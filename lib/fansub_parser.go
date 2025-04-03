@@ -118,15 +118,15 @@ var tmap = map[string]string{
 func getFansubEncoding(s string) string {
 	keys := []string{
 		// Resolutions
-		"360p", "480p", "540p", "720p", "1080p", "1440p",
+		"240p", "360p", "480p", "540p", "720p", "1080p", "1440p",
 
 		// Video Codecs
-		"HEVC", "AVC", "AV1", "Hybrid",
+		"HEVC", "AVC", "AV1", "Hybrid", "Xvid", "XVID", "XviD",
 		"H.264", "H.265", "h.265", "h.264", "x265", "x264",
 
 		// Audio Codecs
 		"AAC", "AAC2.0", "E-AC-3", "EAC3", "E-AC3", "AC-3",
-		"FLAC", "DDP", "TrueHD", "2.0", "Opus",
+		"FLAC", "DDP", "TrueHD", "2.0", "Opus", "MP3", "Mp3",
 
 		// Bit Depths
 		"10bit", "10-bit", "10-Bit", "8-Bit", "8bit", "8-bit",
