@@ -160,6 +160,10 @@ func getFansubSource(s string) string {
 }
 
 func getFansubEpisode(s string, index int, tokens []string) (season string, episode string) {
+	if len(s) == 0 {
+		return
+	}
+
 	if s == "Season" && tokens[index+2][0] == '-' {
 		_, err1 := strconv.ParseInt(tokens[index+1], 10, 32)
 		_, err2 := strconv.ParseInt(tokens[index+3], 10, 32)
