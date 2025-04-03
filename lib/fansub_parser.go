@@ -137,11 +137,11 @@ func getFansubEncoding(s string) string {
 		case "DDP":
 			return "DolbyDigital+ "
 		case "E-AC-3", "E-AC3":
-			return "EAC3"
+			return "EAC3 "
 		case "AVC", "x264", "h.264":
-			return "H.264"
+			return "H.264 "
 		case "H.265", "h.265", "x265":
-			return "HEVC"
+			return "HEVC "
 		default:
 			if key == s {
 				return key + " "
