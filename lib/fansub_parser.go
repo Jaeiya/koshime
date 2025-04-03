@@ -18,6 +18,7 @@ var fansubSourceMap = map[string]string{
 	"AMZN":     "Amazon",
 	"NF":       "Netflix",
 	"VIKI":     "Viki",
+	"ADN":      "AnimeDigitalNetwork",
 	"B-Global": "Bilibili-Global",
 	"DSNP":     "Disney+",
 	"CR":       "CrunchyRoll",
