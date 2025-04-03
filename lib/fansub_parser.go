@@ -2,7 +2,6 @@ package lib
 
 import (
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -47,8 +46,6 @@ type FansubInfo struct {
 type Fansub struct{}
 
 func (Fansub) Parse(fileName string) (FansubInfo, error) {
-	ext := filepath.Ext(fileName)
-	fileName = strings.TrimSuffix(fileName, ext)
 
 	if !strings.Contains(fileName, " ") && !strings.Contains(fileName, ".") {
 		return FansubInfo{}, fmt.Errorf("cannot tokenize file name")
