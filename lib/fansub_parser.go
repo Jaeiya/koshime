@@ -32,6 +32,10 @@ var fansubSourceMap = map[string]string{
 
 	"BD":    "BluRayDisc",
 	"BDRip": "BluRayDisc",
+
+	"DVD":    "DVD",
+	"DVDRIP": "DVD",
+	"DVDRip": "DVD",
 }
 
 type FansubInfo struct {
