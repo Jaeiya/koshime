@@ -121,13 +121,11 @@ func getFansubEncoding(s string) string {
 
 		// Video Codecs
 		"HEVC", "AVC", "AV1", "Hybrid",
+		"H.264", "H.265", "h.265", "h.264", "x265", "x264",
 
 		// Audio Codecs
 		"AAC", "AAC2.0", "E-AC-3", "EAC3", "E-AC3", "AC-3",
 		"FLAC", "DDP", "TrueHD", "2.0", "Opus",
-
-		// Encoding Algorithms
-		"H.264", "x265", "x264",
 
 		// Bit Depths
 		"10bit", "10-bit", "10-Bit", "8-Bit", "8bit", "8-bit",
@@ -139,6 +137,10 @@ func getFansubEncoding(s string) string {
 			return "DolbyDigital+ "
 		case "E-AC-3", "E-AC3":
 			return "EAC3"
+		case "AVC", "x264", "h.264":
+			return "H.264"
+		case "H.265", "h.265", "x265":
+			return "HEVC"
 		default:
 			if key == s {
 				return key + " "
