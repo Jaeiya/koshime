@@ -156,6 +156,14 @@ func getFansubSource(s string) string {
 }
 
 func getFansubEpisode(s string, index int, tokens []string) (season string, episode string) {
+	if s == "Season" && tokens[index+2][0] == '-' {
+		_, err1 := strconv.ParseInt(tokens[index+1], 10, 32)
+		_, err2 := strconv.ParseInt(tokens[index+3], 10, 32)
+		if err1 == nil && err2 == nil {
+			return tokens[index+1], tokens[index+3]
+		}
+	}
+
 	if s[0] == 'S' && (len(s) == 6 || len(s) == 8) {
 		_, err1 := strconv.ParseInt(s[1:3], 10, 32)
 		_, err2 := strconv.ParseInt(s[4:6], 10, 32)
