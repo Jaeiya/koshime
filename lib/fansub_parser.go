@@ -150,7 +150,7 @@ func getFansubEncoding(s string) string {
 
 func getFansubSource(s string) string {
 	if source, exists := fansubSourceMap[s]; exists {
-		return source
+		return source + " "
 	}
 	return ""
 }
