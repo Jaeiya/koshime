@@ -50,9 +50,8 @@ type FansubInfo struct {
 type Fansub struct{}
 
 func (Fansub) Parse(fileName string) (FansubInfo, error) {
-
 	if !strings.Contains(fileName, " ") && !strings.Contains(fileName, ".") {
-		return FansubInfo{}, fmt.Errorf("cannot tokenize file name")
+		return FansubInfo{}, fmt.Errorf("unsupported file name")
 	}
 
 	if i := strings.Index(strings.ToLower(fileName), "batch"); i > 0 {
@@ -69,27 +68,24 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	var episode string
 	var season string
 
-	fileName = utils.ReplaceAll(fileName, fansubReplaceMap)
-
-	tokens := strings.Split(fileName, " ")
-	if len(tokens) <= 1 {
-		tokens = strings.Split(fileName, ".")
-	}
-
-	tokensNoFansub := tokens
 	if fileName[0] == '[' {
+		fansubEndIndex := strings.Index(fileName, "]")
 		fansubName = fileName[1:strings.Index(fileName, "]")]
-		fansubTokenCount := strings.Count(fansubName, " ") + 1
-		tokensNoFansub = tokens[fansubTokenCount:]
+		fileName = fileName[fansubEndIndex+1:]
 	}
 
-	for i, t := range tokensNoFansub {
+	separator := getTokenSeparator(fileName)
+	fileName = utils.ReplaceAll(fileName, newBracketReplaceMap(separator))
+	fileName = strings.TrimPrefix(fileName, separator)
+	tokens := strings.Split(fileName, separator)
+
+	for i, t := range tokens {
 		t = utils.RemoveBrackets(t)
 		encoding.WriteString(getFansubEncoding(t))
 		source.WriteString(getFansubSource(t))
 		// Assume only one valid episode number
 		if len(episode) == 0 {
-			season, episode = getFansubEpisode(t, i, tokensNoFansub)
+			season, episode = getFansubEpisode(t, i, tokens)
 		}
 
 		// Title can be anything but should not be found after meta-data
@@ -189,4 +185,23 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 	}
 
 	return
+}
+// getTokenSeparator returns the most prevalent token
+// separator within the given string.
+func getTokenSeparator(s string) string {
+	spaceCount := strings.Count(s, " ")
+	ellipsesCount := strings.Count(s, ".")
+
+	if spaceCount > ellipsesCount {
+		return " "
+	}
+
+	return "."
+}
+
+func newBracketReplaceMap(replacement string) map[string]string {
+	return map[string]string{
+		"][": replacement,
+		")(": replacement,
+	}
 }
