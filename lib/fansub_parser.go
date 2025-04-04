@@ -69,6 +69,7 @@ var fansubSourceMap = map[string]string{
 	"bs8":   "Japan TV Broadcast",
 	"bs11":  "Japan TV Broadcast",
 	"bs260": "Japan TV Broadcast",
+	"at-x":  "Japan TV Broadcast",
 
 	"web-dl": "Web-Download",
 
