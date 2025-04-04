@@ -58,6 +58,9 @@ var fansubSourceMap = map[string]string{
 	"hidive":   "HIDIVE",
 	"cx":       "TV Asahi",
 
+	"bs8":  "TV Tokyo",
+	"bs11": "TV Tokyo",
+
 	"web-dl": "WebRip",
 	"webrip": "WebRip",
 	"WEB":    "WebRip",
