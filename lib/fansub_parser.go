@@ -15,8 +15,12 @@ var fansubReplaceMap = map[string]string{
 }
 
 var fansubEncodingMap = map[string]string{
-	"1920x1080": "1080p",
-	"1280x720":  "720p",
+	"1920x1080":  "1080p",
+	"1920x1080i": "1080i",
+	"1440x1080":  "1080p-Squeezed",
+	"1280x720":   "720p",
+	"854x480":    "480p",
+	"640x360":    "360p",
 
 	"av1":        "AV1",
 	"aac":        "AAC",
