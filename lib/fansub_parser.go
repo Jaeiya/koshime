@@ -59,10 +59,11 @@ var fansubSourceMap = map[string]string{
 	"hidive":   "HIDIVE",
 	"yt":       "YouTube",
 	"cx":       "TV Asahi",
-	"tx":       "Japan TV Broadcast",
 
-	"bs8":  "TV Tokyo",
-	"bs11": "TV Tokyo",
+	"tx":   "Japan TV Broadcast",
+	"tbs":  "Japan TV Broadcast",
+	"bs8":  "Japan TV Broadcast",
+	"bs11": "Japan TV Broadcast",
 
 	"web-dl": "WebRip",
 	"webrip": "WebRip",
