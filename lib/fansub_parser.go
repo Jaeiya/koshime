@@ -60,10 +60,11 @@ var fansubSourceMap = map[string]string{
 	"yt":       "YouTube",
 	"cx":       "TV Asahi",
 
-	"tx":   "Japan TV Broadcast",
-	"tbs":  "Japan TV Broadcast",
-	"bs8":  "Japan TV Broadcast",
-	"bs11": "Japan TV Broadcast",
+	"tx":    "Japan TV Broadcast",
+	"tbs":   "Japan TV Broadcast",
+	"bs8":   "Japan TV Broadcast",
+	"bs11":  "Japan TV Broadcast",
+	"bs260": "Japan TV Broadcast",
 
 	"web-dl": "WebRip",
 	"webrip": "WebRip",
