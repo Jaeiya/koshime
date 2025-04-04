@@ -2,6 +2,7 @@ package lib
 
 import (
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -67,6 +68,14 @@ var fansubSourceMap = map[string]string{
 	"dvdrip": "DVD",
 }
 
+var fansubExtMap = map[string]struct{}{
+	".mp4": {},
+	".mkv": {},
+	".avi": {},
+	".mpg": {},
+	".wmv": {},
+}
+
 type FansubInfo struct {
 	Fansub   string
 	Title    string
@@ -79,7 +88,13 @@ type FansubInfo struct {
 type Fansub struct{}
 
 func (Fansub) Parse(fileName string) (FansubInfo, error) {
-	if !strings.Contains(fileName, " ") && !strings.Contains(fileName, ".") {
+	ext := filepath.Ext(fileName)
+	if _, hasExt := fansubExtMap[ext]; hasExt {
+		fileName = strings.TrimSuffix(fileName, ext)
+	}
+
+	if !strings.Contains(fileName, " ") && !strings.Contains(fileName, ".") &&
+		!strings.Contains(fileName, "_") {
 		return FansubInfo{}, fmt.Errorf("unsupported file name")
 	}
 
@@ -211,12 +226,17 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 func getTokenSeparator(s string) string {
 	spaceCount := strings.Count(s, " ")
 	ellipsesCount := strings.Count(s, ".")
+	underscoreCount := strings.Count(s, "_")
 
-	if spaceCount > ellipsesCount {
+	if spaceCount > ellipsesCount && spaceCount > underscoreCount {
 		return " "
 	}
 
-	return "."
+	if ellipsesCount > underscoreCount {
+		return "."
+	}
+
+	return "_"
 }
 
 func newBracketReplaceMap(replacement string) map[string]string {
