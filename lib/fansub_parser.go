@@ -38,6 +38,7 @@ var fansubEncodingMap = map[string]string{
 	"e-ac-3": "EAC3",
 	"e-ac3":  "EAC3",
 	"eac3":   "EAC3",
+	"eac-3":  "EAC3",
 
 	"10bit":  "10-bit",
 	"10-bit": "10-bit",
