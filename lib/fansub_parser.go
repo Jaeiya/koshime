@@ -64,7 +64,7 @@ var fansubSourceMap = map[string]string{
 
 	"web-dl": "WebRip",
 	"webrip": "WebRip",
-	"WEB":    "WebRip",
+	"web":    "WebRip",
 
 	"bili":     "Bilibili",
 	"bstation": "Bilibili",
