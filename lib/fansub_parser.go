@@ -26,6 +26,7 @@ var fansubEncodingMap = map[string]string{
 	"x264":       "H.264",
 
 	"ddp":    "DolbyDigital+",
+	"ddp2.0": "DolbyDigital+2.0",
 	"truehd": "TrueHD",
 	"opus":   "Opus",
 	"mp3":    "Mp3",
