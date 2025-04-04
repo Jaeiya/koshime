@@ -66,7 +66,8 @@ var fansubSourceMap = map[string]string{
 	"bs11":  "Japan TV Broadcast",
 	"bs260": "Japan TV Broadcast",
 
-	"web-dl": "WebRip",
+	"web-dl": "Web-Download",
+
 	"webrip": "WebRip",
 	"web":    "WebRip",
 
