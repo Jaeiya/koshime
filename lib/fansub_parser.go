@@ -260,6 +260,20 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 		}
 	}
 
+	// Catch "#<suffix> Season - #" for season & episode
+	if len(s) > 2 && len(s) < 5 && strings.ToLower(tokens[index+1]) == "season" {
+		season := strings.TrimSuffix(s, "st")
+		season = strings.TrimSuffix(season, "nd")
+		season = strings.TrimSuffix(season, "rd")
+		season = strings.TrimSuffix(season, "th")
+		_, err0 := strconv.ParseInt(season, 10, 32)
+		episode := trimEpVersion(tokens[index+3])
+		_, err1 := strconv.ParseInt(episode, 10, 32)
+		if err0 == nil && err1 == nil {
+			return season, tokens[index+3]
+		}
+	}
+
 	return
 }
 
