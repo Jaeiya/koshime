@@ -52,7 +52,7 @@ var fansubSourceMap = map[string]string{
 	"cr":       "CrunchyRoll",
 	"hidive":   "HIDIVE",
 
-	"WEB-DL": "WebRip",
+	"web-dl": "WebRip",
 	"webrip": "WebRip",
 	"WEB":    "WebRip",
 
