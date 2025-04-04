@@ -40,29 +40,30 @@ var fansubEncodingMap = map[string]string{
 	"8bit":  "8-bit",
 	"8-bit": "8-bit",
 }
+
 var fansubSourceMap = map[string]string{
-	"AMZN":     "Amazon",
-	"NF":       "Netflix",
-	"VIKI":     "Viki",
-	"ADN":      "AnimeDigitalNetwork",
-	"B-Global": "Bilibili-Global",
-	"DSNP":     "Disney+",
-	"CR":       "CrunchyRoll",
+	"amzn":     "Amazon",
+	"nf":       "Netflix",
+	"viki":     "Viki",
+	"adn":      "AnimeDigitalNetwork",
+	"baha":     "BahamutAnimeMadness",
+	"b-global": "Bilibili-Global",
+	"dsnp":     "Disney+",
+	"cr":       "CrunchyRoll",
+	"hidive":   "HIDIVE",
 
 	"WEB-DL": "WebRip",
+	"webrip": "WebRip",
 	"WEB":    "WebRip",
-	"WEBRip": "WebRip",
 
-	"BILI":     "Bilibili",
-	"Bstation": "Bilibili",
-	"BStation": "Bilibili",
+	"bili":     "Bilibili",
+	"bstation": "Bilibili",
 
-	"BD":    "BluRayDisc",
-	"BDRip": "BluRayDisc",
+	"bd":    "BluRayDisc",
+	"bdrip": "BluRayDisc",
 
-	"DVD":    "DVD",
-	"DVDRIP": "DVD",
-	"DVDRip": "DVD",
+	"dvd":    "DVD",
+	"dvdrip": "DVD",
 }
 
 type FansubInfo struct {
@@ -166,7 +167,7 @@ func getFansubEncoding(s string, index int, tokens []string) string {
 }
 
 func getFansubSource(s string) string {
-	if source, exists := fansubSourceMap[s]; exists {
+	if source, exists := fansubSourceMap[strings.ToLower(s)]; exists {
 		return source + " "
 	}
 	return ""
