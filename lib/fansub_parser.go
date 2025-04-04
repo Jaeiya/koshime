@@ -13,6 +13,33 @@ var fansubReplaceMap = map[string]string{
 	")(": " ",
 }
 
+var fansubEncodingMap = map[string]string{
+	"av1":        "AV1",
+	"aac":        "AAC",
+	"aac2.0":     "AAC2.0",
+	"hevc-10bit": "HEVC 10-bit",
+	"hevc":       "HEVC",
+	"h.265":      "HEVC",
+	"x265":       "HEVC",
+	"avc":        "H.264",
+	"h.264":      "H.264",
+	"x264":       "H.264",
+
+	"ddp":    "DolbyDigital+",
+	"truehd": "TrueHD",
+	"opus":   "Opus",
+	"mp3":    "Mp3",
+	"flac":   "FLAC",
+	"e-ac-3": "EAC3",
+	"e-ac3":  "EAC3",
+	"eac3":   "EAC3",
+
+	"10bit":  "10-bit",
+	"10-bit": "10-bit",
+
+	"8bit":  "8-bit",
+	"8-bit": "8-bit",
+}
 var fansubSourceMap = map[string]string{
 	"AMZN":     "Amazon",
 	"NF":       "Netflix",
@@ -81,7 +108,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 
 	for i, t := range tokens {
 		t = utils.RemoveBrackets(t)
-		encoding.WriteString(getFansubEncoding(t))
+		encoding.WriteString(getFansubEncoding(t, i, tokens))
 		source.WriteString(getFansubSource(t))
 		// Assume only one valid episode number
 		if len(episode) == 0 {
@@ -106,42 +133,32 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	return info, nil
 }
 
-var tmap = map[string]string{
-	"360p": "360p",
-	"DDP":  "DolbyDigital+",
-}
-
-func getFansubEncoding(s string) string {
-	keys := []string{
-		// Resolutions
+func getFansubEncoding(s string, index int, tokens []string) string {
+	resolutions := []string{
 		"240p", "360p", "480p", "540p", "720p", "1080p", "1440p",
-
-		// Video Codecs
-		"HEVC", "AVC", "AV1", "Hybrid", "Xvid", "XVID", "XviD",
-		"H.264", "H.265", "h.265", "h.264", "x265", "x264",
-
-		// Audio Codecs
-		"AAC", "AAC2.0", "E-AC-3", "EAC3", "E-AC3", "AC-3",
-		"FLAC", "DDP", "TrueHD", "2.0", "Opus", "MP3", "Mp3",
-
-		// Bit Depths
-		"10bit", "10-bit", "10-Bit", "8-Bit", "8bit", "8-bit",
 	}
 
-	for _, key := range keys {
-		switch s {
-		case "DDP":
-			return "DolbyDigital+ "
-		case "E-AC-3", "E-AC3":
-			return "EAC3 "
-		case "AVC", "x264", "h.264":
-			return "H.264 "
-		case "H.265", "h.265", "x265":
-			return "HEVC "
-		default:
-			if key == s {
-				return key + " "
+	if val, exists := fansubEncodingMap[strings.ToLower(s)]; exists {
+		// Catch "AAC 2.0" edge case
+		if val == "AAC" && index+1 < len(tokens) {
+			if utils.RemoveBrackets(tokens[index+1]) == "2.0" {
+				return val + "2.0 "
 			}
+		}
+		return val + " "
+	}
+
+	// Catch "H 264" edge case
+	if s == "264" {
+		lastToken := utils.RemoveBrackets(strings.ToLower(tokens[index-1]))
+		if lastToken == "h" {
+			return "H.264 "
+		}
+	}
+
+	for _, res := range resolutions {
+		if res == s {
+			return res + " "
 		}
 	}
 
@@ -186,6 +203,7 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 
 	return
 }
+
 // getTokenSeparator returns the most prevalent token
 // separator within the given string.
 func getTokenSeparator(s string) string {
