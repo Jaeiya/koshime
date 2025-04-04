@@ -155,7 +155,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 
 func getFansubEncoding(s string, index int, tokens []string) string {
 	resolutions := []string{
-		"240p", "360p", "480p", "540p", "720p", "1080p", "1440p",
+		"240p", "360p", "480p", "540p", "720p", "1080p", "1440p", "2160p",
 	}
 
 	if val, exists := fansubEncodingMap[strings.ToLower(s)]; exists {
