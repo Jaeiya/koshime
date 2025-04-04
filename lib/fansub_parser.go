@@ -241,6 +241,15 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 		}
 	}
 
+	// Catch "EP#" for episode
+	if s[:2] == "EP" {
+		episode := trimEpVersion(s[2:])
+		_, err := strconv.ParseInt(episode, 10, 32)
+		if err == nil {
+			return "", episode
+		}
+	}
+
 	return
 }
 
