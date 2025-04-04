@@ -197,6 +197,11 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 		return
 	}
 
+	trimEpVersion := func(episode string) string {
+		return strings.TrimSuffix(episode, "v2")
+	}
+
+	// Catch "Season # - #" for season & episode
 	if s == "Season" && tokens[index+2][0] == '-' {
 		_, err1 := strconv.ParseInt(tokens[index+1], 10, 32)
 		_, err2 := strconv.ParseInt(tokens[index+3], 10, 32)
@@ -205,17 +210,31 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 		}
 	}
 
+	// Catch "S##E##" for season & episode
 	if s[0] == 'S' && (len(s) == 6 || len(s) == 8) {
 		_, err1 := strconv.ParseInt(s[1:3], 10, 32)
-		_, err2 := strconv.ParseInt(s[4:6], 10, 32)
+		episode := trimEpVersion(s[4:])
+		_, err2 := strconv.ParseInt(episode, 10, 32)
 		if err1 == nil && err2 == nil {
-			return s[1:3], s[4:]
+			return s[1:3], episode
 		}
 	}
 
-	// Try to find raw episode
+	// Catch "S# - #" for season & episode
+	if s[0] == 'S' && (len(s) == 2 || len(s) == 3) {
+		_, err1 := strconv.ParseInt(s[1:], 10, 32)
+		episode := trimEpVersion(tokens[index+2])
+		_, err2 := strconv.ParseInt(episode, 10, 32)
+		if err1 == nil && err2 == nil {
+			return s[1:], tokens[index+2]
+		}
+
+	}
+
+	// Catch "- #" for episode
 	if s[0] == '-' {
-		_, err := strconv.ParseInt(strings.TrimSuffix(tokens[index+1], "v2"), 10, 32)
+		episode := trimEpVersion(tokens[index+1])
+		_, err := strconv.ParseInt(episode, 10, 32)
 		if err == nil {
 			return "", tokens[index+1]
 		}
