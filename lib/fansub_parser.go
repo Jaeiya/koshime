@@ -137,18 +137,18 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	tokens := strings.Split(fileName, separator)
 
 	for i, t := range tokens {
-		t = utils.RemoveBrackets(t)
+		cleanToken := utils.RemoveBrackets(t)
 
-		enc := getFansubEncoding(t, i, tokens)
+		enc := getFansubEncoding(cleanToken, i, tokens)
 		// Don't add duplicate encodings
 		if !strings.Contains(encoding.String(), enc) {
 			encoding.WriteString(enc)
 		}
 
-		source.WriteString(getFansubSource(t))
+		source.WriteString(getFansubSource(cleanToken))
 		// Assume only one valid episode number
 		if len(episode) == 0 {
-			season, episode = getFansubEpisode(t, i, tokens)
+			season, episode = getFansubEpisode(cleanToken, i, tokens)
 		}
 
 		// Title can be anything but should not be found after meta-data
