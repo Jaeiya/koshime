@@ -56,6 +56,7 @@ var fansubSourceMap = map[string]string{
 	"dsnp":     "Disney+",
 	"cr":       "CrunchyRoll",
 	"hidive":   "HIDIVE",
+	"yt":       "YouTube",
 	"cx":       "TV Asahi",
 
 	"bs8":  "TV Tokyo",
