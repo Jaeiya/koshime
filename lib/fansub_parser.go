@@ -56,6 +56,7 @@ var fansubSourceMap = map[string]string{
 	"dsnp":     "Disney+",
 	"cr":       "CrunchyRoll",
 	"hidive":   "HIDIVE",
+	"cx":       "TV Asahi",
 
 	"web-dl": "WebRip",
 	"webrip": "WebRip",
