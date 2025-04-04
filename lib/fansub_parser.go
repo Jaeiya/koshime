@@ -133,7 +133,13 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 
 	for i, t := range tokens {
 		t = utils.RemoveBrackets(t)
-		encoding.WriteString(getFansubEncoding(t, i, tokens))
+
+		enc := getFansubEncoding(t, i, tokens)
+		// Don't add duplicate encodings
+		if !strings.Contains(encoding.String(), enc) {
+			encoding.WriteString(enc)
+		}
+
 		source.WriteString(getFansubSource(t))
 		// Assume only one valid episode number
 		if len(episode) == 0 {
