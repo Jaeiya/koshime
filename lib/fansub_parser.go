@@ -92,6 +92,7 @@ var fansubExtMap = map[string]struct{}{
 	".avi": {},
 	".mpg": {},
 	".wmv": {},
+	".ts":  {},
 }
 
 type FansubInfo struct {
