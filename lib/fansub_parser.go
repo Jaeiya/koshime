@@ -59,6 +59,7 @@ var fansubSourceMap = map[string]string{
 	"hidive":   "HIDIVE",
 	"yt":       "YouTube",
 	"cx":       "TV Asahi",
+	"tx":       "Japan TV Broadcast",
 
 	"bs8":  "TV Tokyo",
 	"bs11": "TV Tokyo",
