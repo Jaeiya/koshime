@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -238,7 +239,7 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 		episode := trimEpVersion(s[4:])
 		_, err2 := strconv.ParseInt(episode, 10, 32)
 		if err1 == nil && err2 == nil {
-			return s[1:3], episode
+			return s[1:3], s[4:]
 		}
 	}
 
