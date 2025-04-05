@@ -235,7 +235,7 @@ func getFansubSource(s string) string {
 }
 
 func getFansubEpisode(s string, index int, tokens []string) (season string, episode string) {
-	if s == "" {
+	if strings.TrimSpace(s) == "" {
 		return
 	}
 
