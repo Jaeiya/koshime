@@ -144,7 +144,8 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	addedEncodings := map[string]struct{}{}
 
 	for i, t := range tokens {
-		cleanToken := utils.RemoveBrackets(t)
+		token := t
+		cleanToken := strings.ToLower(utils.RemoveBrackets(token))
 
 		enc := getFansubEncoding(cleanToken, i, tokens)
 		// Don't add duplicate encodings
@@ -156,7 +157,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		source.WriteString(getFansubSource(cleanToken))
 		// Assume only one valid episode number
 		if len(episode) == 0 {
-			season, episode = getFansubEpisode(cleanToken, i, tokens)
+			season, episode = getFansubEpisode(token, i, tokens)
 		}
 
 		// Title can be anything but should not be found after meta-data
@@ -182,7 +183,7 @@ func getFansubEncoding(s string, index int, tokens []string) string {
 		"240p", "360p", "480p", "540p", "720p", "1080p", "1440p", "2160p",
 	}
 
-	if val, exists := fansubEncodingMap[strings.ToLower(s)]; exists {
+	if val, exists := fansubEncodingMap[s]; exists {
 		// Catch "AAC 2.0" edge case
 		if val == "AAC" && index+1 < len(tokens) {
 			if utils.RemoveBrackets(tokens[index+1]) == "2.0" {
@@ -210,7 +211,7 @@ func getFansubEncoding(s string, index int, tokens []string) string {
 }
 
 func getFansubSource(s string) string {
-	if source, exists := fansubSourceMap[strings.ToLower(s)]; exists {
+	if source, exists := fansubSourceMap[s]; exists {
 		return source + " "
 	}
 	return ""
