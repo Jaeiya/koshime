@@ -196,10 +196,6 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 		possibleEncodings = strings.Split(s, ".")
 	}
 
-	resolutions := []string{
-		"240p", "360p", "480p", "540p", "720p", "1080p", "1440p", "2160p",
-	}
-
 	if val, exists := fansubEncodingMap[s]; exists {
 		// Catch "AAC 2.0" edge case
 		if val == "AAC" && index+1 < len(tokens) {
@@ -216,6 +212,10 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 		if lastToken == "h" {
 			return "H.264 ", possibleEncodings
 		}
+	}
+
+	resolutions := []string{
+		"240p", "360p", "480p", "540p", "720p", "1080p", "1440p", "2160p",
 	}
 
 	for _, res := range resolutions {
