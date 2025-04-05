@@ -112,7 +112,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		fileName = strings.TrimSuffix(fileName, ext)
 	}
 
-	if strings.ContainsAny(fileName, " ._") {
+	if !strings.ContainsAny(fileName, " ._") {
 		return FansubInfo{}, fmt.Errorf("unsupported file name")
 	}
 
