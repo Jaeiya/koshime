@@ -136,15 +136,26 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 
 	addedEncodings := map[string]struct{}{}
 
-	for i, t := range tokens {
-		token := t
-		cleanToken := strings.ToLower(utils.RemoveBrackets(token))
-
-		enc := getFansubEncoding(cleanToken, i, tokens)
+	tryWriteEncoding := func(enc string) {
 		// Don't add duplicate encodings
 		if _, exists := addedEncodings[enc]; !exists {
 			encoding.WriteString(enc)
 			addedEncodings[enc] = struct{}{}
+		}
+	}
+
+	for i, t := range tokens {
+		token := t
+		cleanToken := strings.ToLower(utils.RemoveBrackets(token))
+
+		enc, multiEnc := getFansubEncoding(cleanToken, i, tokens)
+		tryWriteEncoding(enc)
+
+		if len(multiEnc) > 0 {
+			for _, enc = range multiEnc {
+				enc, _ = getFansubEncoding(enc, i, tokens)
+				tryWriteEncoding(enc)
+			}
 		}
 
 		source.WriteString(getFansubSource(cleanToken))
@@ -178,7 +189,13 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	return info, nil
 }
 
-func getFansubEncoding(s string, index int, tokens []string) string {
+func getFansubEncoding(s string, index int, tokens []string) (string, []string) {
+	// Catch "<enc>.<enc>" where multiple encodings can be separated by ellipses
+	var possibleEncodings []string
+	if strings.Contains(s, ".") {
+		possibleEncodings = strings.Split(s, ".")
+	}
+
 	resolutions := []string{
 		"240p", "360p", "480p", "540p", "720p", "1080p", "1440p", "2160p",
 	}
@@ -187,27 +204,27 @@ func getFansubEncoding(s string, index int, tokens []string) string {
 		// Catch "AAC 2.0" edge case
 		if val == "AAC" && index+1 < len(tokens) {
 			if utils.RemoveBrackets(tokens[index+1]) == "2.0" {
-				return val + "2.0 "
+				return val + "2.0 ", possibleEncodings
 			}
 		}
-		return val + " "
+		return val + " ", possibleEncodings
 	}
 
 	// Catch "H 264" edge case
 	if s == "264" {
 		lastToken := utils.RemoveBrackets(strings.ToLower(tokens[index-1]))
 		if lastToken == "h" {
-			return "H.264 "
+			return "H.264 ", possibleEncodings
 		}
 	}
 
 	for _, res := range resolutions {
 		if res == s {
-			return res + " "
+			return res + " ", possibleEncodings
 		}
 	}
 
-	return ""
+	return "", possibleEncodings
 }
 
 func getFansubSource(s string) string {
