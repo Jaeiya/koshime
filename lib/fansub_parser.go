@@ -299,6 +299,13 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 		}
 	}
 
+	// Catch "<title> # [<meta-data>" for episode
+	if utils.IsNumber(trimEpVersion(s)) && index+1 < len(tokens) {
+		if tokens[index+1][0] == '[' {
+			return "", s
+		}
+	}
+
 	return
 }
 
