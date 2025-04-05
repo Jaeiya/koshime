@@ -141,13 +141,16 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		return FansubInfo{}, fmt.Errorf("batch files not supported")
 	}
 
+	addedEncodings := map[string]struct{}{}
+
 	for i, t := range tokens {
 		cleanToken := utils.RemoveBrackets(t)
 
 		enc := getFansubEncoding(cleanToken, i, tokens)
 		// Don't add duplicate encodings
-		if !strings.Contains(encoding.String(), enc) {
+		if _, exists := addedEncodings[enc]; !exists {
 			encoding.WriteString(enc)
+			addedEncodings[enc] = struct{}{}
 		}
 
 		source.WriteString(getFansubSource(cleanToken))
