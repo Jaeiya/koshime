@@ -117,13 +117,6 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		return FansubInfo{}, fmt.Errorf("unsupported file name")
 	}
 
-	if i := strings.Index(strings.ToLower(fileName), "batch"); i > 0 {
-		leadingChar := fileName[i-1]
-		if leadingChar == '[' || leadingChar == '(' {
-			return FansubInfo{}, fmt.Errorf("batch files not supported")
-		}
-	}
-
 	var fansubName string
 	var encoding strings.Builder
 	var source strings.Builder
@@ -141,6 +134,13 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	fileName = utils.ReplaceAll(fileName, newBracketReplaceMap(separator))
 	fileName = strings.TrimPrefix(fileName, separator)
 	tokens := strings.Split(fileName, separator)
+
+	doesContainBatch := func(t string) bool {
+		return strings.ToLower(utils.RemoveBrackets(t)) == "batch"
+	}
+	if slices.ContainsFunc(tokens, doesContainBatch) {
+		return FansubInfo{}, fmt.Errorf("batch files not supported")
+	}
 
 	for i, t := range tokens {
 		cleanToken := utils.RemoveBrackets(t)
