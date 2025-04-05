@@ -144,6 +144,8 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		}
 	}
 
+	var foundBracket bool
+
 	for i, t := range tokens {
 		token := t
 		cleanToken := strings.ToLower(utils.RemoveBrackets(token))
@@ -172,7 +174,12 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 			return FansubInfo{}, fmt.Errorf("batch files not supported")
 		}
 
-		if !foundMetaData {
+		// We assume titles should never contain brackets
+		if token[0] == '[' {
+			foundBracket = true
+		}
+
+		if !foundMetaData && !foundBracket {
 			title.WriteString(t + " ")
 		}
 
