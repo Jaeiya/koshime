@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/jaeiya/koshime/lib/utils"
@@ -215,7 +214,7 @@ func getFansubSource(s string) string {
 }
 
 func getFansubEpisode(s string, index int, tokens []string) (season string, episode string) {
-	if len(s) == 0 {
+	if s == "" {
 		return
 	}
 
@@ -224,69 +223,49 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 	}
 
 	// Catch "Season # - #" for season & episode
-	if s == "Season" && tokens[index+2][0] == '-' {
-		_, err1 := strconv.ParseInt(tokens[index+1], 10, 32)
-		_, err2 := strconv.ParseInt(tokens[index+3], 10, 32)
-		if err1 == nil && err2 == nil {
+	if s == "Season" && index+3 < len(tokens) && tokens[index+2][0] == '-' {
+		if utils.IsNumber(tokens[index+1]) && utils.IsNumber(tokens[index+3]) {
 			return tokens[index+1], tokens[index+3]
 		}
 	}
 
 	// Catch "S##E##" for season & episode
 	if s[0] == 'S' && (len(s) == 6 || len(s) == 8) {
-		_, err1 := strconv.ParseInt(s[1:3], 10, 32)
-		episode := trimEpVersion(s[4:])
-		_, err2 := strconv.ParseInt(episode, 10, 32)
-		if err1 == nil && err2 == nil {
+		if utils.IsNumber(s[1:3]) && utils.IsNumber(trimEpVersion(s[4:])) {
 			return s[1:3], s[4:]
 		}
 	}
 
 	// Catch "S# - #" for season & episode
-	if s[0] == 'S' && (len(s) == 2 || len(s) == 3) {
-		_, err1 := strconv.ParseInt(s[1:], 10, 32)
-		episode := trimEpVersion(tokens[index+2])
-		_, err2 := strconv.ParseInt(episode, 10, 32)
-		if err1 == nil && err2 == nil {
+	if s[0] == 'S' && (len(s) == 2 || len(s) == 3) && index+2 < len(tokens) {
+		if utils.IsNumber(s[1:]) && utils.IsNumber(trimEpVersion(tokens[index+2])) {
 			return s[1:], tokens[index+2]
 		}
-
 	}
 
 	// Catch "- #" for episode
-	if s[0] == '-' {
-		episode := trimEpVersion(tokens[index+1])
-		_, err := strconv.ParseInt(episode, 10, 32)
-		if err == nil {
+	if s[0] == '-' && index+1 < len(tokens) {
+		if utils.IsNumber(trimEpVersion(tokens[index+1])) {
 			return "", tokens[index+1]
 		}
 	}
 
 	// Catch "EP#" for episode
 	if len(s) > 2 && s[:2] == "EP" {
-		episode := trimEpVersion(s[2:])
-		_, err := strconv.ParseInt(episode, 10, 32)
-		if err == nil {
-			return "", episode
+		if utils.IsNumber(trimEpVersion(s[2:])) {
+			return "", s[2:]
 		}
 	}
 
 	// Catch "#<suffix> Season - #" for season & episode
-	if len(s) > 2 && len(s) < 5 && index+1 < len(tokens) {
+	if len(s) > 2 && len(s) < 5 && index+3 < len(tokens) {
 		if strings.ToLower(tokens[index+1]) == "season" {
 			season = strings.TrimSuffix(s, "st")
 			season = strings.TrimSuffix(season, "nd")
 			season = strings.TrimSuffix(season, "rd")
 			season = strings.TrimSuffix(season, "th")
 
-			_, err0 := strconv.ParseInt(season, 10, 32)
-			if err0 != nil {
-				return
-			}
-
-			episode := trimEpVersion(tokens[index+3])
-			_, err1 := strconv.ParseInt(episode, 10, 32)
-			if err1 == nil {
+			if utils.IsNumber(season) && utils.IsNumber(trimEpVersion(tokens[index+3])) {
 				return season, tokens[index+3]
 			}
 		}
