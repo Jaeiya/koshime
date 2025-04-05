@@ -3,7 +3,6 @@ package lib
 import (
 	"fmt"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/jaeiya/koshime/lib/utils"
@@ -134,13 +133,6 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	fileName = strings.TrimPrefix(fileName, separator)
 	tokens := strings.Split(fileName, separator)
 
-	doesContainBatch := func(t string) bool {
-		return strings.ToLower(utils.RemoveBrackets(t)) == "batch"
-	}
-	if slices.ContainsFunc(tokens, doesContainBatch) {
-		return FansubInfo{}, fmt.Errorf("batch files not supported")
-	}
-
 	addedEncodings := map[string]struct{}{}
 
 	for i, t := range tokens {
@@ -162,9 +154,16 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 
 		// Title can be anything but should not be found after meta-data
 		foundMetaData := encoding.Len() > 0 || source.Len() > 0 || len(episode) > 0
+
+		// Assume "batch" always comes after some meta data
+		if foundMetaData && cleanToken == "batch" {
+			return FansubInfo{}, fmt.Errorf("batch files not supported")
+		}
+
 		if !foundMetaData {
 			title.WriteString(t + " ")
 		}
+
 	}
 
 	info := FansubInfo{}
