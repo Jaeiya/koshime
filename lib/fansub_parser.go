@@ -151,6 +151,9 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	var foundBracket bool
 
 	for i, t := range tokens {
+		if t == "" {
+			continue
+		}
 		token := t
 		cleanToken := strings.ToLower(utils.RemoveBrackets(token))
 
