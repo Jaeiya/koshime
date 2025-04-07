@@ -123,16 +123,12 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	var episode string
 	var season string
 
-	if fileName[0] == '[' {
-		fansubEndIndex := strings.Index(fileName, "]")
-		fansubName = fileName[1:strings.Index(fileName, "]")]
-		fileName = fileName[fansubEndIndex+1:]
+	tokens, err := SplitFansubTokens(fileName)
+	if err != nil {
+		return FansubInfo{}, err
 	}
-
-	separator := getTokenSeparator(fileName)
-	fileName = utils.ReplaceAll(fileName, newBracketReplaceMap(separator))
-	fileName = strings.TrimPrefix(fileName, separator)
-	tokens := strings.Split(fileName, separator)
+	fansubName = tokens[0]
+	tokens = tokens[1:]
 
 	addedEncodings := map[string]struct{}{}
 
@@ -309,22 +305,58 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 	return
 }
 
-// getTokenSeparator returns the most prevalent token
-// separator within the given string.
-func getTokenSeparator(s string) string {
-	spaceCount := strings.Count(s, " ")
-	ellipsesCount := strings.Count(s, ".")
-	underscoreCount := strings.Count(s, "_")
+func SplitFansubTokens(fileName string) ([]string, error) {
+	spaceCount := strings.Count(fileName, " ")
+	ellipsesCount := strings.Count(fileName, ".")
+	underscoreCount := strings.Count(fileName, "_")
+
+	var fansubName string
+	if fileName[0] == '[' {
+		fansubEndIndex := strings.Index(fileName, "]")
+		fansubName = fileName[1:strings.Index(fileName, "]")]
+		fileName = strings.TrimSpace(fileName[fansubEndIndex+1:])
+	}
+
+	// Try to parse inconsistent separators
+	if ellipsesCount > spaceCount && spaceCount > 1 {
+		tokens := strings.Split(fileName, " ")
+		lastToken := tokens[len(tokens)-1]
+		if !strings.Contains(lastToken, ".") {
+			return []string{}, fmt.Errorf("unsupported separator format")
+		}
+		tokens = tokens[:len(tokens)-1]
+		tokens = append(tokens, strings.Split(lastToken, ".")...)
+		tokens = append([]string{fansubName}, tokens...)
+		return tokens, nil
+	}
 
 	if spaceCount > ellipsesCount && spaceCount > underscoreCount {
-		return " "
+		fileName = utils.ReplaceAll(fileName, newBracketReplaceMap(" "))
+		tokens := strings.Split(fileName, " ")
+		tokens = append([]string{fansubName}, tokens...)
+		return tokens, nil
 	}
 
 	if ellipsesCount > underscoreCount {
-		return "."
+		tokens := strings.Split(fileName, ".")
+		lastToken := tokens[len(tokens)-1]
+		// Look for fansub group at end of file name
+		if strings.Contains(lastToken, "-") {
+			tokens = tokens[:len(tokens)-1]
+			lastTokens := strings.Split(lastToken, "-")
+			if len(lastTokens) != 2 {
+				return []string{}, fmt.Errorf("unsupported end-token format")
+			}
+			tokens = append([]string{fmt.Sprintf("%s", lastTokens[1])}, tokens...)
+			tokens = append(tokens, lastTokens[0])
+		}
+		return tokens, nil
 	}
 
-	return "_"
+	fileName = utils.ReplaceAll(fileName, newBracketReplaceMap("_"))
+	tokens := strings.Split(fileName, "_")
+	tokens = append([]string{fansubName}, tokens...)
+	return tokens, nil
 }
 
 func newBracketReplaceMap(replacement string) map[string]string {
