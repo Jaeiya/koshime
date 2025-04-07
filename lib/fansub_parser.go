@@ -182,7 +182,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		}
 
 		// We assume titles should never contain brackets
-		if token[0] == '[' {
+		if token[0] == '[' && title.Len() > 0 {
 			foundBracket = true
 		}
 
