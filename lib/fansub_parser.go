@@ -208,20 +208,62 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 	}
 
 	if val, exists := fansubEncodingMap[s]; exists {
-		// Catch "AAC 2.0" edge case
-		if val == "AAC" && index+1 < len(tokens) {
+		// Catch "AAC 2.0" formatting
+		if s == "aac" && index+1 < len(tokens) {
 			if utils.RemoveBrackets(tokens[index+1]) == "2.0" {
 				return val + "2.0 ", possibleEncodings
+			}
+		}
+
+		// Catch "TrueHD 7.1" formatting
+		if s == "truehd" {
+			nextToken := utils.RemoveBrackets(strings.ToLower(tokens[index+1]))
+			fmt.Println(nextToken)
+			if nextToken == "7" {
+				return val + "7.1 ", possibleEncodings
 			}
 		}
 		return val + " ", possibleEncodings
 	}
 
-	// Catch "H 264" edge case
+	// Catch "H 264" formatting
 	if s == "264" {
 		lastToken := utils.RemoveBrackets(strings.ToLower(tokens[index-1]))
 		if lastToken == "h" {
 			return "H.264 ", possibleEncodings
+		}
+	}
+
+	// Catch "H 265" formatting
+	if s == "265" {
+		lastToken := utils.RemoveBrackets(strings.ToLower(tokens[index-1]))
+		if lastToken == "h" {
+			return fansubEncodingMap["x265"], possibleEncodings
+		}
+	}
+
+	// Catch "AAC2 0" formatting
+	if s == "aac2" {
+		nextToken := utils.RemoveBrackets(strings.ToLower(tokens[index+1]))
+		if nextToken == "0" {
+			return fansubEncodingMap["aac2.0"] + " ", possibleEncodings
+		}
+
+	}
+
+	// Catch "DDP5 1" formatting
+	if s == "ddp5" {
+		nextToken := utils.RemoveBrackets(strings.ToLower(tokens[index+1]))
+		if nextToken == "1" {
+			return fansubEncodingMap["ddp5.1"] + " ", possibleEncodings
+		}
+	}
+
+	// Catch "DDP2 0" formatting
+	if s == "ddp2" {
+		nextToken := utils.RemoveBrackets(strings.ToLower(tokens[index+1]))
+		if nextToken == "0" {
+			return fansubEncodingMap["ddp2.0"] + " ", possibleEncodings
 		}
 	}
 
