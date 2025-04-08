@@ -169,7 +169,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		source.WriteString(getFansubSource(normalizedToken))
 
 		// Assume episode format is always at beginning of file name
-		if season == "" || episode == "" && !hasMetaData() {
+		if season == "" && episode == "" && !hasMetaData() {
 			season, episode = getFansubEpisode(token, i, tokens)
 		}
 
