@@ -124,12 +124,8 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		return FansubInfo{}, fmt.Errorf("unsupported file name")
 	}
 
-	var fansubName string
-	var encoding strings.Builder
-	var source strings.Builder
-	var title strings.Builder
-	var episode string
-	var season string
+	var fansubName, episode, season string
+	var encoding, source, title strings.Builder
 
 	tokens, err := SplitFansubTokens(fileName)
 	if err != nil {
@@ -152,6 +148,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		if t == "" {
 			continue
 		}
+
 		token := t
 		cleanToken := strings.ToLower(utils.RemoveBrackets(token))
 
