@@ -148,8 +148,6 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		}
 	}
 
-	var foundBracket bool
-
 	for i, t := range tokens {
 		if t == "" {
 			continue
@@ -173,7 +171,6 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 			season, episode = getFansubEpisode(token, i, tokens)
 		}
 
-		// Title can be anything but should not be found after meta-data
 		foundMetaData := encoding.Len() > 0 || source.Len() > 0 || len(episode) > 0
 
 		// Assume "batch" always comes after some meta data
@@ -181,12 +178,8 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 			return FansubInfo{}, fmt.Errorf("batch files not supported")
 		}
 
-		// We assume titles should never contain brackets
-		if token[0] == '[' && title.Len() > 0 {
-			foundBracket = true
-		}
-
-		if !foundMetaData && !foundBracket {
+		// Assume title is always before meta-data
+		if !foundMetaData {
 			title.WriteString(t + " ")
 		}
 
