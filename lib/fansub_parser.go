@@ -233,7 +233,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 	if s == "265" {
 		lastToken := normalizeToken(tokens[index-1])
 		if lastToken == "h" {
-			return fansubEncodingMap["x265"], possibleEncodings
+			return fansubEncodingMap["x265"] + " ", possibleEncodings
 		}
 	}
 
