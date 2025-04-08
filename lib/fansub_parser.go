@@ -162,22 +162,24 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 			}
 		}
 
+		hasMetaData := func() bool {
+			return encoding.Len() > 0 || source.Len() > 0 || episode != "" || season != ""
+		}
+
 		source.WriteString(getFansubSource(cleanToken))
 
 		// Assume episode format is always at beginning of file name
-		if episode == "" {
+		if season == "" || episode == "" && !hasMetaData() {
 			season, episode = getFansubEpisode(token, i, tokens)
 		}
 
-		foundMetaData := encoding.Len() > 0 || source.Len() > 0 || len(episode) > 0
-
 		// Assume "batch" always comes after some meta data
-		if foundMetaData && cleanToken == "batch" {
+		if hasMetaData() && cleanToken == "batch" {
 			return FansubInfo{}, fmt.Errorf("batch files not supported")
 		}
 
 		// Assume title is always before meta-data
-		if !foundMetaData {
+		if !hasMetaData() {
 			title.WriteString(t + " ")
 		}
 
@@ -343,6 +345,12 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 	if utils.IsNumber(trimEpVersion(s)) && index+1 < len(tokens) {
 		if tokens[index+1][0] == '[' {
 			return "", s
+		}
+	}
+
+	if s[0] == 'S' {
+		if utils.IsNumber(s[1:]) {
+			return s[1:], ""
 		}
 	}
 
