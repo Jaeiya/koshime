@@ -156,8 +156,8 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		tryWriteEncoding(enc)
 
 		if len(multiEnc) > 0 {
-			for _, enc = range multiEnc {
-				enc, _ = getFansubEncoding(enc, i, tokens)
+			for i, enc = range multiEnc {
+				enc, _ = getFansubEncoding(enc, i, multiEnc)
 				tryWriteEncoding(enc)
 			}
 		}
