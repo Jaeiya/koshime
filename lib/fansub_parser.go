@@ -214,7 +214,6 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 		// Catch "TrueHD 7.1" formatting
 		if s == "truehd" {
 			nextToken := utils.RemoveBrackets(strings.ToLower(tokens[index+1]))
-			fmt.Println(nextToken)
 			if nextToken == "7" {
 				return val + "7.1 ", possibleEncodings
 			}
@@ -370,14 +369,23 @@ func getFansubTokens(fileName string) ([]string, error) {
 	}
 
 	// Try to parse inconsistent separators
-	if ellipsesCount > spaceCount && spaceCount > 1 {
+	if ellipsesCount > spaceCount && spaceCount > 0 {
+		var lastToken string
 		tokens := strings.Split(fileName, " ")
-		lastToken := tokens[len(tokens)-1]
-		if !strings.Contains(lastToken, ".") {
-			return []string{}, fmt.Errorf("unsupported separator format")
+		if strings.Contains(tokens[0], ".") {
+			tokens = strings.Split(tokens[0], ".")
+			lastToken = tokens[len(tokens)-1]
+			if strings.Contains(lastToken, "-") {
+				fansubName = strings.Split(lastToken, "-")[1]
+			}
+		} else {
+			lastToken = tokens[len(tokens)-1]
+			if !strings.Contains(lastToken, ".") {
+				return []string{}, fmt.Errorf("unsupported separator format")
+			}
 		}
 		tokens = tokens[:len(tokens)-1]
-		tokens = append(tokens, strings.Split(lastToken, ".")...)
+		tokens = append(tokens, strings.ReplaceAll(lastToken, "-"+fansubName, ""))
 		tokens = append([]string{fansubName}, tokens...)
 		return tokens, nil
 	}
