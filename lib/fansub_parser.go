@@ -369,8 +369,8 @@ func getFansubTokens(fileName string) ([]string, error) {
 		fileName = strings.TrimSpace(fileName[fansubEndIndex+1:])
 	}
 
-	// Try to parse inconsistent separators
-	if ellipsesCount > spaceCount && spaceCount > 0 {
+	// Try to parse inconsistent ellipses separators
+	if ellipsesCount >= spaceCount && spaceCount > 0 {
 		var lastToken string
 		tokens := strings.Split(fileName, " ")
 		if strings.Contains(tokens[0], ".") {
@@ -380,10 +380,7 @@ func getFansubTokens(fileName string) ([]string, error) {
 				fansubName = strings.Split(lastToken, "-")[1]
 			}
 		} else {
-			lastToken = tokens[len(tokens)-1]
-			if !strings.Contains(lastToken, ".") {
-				return []string{}, fmt.Errorf("unsupported separator format")
-			}
+			return []string{}, fmt.Errorf("unsupported separator format")
 		}
 		tokens = tokens[:len(tokens)-1]
 		tokens = append(tokens, strings.ReplaceAll(lastToken, "-"+fansubName, ""))
