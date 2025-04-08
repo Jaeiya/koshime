@@ -424,6 +424,8 @@ func newBracketReplaceMap(replacement string) map[string]string {
 	return map[string]string{
 		"][": replacement,
 		")(": replacement,
+		"](": replacement,
+		")[": replacement,
 	}
 }
 
