@@ -127,7 +127,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	var fansubName, episode, season string
 	var encoding, source, title strings.Builder
 
-	tokens, err := SplitFansubTokens(fileName)
+	tokens, err := getFansubTokens(fileName)
 	if err != nil {
 		return FansubInfo{}, err
 	}
@@ -357,7 +357,7 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 	return
 }
 
-func SplitFansubTokens(fileName string) ([]string, error) {
+func getFansubTokens(fileName string) ([]string, error) {
 	spaceCount := strings.Count(fileName, " ")
 	ellipsesCount := strings.Count(fileName, ".")
 	underscoreCount := strings.Count(fileName, "_")
