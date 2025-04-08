@@ -132,7 +132,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		return FansubInfo{}, err
 	}
 	fansubName = tokens[0]
-	tokens = tokens[1:]
+	tokens = tokens[1:] // Ignore fansub name
 
 	addedEncodings := map[string]struct{}{}
 
@@ -150,7 +150,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		}
 
 		token := t
-		normalizedToken := strings.ToLower(utils.RemoveBrackets(token))
+		normalizedToken := normalizeToken(t)
 
 		enc, multiEnc := getFansubEncoding(normalizedToken, i, tokens)
 		tryWriteEncoding(enc)
@@ -213,7 +213,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 		// Catch "TrueHD 7.1" formatting
 		if s == "truehd" {
-			nextToken := utils.RemoveBrackets(strings.ToLower(tokens[index+1]))
+			nextToken := normalizeToken(tokens[index+1])
 			if nextToken == "7" {
 				return val + "7.1 ", possibleEncodings
 			}
@@ -223,7 +223,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 	// Catch "H 264" formatting
 	if s == "264" {
-		lastToken := utils.RemoveBrackets(strings.ToLower(tokens[index-1]))
+		lastToken := normalizeToken(tokens[index-1])
 		if lastToken == "h" {
 			return "H.264 ", possibleEncodings
 		}
@@ -231,7 +231,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 	// Catch "H 265" formatting
 	if s == "265" {
-		lastToken := utils.RemoveBrackets(strings.ToLower(tokens[index-1]))
+		lastToken := normalizeToken(tokens[index-1])
 		if lastToken == "h" {
 			return fansubEncodingMap["x265"], possibleEncodings
 		}
@@ -239,7 +239,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 	// Catch "AAC2 0" formatting
 	if s == "aac2" {
-		nextToken := utils.RemoveBrackets(strings.ToLower(tokens[index+1]))
+		nextToken := normalizeToken(tokens[index+1])
 		if nextToken == "0" {
 			return fansubEncodingMap["aac2.0"] + " ", possibleEncodings
 		}
@@ -248,7 +248,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 	// Catch "DDP5 1" formatting
 	if s == "ddp5" {
-		nextToken := utils.RemoveBrackets(strings.ToLower(tokens[index+1]))
+		nextToken := normalizeToken(tokens[index+1])
 		if nextToken == "1" {
 			return fansubEncodingMap["ddp5.1"] + " ", possibleEncodings
 		}
@@ -256,7 +256,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 	// Catch "DDP2 0" formatting
 	if s == "ddp2" {
-		nextToken := utils.RemoveBrackets(strings.ToLower(tokens[index+1]))
+		nextToken := normalizeToken(tokens[index+1])
 		if nextToken == "0" {
 			return fansubEncodingMap["ddp2.0"] + " ", possibleEncodings
 		}
@@ -425,4 +425,8 @@ func newBracketReplaceMap(replacement string) map[string]string {
 		"][": replacement,
 		")(": replacement,
 	}
+}
+
+func normalizeToken(token string) string {
+	return utils.RemoveBrackets(strings.ToLower(token))
 }
