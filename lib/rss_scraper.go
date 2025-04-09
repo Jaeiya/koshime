@@ -2,6 +2,7 @@ package lib
 
 import (
 	"compress/gzip"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -29,6 +30,20 @@ type RSSEntry struct {
 
 type RSS struct{}
 
+// Get returns an RSSResult, which is intended to be passed to
+// the Parse func. The content will contain the raw XML returned
+// from the RSS link.
+//
+// 🟠 The link must contain the query replacement sequence '$q'
+// or an error will be returned. If the service does not have
+// the ability to be queried, then it cannot be used in this
+// context.
+//
+//	:: Example Link ::
+//	page.com/rss.php?q=$q
+//
+// Where `$q` will be replaced by the specified query
+// parameter.
 func (RSS) Get(link string, query string) (RSSResult, error) {
 	if !strings.Contains(link, "$q") {
 		return RSSResult{}, fmt.Errorf("missing query replacement: $q")
