@@ -30,6 +30,9 @@ type RSSEntry struct {
 type RSS struct{}
 
 func (RSS) Get(link string, query string) (RSSResult, error) {
+	if !strings.Contains(link, "$q") {
+		return RSSResult{}, fmt.Errorf("missing query replacement: $q")
+	}
 	parsedURL, err := url.Parse(link)
 	if err != nil {
 		return RSSResult{}, err
