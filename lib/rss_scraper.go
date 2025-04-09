@@ -76,16 +76,16 @@ func (RSS) Get(link string, query string) (RSSResult, error) {
 	}, nil
 }
 
-func (RSS) Parse(result RSSResult) []RSSEntry {
+func (rss RSS) Parse(result RSSResult) []RSSEntry {
 	switch result.host {
 	case "nyaa.si", "www.nyaa.si":
-		return parseNyaa(result)
+		return rss.parseNyaa(result)
 	}
 
 	panic("host not supported")
 }
 
-func parseNyaa(result RSSResult) []RSSEntry {
+func (RSS) parseNyaa(result RSSResult) []RSSEntry {
 	doc, err := xmlquery.Parse(strings.NewReader(result.Content))
 	if err != nil {
 		panic(err)
