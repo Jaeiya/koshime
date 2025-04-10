@@ -17,7 +17,7 @@ var rssClient http.Client
 
 type RSSResult struct {
 	Content string
-	host    string
+	Host    string
 }
 
 type RSSEntry struct {
@@ -90,13 +90,13 @@ func (RSS) Get(link string, query string) (RSSResult, error) {
 	}
 
 	return RSSResult{
-		host:    parsedURL.Host,
+		Host:    parsedURL.Host,
 		Content: string(body),
 	}, nil
 }
 
 func (rss RSS) Parse(result RSSResult) []RSSEntry {
-	switch result.host {
+	switch result.Host {
 	case "nyaa.si", "www.nyaa.si":
 		return rss.parseNyaa(result)
 	}
