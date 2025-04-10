@@ -116,7 +116,7 @@ type FansubInfo struct {
 
 type Fansub struct{}
 
-func (Fansub) Parse(fileName string) (FansubInfo, error) {
+func (fansub Fansub) Parse(fileName string) (FansubInfo, error) {
 	ext := filepath.Ext(fileName)
 	if _, hasExt := fansubExtMap[ext]; hasExt {
 		fileName = strings.TrimSuffix(fileName, ext)
@@ -129,7 +129,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	var fansubName, episode, season string
 	var encoding, source, title strings.Builder
 
-	tokens, err := getFansubTokens(fileName)
+	tokens, err := fansub.getTokens(fileName)
 	if err != nil {
 		return FansubInfo{}, err
 	}
@@ -152,14 +152,14 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 		}
 
 		token := t
-		normalizedToken := normalizeToken(t)
+		normalizedToken := fansub.normalizeToken(t)
 
-		enc, multiEnc := getFansubEncoding(normalizedToken, i, tokens)
+		enc, multiEnc := fansub.getEncoding(normalizedToken, i, tokens)
 		tryWriteEncoding(enc)
 
 		if len(multiEnc) > 0 {
 			for i, enc = range multiEnc {
-				enc, _ = getFansubEncoding(enc, i, multiEnc)
+				enc, _ = fansub.getEncoding(enc, i, multiEnc)
 				tryWriteEncoding(enc)
 			}
 		}
@@ -168,11 +168,11 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 			return encoding.Len() > 0 || source.Len() > 0 || episode != "" || season != ""
 		}
 
-		source.WriteString(getFansubSource(normalizedToken))
+		source.WriteString(fansub.getSource(normalizedToken))
 
 		// Assume episode format is always at beginning of file name
 		if season == "" && episode == "" && !hasMetaData() {
-			season, episode = getFansubEpisode(token, i, tokens)
+			season, episode = fansub.getEpisode(token, i, tokens)
 		}
 
 		// Assume "batch" always comes after some meta data
@@ -198,7 +198,7 @@ func (Fansub) Parse(fileName string) (FansubInfo, error) {
 	return info, nil
 }
 
-func getFansubEncoding(s string, index int, tokens []string) (string, []string) {
+func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, []string) {
 	// Catch "<enc>.<enc>" where multiple encodings can be separated by ellipses
 	var possibleEncodings []string
 	if strings.Contains(s, ".") {
@@ -215,7 +215,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 		// Catch "TrueHD 7.1" formatting
 		if s == "truehd" {
-			nextToken := normalizeToken(tokens[index+1])
+			nextToken := fansub.normalizeToken(tokens[index+1])
 			if nextToken == "7" {
 				return val + "7.1 ", possibleEncodings
 			}
@@ -225,7 +225,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 	// Catch "H 264" formatting
 	if s == "264" {
-		lastToken := normalizeToken(tokens[index-1])
+		lastToken := fansub.normalizeToken(tokens[index-1])
 		if lastToken == "h" {
 			return "H.264 ", possibleEncodings
 		}
@@ -233,7 +233,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 	// Catch "H 265" formatting
 	if s == "265" {
-		lastToken := normalizeToken(tokens[index-1])
+		lastToken := fansub.normalizeToken(tokens[index-1])
 		if lastToken == "h" {
 			return fansubEncodingMap["x265"] + " ", possibleEncodings
 		}
@@ -241,7 +241,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 	// Catch "AAC2 0" formatting
 	if s == "aac2" {
-		nextToken := normalizeToken(tokens[index+1])
+		nextToken := fansub.normalizeToken(tokens[index+1])
 		if nextToken == "0" {
 			return fansubEncodingMap["aac2.0"] + " ", possibleEncodings
 		}
@@ -250,7 +250,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 	// Catch "DDP5 1" formatting
 	if s == "ddp5" {
-		nextToken := normalizeToken(tokens[index+1])
+		nextToken := fansub.normalizeToken(tokens[index+1])
 		if nextToken == "1" {
 			return fansubEncodingMap["ddp5.1"] + " ", possibleEncodings
 		}
@@ -258,7 +258,7 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 
 	// Catch "DDP2 0" formatting
 	if s == "ddp2" {
-		nextToken := normalizeToken(tokens[index+1])
+		nextToken := fansub.normalizeToken(tokens[index+1])
 		if nextToken == "0" {
 			return fansubEncodingMap["ddp2.0"] + " ", possibleEncodings
 		}
@@ -277,14 +277,14 @@ func getFansubEncoding(s string, index int, tokens []string) (string, []string) 
 	return "", possibleEncodings
 }
 
-func getFansubSource(s string) string {
+func (Fansub) getSource(s string) string {
 	if source, exists := fansubSourceMap[s]; exists {
 		return source + " "
 	}
 	return ""
 }
 
-func getFansubEpisode(s string, index int, tokens []string) (season string, episode string) {
+func (Fansub) getEpisode(s string, index int, tokens []string) (season string, episode string) {
 	if strings.TrimSpace(s) == "" {
 		return
 	}
@@ -359,7 +359,7 @@ func getFansubEpisode(s string, index int, tokens []string) (season string, epis
 	return
 }
 
-func getFansubTokens(fileName string) ([]string, error) {
+func (fansub Fansub) getTokens(fileName string) ([]string, error) {
 	spaceCount := strings.Count(fileName, " ")
 	ellipsesCount := strings.Count(fileName, ".")
 	underscoreCount := strings.Count(fileName, "_")
@@ -391,7 +391,7 @@ func getFansubTokens(fileName string) ([]string, error) {
 	}
 
 	if spaceCount > ellipsesCount && spaceCount > underscoreCount {
-		fileName = utils.ReplaceAll(fileName, newBracketReplaceMap(" "))
+		fileName = utils.ReplaceAll(fileName, fansub.newBracketReplaceMap(" "))
 		tokens := strings.Split(fileName, " ")
 		tokens = append([]string{fansubName}, tokens...)
 		return tokens, nil
@@ -413,13 +413,13 @@ func getFansubTokens(fileName string) ([]string, error) {
 		return tokens, nil
 	}
 
-	fileName = utils.ReplaceAll(fileName, newBracketReplaceMap("_"))
+	fileName = utils.ReplaceAll(fileName, fansub.newBracketReplaceMap("_"))
 	tokens := strings.Split(fileName, "_")
 	tokens = append([]string{fansubName}, tokens...)
 	return tokens, nil
 }
 
-func newBracketReplaceMap(replacement string) map[string]string {
+func (Fansub) newBracketReplaceMap(replacement string) map[string]string {
 	return map[string]string{
 		"][": replacement,
 		")(": replacement,
@@ -428,6 +428,6 @@ func newBracketReplaceMap(replacement string) map[string]string {
 	}
 }
 
-func normalizeToken(token string) string {
+func (Fansub) normalizeToken(token string) string {
 	return utils.RemoveBrackets(strings.ToLower(token))
 }
