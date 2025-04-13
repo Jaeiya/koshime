@@ -97,7 +97,7 @@ func (m userModel) View() string {
 func (m userModel) ConsentView() string {
 	selStyle := lipgloss.NewStyle().PaddingLeft(3)
 	var yes, no string
-	if m.consentPos == 1 {
+	if m.consentPos == 0 {
 		no = selStyle.MarginTop(1).Foreground(ansi.BrightMagenta).Render("> No")
 		yes = selStyle.Render("  Yes")
 	} else {
