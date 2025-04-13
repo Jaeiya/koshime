@@ -1,43 +1,21 @@
 package utils
 
-import (
-	"image/color"
-	"strings"
+var colorCodeMap = map[string]string{
+	";bk;": "\033[90m", // Bright Black
+	";r;":  "\033[91m", // Bright Red
+	";g;":  "\033[92m", // Bright Green
+	";y;":  "\033[93m", // Bright Yellow
+	";b;":  "\033[94m", // Bright Blue
+	";db;": "\033[34m", // Dark Blue
+	";m;":  "\033[95m", // Bright Magenta
+	";c;":  "\033[96m", // Bright Cyan
+	";w;":  "\033[97m", // Bright White
+	";x;":  "\033[0m",  // Reset
+}
 
-	"github.com/charmbracelet/lipgloss/v2"
-)
-
-func ColorText(text string, defaultColor color.Color, wordMap map[string]color.Color) string {
-	textSB := strings.Builder{}
-	leftoverSB := strings.Builder{}
-	s := lipgloss.NewStyle()
-
-TextLoop:
-	for i := 0; i < len(text); {
-		for t, v := range wordMap {
-			if strings.HasPrefix(text[i:], t) {
-				if leftoverSB.Len() > 0 {
-					textSB.WriteString(s.Foreground(defaultColor).Render(leftoverSB.String()))
-					leftoverSB.Reset()
-				}
-				textSB.WriteString(s.Foreground(v).Render(t))
-				i += len(t)
-				continue TextLoop
-			}
-		}
-
-		// Lipgloss acts weird when new lines and trailing spaces are
-		// styled manually
-		if text[i] == '\n' {
-			textSB.WriteString(
-				s.Foreground(defaultColor).Render(leftoverSB.String()) + "\n",
-			)
-			leftoverSB.Reset()
-		} else {
-			leftoverSB.WriteByte(text[i])
-		}
-		i++
-	}
-
-	return textSB.String()
+// ColorText replaces special color code strings (e.g., ";r;" for Bright Red)
+// with their corresponding ANSI terminal color codes and returns
+// the modified string.
+func ColorText(text string) string {
+	return ReplaceAll(text, colorCodeMap)
 }
