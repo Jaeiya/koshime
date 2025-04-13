@@ -8,20 +8,17 @@ mapped value, within the given string.
 */
 func ReplaceAll(s string, tokenMap map[string]string) string {
 	sb := strings.Builder{}
+StringLoop:
 	for i := 0; i < len(s); {
-		var isSwapped bool
 		for t, v := range tokenMap {
 			if strings.HasPrefix(s[i:], t) {
 				sb.WriteString(v)
 				i += len(t)
-				isSwapped = true
-				break
+				continue StringLoop
 			}
 		}
-		if !isSwapped {
-			sb.WriteByte(s[i])
-			i++
-		}
+		sb.WriteByte(s[i])
+		i++
 	}
 
 	return sb.String()
