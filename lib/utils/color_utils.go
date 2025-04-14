@@ -9,6 +9,7 @@ var colorCodeMap = map[string]string{
 	";b;":  "\033[94m", // Bright Blue
 	";db;": "\033[34m", // Dark Blue
 	";m;":  "\033[95m", // Bright Magenta
+	";dm;": "\033[35m", // Dark Magenta
 	";c;":  "\033[96m", // Bright Cyan
 	";w;":  "\033[97m", // Bright White
 	";x;":  "\033[0m",  // Reset

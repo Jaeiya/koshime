@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"github.com/charmbracelet/bubbles/v2/help"
+	"github.com/charmbracelet/bubbles/v2/key"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -21,11 +23,45 @@ const (
 	PasswordView
 )
 
+type keyMap struct {
+	Up   key.Binding
+	Down key.Binding
+	Quit key.Binding
+	Help key.Binding
+}
+
+func (km keyMap) ShortHelp() []key.Binding {
+	return []key.Binding{km.Quit, km.Help}
+}
+
+func (km keyMap) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{km.Up, km.Down},
+		{km.Help, km.Quit},
+	}
+}
+
+var keys = keyMap{
+	Up:   key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "move up")),
+	Down: key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "move down")),
+	Quit: key.NewBinding(key.WithKeys("q", "esc", "ctrl+c"), key.WithHelp("q", "quit")),
+	Help: key.NewBinding(key.WithKeys("shift+/"), key.WithHelp("?", "toggle help")),
+}
+
 type User struct{}
 
 func (User) Init() lib.DBData {
+	h := help.New()
+	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(lipgloss.Color("#787897"))
+	h.Styles.FullKey = h.Styles.ShortKey
+
+	h.Styles.ShortDesc = h.Styles.ShortDesc.Foreground(lipgloss.Color("#56566B"))
+	h.Styles.FullDesc = h.Styles.ShortDesc
+
 	p := tea.NewProgram(userModel{
 		isConsenting: true,
+		keys:         keys,
+		help:         h,
 	})
 	m, err := p.Run()
 	if err != nil {
@@ -36,6 +72,8 @@ func (User) Init() lib.DBData {
 }
 
 type userModel struct {
+	keys         keyMap
+	help         help.Model
 	isConsenting bool
 	consentPos   int
 	viewState    ViewState
@@ -48,20 +86,18 @@ func (m userModel) Init() tea.Cmd {
 
 func (m userModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.help.Width = msg.Width
+
 	case tea.KeyPressMsg:
-		switch msg.Key().Code {
-		case tea.KeyEsc:
+		if key.Matches(msg, m.keys.Quit) {
 			return m, tea.Quit
 		}
 
-		// Exit with Ctrl+C
-		switch msg.Mod {
-		case tea.ModCtrl:
-			switch msg.Code {
-			case 'c':
-				return m, tea.Quit
-			}
+		if key.Matches(msg, m.keys.Help) {
+			m.help.ShowAll = !m.help.ShowAll
 		}
+
 	}
 
 	return m.UpdateUserConsent(msg)
@@ -70,10 +106,10 @@ func (m userModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m userModel) UpdateUserConsent(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
-		switch msg.Key().Code {
-		case 'j', tea.KeyDown:
+		switch {
+		case key.Matches(msg, m.keys.Down):
 			m.consentPos = utils.AbsInt(m.consentPos-1) % 2
-		case 'k', tea.KeyUp:
+		case key.Matches(msg, m.keys.Up):
 			m.consentPos = utils.AbsInt(m.consentPos+1) % 2
 		}
 	}
@@ -87,11 +123,9 @@ func (m userModel) View() string {
 		view = m.ConsentView()
 	}
 
-	footer := defaultTextStyle.Render(
-		utils.ColorText(";bk;Koshime ;dg;Alpha;x; ;bk;- Hit Esc or Ctrl+C to quit;x;"),
-	)
+	helpView := defaultTextStyle.Height(3).PaddingTop(1).Render(m.help.View(m.keys))
 
-	return lipgloss.JoinVertical(lipgloss.Left, view, footer)
+	return lipgloss.JoinVertical(lipgloss.Left, view, helpView)
 }
 
 func (m userModel) ConsentView() string {
@@ -101,7 +135,7 @@ func (m userModel) ConsentView() string {
 		no = selStyle.MarginTop(1).Foreground(ansi.BrightMagenta).Render("> No")
 		yes = selStyle.Render("  Yes")
 	} else {
-		yes = selStyle.Foreground(ansi.BrightMagenta).Render("> Yes")
+		yes = selStyle.Foreground(ansi.BrightGreen).Render("> Yes")
 		no = selStyle.MarginTop(1).Render("  No")
 	}
 	return lipgloss.JoinVertical(
@@ -110,7 +144,6 @@ func (m userModel) ConsentView() string {
 		UserConsentMsg,
 		no,
 		yes,
-		lipgloss.NewStyle().Render(""),
 	)
 }
 
