@@ -24,10 +24,11 @@ const (
 )
 
 type keyMap struct {
-	Up   key.Binding
-	Down key.Binding
-	Quit key.Binding
-	Help key.Binding
+	Up    key.Binding
+	Down  key.Binding
+	Enter key.Binding
+	Quit  key.Binding
+	Help  key.Binding
 }
 
 func (km keyMap) ShortHelp() []key.Binding {
@@ -36,16 +37,17 @@ func (km keyMap) ShortHelp() []key.Binding {
 
 func (km keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
-		{km.Up, km.Down},
+		{km.Up, km.Down, km.Enter},
 		{km.Help, km.Quit},
 	}
 }
 
 var keys = keyMap{
-	Up:   key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "move up")),
-	Down: key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "move down")),
-	Quit: key.NewBinding(key.WithKeys("q", "esc", "ctrl+c"), key.WithHelp("q", "quit")),
-	Help: key.NewBinding(key.WithKeys("shift+/"), key.WithHelp("?", "toggle help")),
+	Up:    key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "move up")),
+	Down:  key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "move down")),
+	Enter: key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
+	Quit:  key.NewBinding(key.WithKeys("q", "esc", "ctrl+c"), key.WithHelp("q", "quit")),
+	Help:  key.NewBinding(key.WithKeys("shift+/"), key.WithHelp("?", "toggle help")),
 }
 
 type User struct{}
@@ -111,6 +113,8 @@ func (m userModel) UpdateUserConsent(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.consentPos = utils.AbsInt(m.consentPos-1) % 2
 		case key.Matches(msg, m.keys.Up):
 			m.consentPos = utils.AbsInt(m.consentPos+1) % 2
+		case key.Matches(msg, m.keys.Enter):
+			return m, tea.Quit
 		}
 	}
 	return m, nil
