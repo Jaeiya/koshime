@@ -13,7 +13,7 @@ var UserWelcomeMsg = defaultTextStyle.
 	MarginTop(1).
 	MarginBottom(1).
 	Render(strings.TrimSpace(utils.ColorText(`
-;g;Welcome to Koshime!;x;
+;g;Welcome to Koshime!
 
 ;b;I will need to grab your profile from Kitsu, which requires a
 user name and password. Your password will ;y;not;x; ;b;be saved
