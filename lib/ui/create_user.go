@@ -168,6 +168,8 @@ func (m userModel) UpdateUserName(msg tea.Msg) (userModel, tea.Cmd) {
 			m.userName = m.input.Value()
 			m.viewState = PasswordView
 			m.input.Reset()
+			m.input.EchoCharacter = '•'
+			m.input.EchoMode = textinput.EchoPassword
 		}
 	}
 
