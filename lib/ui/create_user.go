@@ -3,6 +3,7 @@ package ui
 import (
 	"github.com/charmbracelet/bubbles/v2/help"
 	"github.com/charmbracelet/bubbles/v2/key"
+	"github.com/charmbracelet/bubbles/v2/textinput"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -13,6 +14,10 @@ import (
 var (
 	questionStyle = defaultTextStyle.Foreground(ansi.BrightWhite)
 	selectedStyle = defaultTextStyle.Foreground(ansi.BrightMagenta)
+
+	selectStyle = lipgloss.NewStyle().PaddingLeft(3)
+	selectedYes = selectStyle.Foreground(ansi.BrightGreen).Render("> Yes")
+	selectedNo  = selectStyle.MarginTop(1).Foreground(ansi.BrightMagenta).Render("> No")
 )
 
 type ViewState int
@@ -21,6 +26,7 @@ const (
 	ConsentView = ViewState(iota)
 	UsernameView
 	PasswordView
+	AbortView
 )
 
 type keyMap struct {
@@ -60,8 +66,15 @@ func (User) Init() lib.DBData {
 	h.Styles.ShortDesc = h.Styles.ShortDesc.Foreground(lipgloss.Color("#56566B"))
 	h.Styles.FullDesc = h.Styles.ShortDesc
 
+	input := textinput.New()
+	input.SetWidth(20)
+	input.Focus()
+	input.CharLimit = 30
+	input.Prompt = "   > "
+
 	p := tea.NewProgram(userModel{
 		isConsenting: true,
+		input:        input,
 		keys:         keys,
 		help:         h,
 	})
@@ -76,9 +89,13 @@ func (User) Init() lib.DBData {
 type userModel struct {
 	keys         keyMap
 	help         help.Model
+	input        textinput.Model
 	isConsenting bool
 	consentPos   int
+	userName     string
+	password     string
 	viewState    ViewState
+	blinks       int
 	Data         lib.DBData
 }
 
@@ -87,6 +104,8 @@ func (m userModel) Init() tea.Cmd {
 }
 
 func (m userModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.help.Width = msg.Width
@@ -102,46 +121,67 @@ func (m userModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 
-	return m.UpdateUserConsent(msg)
+	switch m.viewState {
+	case ConsentView:
+		m, cmd = m.UpdateUserConsent(msg)
+	case UsernameView:
+		m, cmd = m.UpdateUserName(msg)
+	}
+
+	return m, cmd
 }
 
-func (m userModel) UpdateUserConsent(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m userModel) UpdateUserConsent(msg tea.Msg) (userModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, m.keys.Down):
 			m.consentPos = utils.AbsInt(m.consentPos-1) % 2
+
 		case key.Matches(msg, m.keys.Up):
 			m.consentPos = utils.AbsInt(m.consentPos+1) % 2
+
 		case key.Matches(msg, m.keys.Enter):
-			return m, tea.Quit
+			if m.consentPos == 0 {
+				m.viewState = AbortView
+				return m, tea.Quit
+			}
+			m.viewState = UsernameView
+			return m, textinput.Blink
+
 		}
 	}
 	return m, nil
 }
 
-func (m userModel) View() string {
+func (m userModel) UpdateUserName(msg tea.Msg) (userModel, tea.Cmd) {
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	return m, cmd
+}
+
+func (m userModel) View() (string, *tea.Cursor) {
+	var c *tea.Cursor
 	var view string
 	switch m.viewState {
 	case ConsentView:
 		view = m.ConsentView()
+	case UsernameView:
+		view, c = m.UsernameView()
+	case AbortView:
+		view = m.AbortView()
+	}
+
+	if m.viewState == AbortView || m.viewState == UsernameView {
+		return view, c
 	}
 
 	helpView := defaultTextStyle.Height(3).PaddingTop(1).Render(m.help.View(m.keys))
-
-	return lipgloss.JoinVertical(lipgloss.Left, view, helpView)
+	return lipgloss.JoinVertical(lipgloss.Left, view, helpView), c
 }
 
 func (m userModel) ConsentView() string {
-	selStyle := lipgloss.NewStyle().PaddingLeft(3)
-	var yes, no string
-	if m.consentPos == 0 {
-		no = selStyle.MarginTop(1).Foreground(ansi.BrightMagenta).Render("> No")
-		yes = selStyle.Render("  Yes")
-	} else {
-		yes = selStyle.Foreground(ansi.BrightGreen).Render("> Yes")
-		no = selStyle.MarginTop(1).Render("  No")
-	}
+	yes, no := m.GetYesNo(m.consentPos)
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		UserWelcomeMsg,
@@ -151,6 +191,32 @@ func (m userModel) ConsentView() string {
 	)
 }
 
-func (m userModel) NextView() {
-	m.viewState += 1
+func (m userModel) UsernameView() (string, *tea.Cursor) {
+	c := m.input.Cursor()
+	c.Shape = tea.CursorBar
+	view := lipgloss.JoinVertical(
+		lipgloss.Left,
+		UserNameMsg,
+		lipgloss.NewStyle().Render(m.input.View()),
+	)
+	c.Y += lipgloss.Height(view)
+	return view, c
+}
+
+func (m userModel) AbortView() string {
+	return lipgloss.NewStyle().
+		MarginTop(1).
+		MarginLeft(2).
+		Render(utils.ColorText(";g;>>> ;y;Koshime Setup Aborted ;g;<<<;x;"))
+}
+
+func (m userModel) GetYesNo(state int) (yes string, no string) {
+	if state == 0 {
+		no = selectedNo
+		yes = selectStyle.Render(" Yes")
+	} else {
+		yes = selectedYes
+		no = selectStyle.MarginTop(1).Render(" No")
+	}
+	return yes, no
 }
