@@ -71,6 +71,8 @@ func (User) Init() lib.DBData {
 	input.Focus()
 	input.CharLimit = 30
 	input.Prompt = "   > "
+	input.Styles.Focused.Prompt = lipgloss.NewStyle().Foreground(ansi.BrightGreen)
+	input.Styles.Focused.Text = lipgloss.NewStyle().Foreground(ansi.BrightWhite)
 
 	p := tea.NewProgram(userModel{
 		isConsenting: true,
