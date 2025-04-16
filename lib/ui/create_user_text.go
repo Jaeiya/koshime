@@ -27,6 +27,12 @@ var UserConsentMsg = defaultTextStyle.Render(strings.TrimSpace(utils.ColorText(`
 
 var UserNameMsg = defaultTextStyle.MarginTop(1).PaddingBottom(1).Render(strings.TrimSpace(
 	utils.ColorText(`
-Please enter your ;g;Kitsu;x; user name.
+Enter your ;g;Kitsu;x; user name.
+`),
+))
+
+var PasswordMsg = defaultTextStyle.MarginTop(1).PaddingBottom(1).Render(strings.TrimSpace(
+	utils.ColorText(`
+Enter your ;g;Kitsu;x; password. [;m;It will not be saved;x;]
 `),
 ))

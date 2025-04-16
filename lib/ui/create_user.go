@@ -128,6 +128,8 @@ func (m userModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m, cmd = m.UpdateUserConsent(msg)
 	case UsernameView:
 		m, cmd = m.UpdateUserName(msg)
+	case PasswordView:
+		m, cmd = m.UpdatePassword(msg)
 	}
 
 	return m, cmd
@@ -158,6 +160,33 @@ func (m userModel) UpdateUserConsent(msg tea.Msg) (userModel, tea.Cmd) {
 
 func (m userModel) UpdateUserName(msg tea.Msg) (userModel, tea.Cmd) {
 	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.Key().Code {
+		case tea.KeyEnter:
+			m.userName = m.input.Value()
+			m.viewState = PasswordView
+			m.input.Reset()
+		}
+	}
+
+	m.input, cmd = m.input.Update(msg)
+	return m, cmd
+}
+
+func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.Key().Code {
+		case tea.KeyEnter:
+			m.password = m.input.Value()
+			m.input.Reset()
+		}
+	}
+
 	m.input, cmd = m.input.Update(msg)
 	return m, cmd
 }
@@ -170,11 +199,13 @@ func (m userModel) View() (string, *tea.Cursor) {
 		view = m.ConsentView()
 	case UsernameView:
 		view, c = m.UsernameView()
+	case PasswordView:
+		view, c = m.PasswordView()
 	case AbortView:
 		view = m.AbortView()
 	}
 
-	if m.viewState == AbortView || m.viewState == UsernameView {
+	if m.viewState >= UsernameView {
 		return view, c
 	}
 
@@ -199,6 +230,18 @@ func (m userModel) UsernameView() (string, *tea.Cursor) {
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		UserNameMsg,
+		lipgloss.NewStyle().Render(m.input.View()),
+	)
+	c.Y += lipgloss.Height(view)
+	return view, c
+}
+
+func (m userModel) PasswordView() (string, *tea.Cursor) {
+	c := m.input.Cursor()
+	c.Shape = tea.CursorBar
+	view := lipgloss.JoinVertical(
+		lipgloss.Left,
+		PasswordMsg,
 		lipgloss.NewStyle().Render(m.input.View()),
 	)
 	c.Y += lipgloss.Height(view)
