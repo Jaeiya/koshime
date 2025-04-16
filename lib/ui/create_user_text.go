@@ -25,7 +25,7 @@ var UserConsentMsg = defaultTextStyle.Render(strings.TrimSpace(utils.ColorText(`
 ;w;Would you like to setup ;m;Koshime;x; ;w;in this directory?;x;
 `)))
 
-var UserNameMsg = defaultTextStyle.MarginTop(1).Render(strings.TrimSpace(
+var UserNameMsg = defaultTextStyle.MarginTop(1).PaddingBottom(1).Render(strings.TrimSpace(
 	utils.ColorText(`
 Please enter your ;g;Kitsu;x; user name.
 `),
