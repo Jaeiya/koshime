@@ -29,20 +29,26 @@ func PostJSON[T any](url string, content []byte, data *T) error {
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 
 	var reader io.ReadCloser
 	if resp.Header.Get("Content-Encoding") == "gzip" {
 		reader, err = gzip.NewReader(resp.Body)
 		if err != nil {
+			resp.Body.Close()
 			return err
 		}
+		defer func() {
+			reader.Close()
+			resp.Body.Close()
+		}()
 	} else {
 		reader = resp.Body
+		defer reader.Close()
+	}
+
 	if resp.Header.Get("Content-Type") == "text/html" {
 		return fmt.Errorf("HTTP %d: expected JSON response but got HTML", resp.StatusCode)
 	}
-	defer reader.Close()
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		body, _ := io.ReadAll(reader)
