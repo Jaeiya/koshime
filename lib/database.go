@@ -34,7 +34,7 @@ type DBLibEntry struct {
 }
 
 type DBConfig struct {
-	UseColors bool
+	StripColors bool
 }
 
 type DBData struct {
