@@ -39,6 +39,8 @@ func PostJSON[T any](url string, content []byte, data *T) error {
 		}
 	} else {
 		reader = resp.Body
+	if resp.Header.Get("Content-Type") == "text/html" {
+		return fmt.Errorf("HTTP %d: expected JSON response but got HTML", resp.StatusCode)
 	}
 	defer reader.Close()
 
