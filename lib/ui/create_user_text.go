@@ -36,3 +36,11 @@ var PasswordMsg = defaultTextStyle.MarginTop(1).PaddingBottom(1).Render(strings.
 Enter your ;g;Kitsu;x; password. [;m;It will not be saved;x;]
 `),
 ))
+
+var PasswordFailedMsg = defaultTextStyle.MarginTop(1).Render(strings.TrimSpace(
+	utils.ColorText(`
+;r;Authorization Failed. ;b;You entered either an incorrect
+user name or password.
+
+;w;Would you like to ;g;try again?;x;`),
+))
