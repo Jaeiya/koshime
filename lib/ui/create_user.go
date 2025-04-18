@@ -65,7 +65,7 @@ var keys = keyMap{
 
 type User struct{}
 
-func (User) NewUser() lib.DBData {
+func (User) NewUser() (lib.DBData, bool) {
 	h := help.New()
 	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(lipgloss.Color("#787897"))
 	h.Styles.FullKey = h.Styles.ShortKey
@@ -94,7 +94,7 @@ func (User) NewUser() lib.DBData {
 		panic(err)
 	}
 
-	return m.(userModel).db
+	return m.(userModel).db, m.(userModel).isAborted
 }
 
 type userModel struct {
@@ -105,6 +105,7 @@ type userModel struct {
 	db         lib.DBData
 	password   string
 	isLoading  bool
+	isAborted  bool
 	authError  error
 	viewState  ViewState
 	blinks     int
@@ -123,6 +124,8 @@ func (m userModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		if key.Matches(msg, m.keys.Quit) {
+			m.isAborted = true
+			m.viewState = AbortView
 			return m, tea.Quit
 		}
 
@@ -159,6 +162,7 @@ func (m userModel) UpdateUserConsent(msg tea.Msg) (userModel, tea.Cmd) {
 		case key.Matches(msg, m.keys.Enter):
 			if m.consentPos == 0 {
 				m.viewState = AbortView
+				m.isAborted = true
 				return m, tea.Quit
 			}
 			m.viewState = UsernameView
@@ -232,6 +236,7 @@ func (m userModel) UpdatePasswordFailed(msg tea.Msg) (userModel, tea.Cmd) {
 		case key.Matches(msg, m.keys.Enter):
 			if m.consentPos == 0 {
 				m.viewState = AbortView
+				m.isAborted = true
 				return m, tea.Quit
 			}
 			m.viewState = UsernameView
