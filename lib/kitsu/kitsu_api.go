@@ -40,7 +40,7 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 	var data AuthToken
 	err = postJSON(apiAuthTokenURL, payload, "", &data)
 	if err != nil {
-		panic(err)
+		return AuthToken{}, err
 	}
 
 	return data, nil
