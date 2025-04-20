@@ -33,6 +33,7 @@ const (
 	UsernameView
 	PasswordView
 	PasswordFailedView
+	Completed
 	AbortView
 )
 
@@ -208,6 +209,7 @@ func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 		m.db.Profile.AccessToken = msg.Token
 		m.db.Profile.RefreshToken = msg.RefreshToken
 		m.db.Profile.TokenExpiration = msg.ExpiresIn
+		m.viewState = Completed
 		return m, tea.Quit
 
 	case AuthTokenErrorMsg:
@@ -321,6 +323,10 @@ func (m userModel) PasswordFailedView() string {
 		yes,
 	)
 	return view
+}
+
+func (m userModel) CompletedView() string {
+	return ""
 }
 
 func (m userModel) AbortView() string {
