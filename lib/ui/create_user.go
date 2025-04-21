@@ -257,7 +257,6 @@ func (m userModel) UpdateConfirmUsername(msg tea.Msg) (userModel, tea.Cmd) {
 
 			m.consentPos = 0 // Reset for future
 			m.viewState = PasswordView
-			m.db.Profile.Username = m.input.Value()
 			m.input.Reset()
 			m.input.EchoMode = textinput.EchoPassword
 			return m, nil
@@ -283,6 +282,15 @@ func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 		m.db.Profile.AccessToken = msg.Token
 		m.db.Profile.RefreshToken = msg.RefreshToken
 		m.db.Profile.TokenExpiration = msg.ExpiresIn
+
+		userData := m.fetchedProfile.Data[0]
+		userStats := m.fetchedProfile.Included[0]
+
+		m.db.Profile.ID = userData.ID
+		m.db.Profile.Username = userData.Attributes.Name
+		m.db.Profile.CompletedSeries = userStats.Attributes.Stats.CompletedAnime
+		m.db.Profile.SecondsWatched = userStats.Attributes.Stats.SecondsWatched
+
 		m.viewState = Completed
 		return m, tea.Quit
 
@@ -465,7 +473,8 @@ func (m userModel) GetYesNo(state int) (yes string, no string) {
 }
 
 func (m userModel) GetAuthToken() tea.Msg {
-	tokenData, err := kitsu.GetAuthToken(m.db.Profile.Username, m.input.Value())
+	userData := m.fetchedProfile.Data[0]
+	tokenData, err := kitsu.GetAuthToken(userData.Attributes.Name, m.input.Value())
 	if err != nil {
 		return AuthTokenErrorMsg(err)
 	}
