@@ -34,13 +34,14 @@ type ViewState int
 
 const (
 	ConsentView = ViewState(iota)
-	UsernameView
 	ConfirmUsernameView
 	UsernameFailedView
-	PasswordView
 	PasswordFailedView
-	Completed
+
+	UsernameView
+	PasswordView
 	AbortView
+	Completed
 )
 
 type keyMap struct {
@@ -350,7 +351,7 @@ func (m userModel) View() (string, *tea.Cursor) {
 		view = m.AbortView()
 	}
 
-	if m.viewState == UsernameView || m.viewState == PasswordView || m.viewState == AbortView {
+	if m.viewState >= UsernameView {
 		return view, c
 	}
 
