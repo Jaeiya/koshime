@@ -9,53 +9,44 @@ import (
 
 var defaultTextStyle = lipgloss.NewStyle().PaddingLeft(3)
 
-var UserWelcomeTxt = defaultTextStyle.
-	MarginTop(1).
-	MarginBottom(1).
-	Render(strings.TrimSpace(utils.ColorText(`
+var UserWelcomeTxt = newText(defaultTextStyle.MarginTop(1).MarginBottom(1), `
 ;g;Welcome to Koshime!
 
 ;b;I will need to grab your profile from Kitsu, which requires a
 user name and password. Your password will ;y;not;x; ;b;be saved
-and will only ;y;ever;x; ;b;be used to get an access token.;x;
+and will only ;y;ever;x; ;b;be used to get an access token.;x;`,
+)
 
-`)))
+var UserConsentTxt = newText(defaultTextStyle, `
+;w;Would you like to setup ;m;Koshime;x; ;w;in this directory?;x;`,
+)
 
-var UserConsentTxt = defaultTextStyle.Render(strings.TrimSpace(utils.ColorText(`
-;w;Would you like to setup ;m;Koshime;x; ;w;in this directory?;x;
-`)))
+var UserNameTxt = newText(defaultTextStyle.MarginTop(1).PaddingBottom(1), `
+Enter your ;g;Kitsu;x; user name.`,
+)
 
-var UserNameTxt = defaultTextStyle.MarginTop(1).PaddingBottom(1).Render(strings.TrimSpace(
-	utils.ColorText(`
-Enter your ;g;Kitsu;x; user name.
-`),
-))
+var ConfirmUsernamePreTxt = newText(defaultTextStyle.MarginTop(1), `
+;b;This is the first profile to pop up for that user name:;x;`,
+)
 
-var ConfirmUsernamePreTxt = defaultTextStyle.MarginTop(1).
-	Render(strings.TrimSpace(utils.ColorText(`
-;b;This is the first profile to pop up for that user name:;x;
-`)))
+var ConfirmUsernameConsentTxt = newText(defaultTextStyle.MarginTop(1), `
+;b;Does that look like your profile?;x;`,
+)
 
-var ConfirmUsernameConsentTxt = defaultTextStyle.MarginTop(1).
-	Render(strings.TrimSpace(utils.ColorText(`
-;b;Does that look like your profile?;x;
-`)))
+var UsernameFailedTxt = newText(defaultTextStyle.MarginTop(1), `
+;y;User name not found; ;g;try again?;x;`,
+)
 
-var UsernameFailedTxt = defaultTextStyle.MarginTop(1).Render(strings.TrimSpace(
-	utils.ColorText(`
-;y;User name not found; ;g;try again?;x;`),
-))
+var PasswordTxt = newText(defaultTextStyle.MarginTop(1).PaddingBottom(1), `
+Enter your ;g;Kitsu;x; password. [;m;It will not be saved;x;]`,
+)
 
-var PasswordTxt = defaultTextStyle.MarginTop(1).PaddingBottom(1).Render(strings.TrimSpace(
-	utils.ColorText(`
-Enter your ;g;Kitsu;x; password. [;m;It will not be saved;x;]
-`),
-))
-
-var PasswordFailedTxt = defaultTextStyle.MarginTop(1).Render(strings.TrimSpace(
-	utils.ColorText(`
+var PasswordFailedTxt = newText(defaultTextStyle.MarginTop(1), `
 ;r;Authorization Failed. ;b;You entered either an incorrect
 user name or password.
 
-;w;Would you like to ;g;try again?;x;`),
-))
+;w;Would you like to ;g;try again?;x;`)
+
+func newText(style lipgloss.Style, text string) string {
+	return style.Render(utils.ColorText(strings.TrimSpace(text)))
+}
