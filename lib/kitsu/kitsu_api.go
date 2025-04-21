@@ -99,15 +99,17 @@ func postJSON[T any](url string, payload []byte, bearerToken string, data *T) er
 	return nil
 }
 
-func NewJsonRequest(method, url string, body *bytes.Buffer) (*http.Request, error) {
+func NewJsonRequest(method, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("Content-Type", "application/json")
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 	req.Header.Set("User-Agent", clientAgent)
-	req.Header.Set("Accept", "application/json")
+	req.Header.Set("Accept", "application/vnd.api+json")
 	req.Header.Set("Accept-Encoding", "gzip")
 
 	return req, nil
