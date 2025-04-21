@@ -34,6 +34,8 @@ type ProfileData struct {
 			Location string `json:"location"`
 			Birthday string `json:"birthday"`
 			Gender   string `json:"gender"`
+			// An RFC 3339 (ISO 8601) formatted string
+			CreatedAt string `json:"createdAt"`
 		}
 	} `json:"data"`
 }
