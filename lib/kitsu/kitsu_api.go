@@ -25,6 +25,19 @@ type AuthToken struct {
 	CreatedAt int `json:"created_at"`
 }
 
+type ProfileData struct {
+	Data []struct {
+		ID         string `json:"id"`
+		Attributes struct {
+			Name     string `json:"name"`
+			About    string `json:"about"`
+			Location string `json:"location"`
+			Birthday string `json:"birthday"`
+			Gender   string `json:"gender"`
+		}
+	} `json:"data"`
+}
+
 func GetAuthToken(userName, password string) (AuthToken, error) {
 	credentials := map[string]string{
 		"grant_type": "password",
@@ -44,6 +57,68 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 	}
 
 	return data, nil
+}
+
+func GetProfile(userName string) (ProfileData, error) {
+	profileURL, err := getProfileURL(userName)
+	if err != nil {
+		return ProfileData{}, err
+	}
+
+	var data ProfileData
+	err = getJSON(profileURL, &data)
+	if err != nil {
+		return ProfileData{}, err
+	}
+
+	return data, nil
+}
+
+func getJSON[T any](url string, data *T) error {
+	req, err := NewJsonRequest("GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+
+	body, err := readResponseBody(resp)
+	if err != nil {
+		return err
+	}
+
+	bodyStr := string(body)
+
+	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+	}
+
+	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+		return fmt.Errorf(
+			"ClientError::HTTP %d: %s\n%s",
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+			bodyStr,
+		)
+	}
+
+	if resp.StatusCode >= 500 {
+		return fmt.Errorf(
+			"ServerError::HTTP %d: %s",
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
+	}
+
+	err = json.NewDecoder(bytes.NewReader(body)).Decode(data)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func postJSON[T any](url string, payload []byte, bearerToken string, data *T) error {
