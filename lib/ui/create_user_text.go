@@ -9,7 +9,7 @@ import (
 
 var defaultTextStyle = lipgloss.NewStyle().PaddingLeft(3)
 
-var UserWelcomeTxt = newText(defaultTextStyle.MarginTop(1).MarginBottom(1), `
+var userWelcomeTxt = newText(defaultTextStyle.MarginTop(1).MarginBottom(1), `
 ;g;Welcome to Koshime!
 
 ;b;I will need to grab your profile from Kitsu, which requires a
@@ -17,31 +17,31 @@ user name and password. Your password will ;y;not;x; ;b;be saved
 and will only ;y;ever;x; ;b;be used to get an access token.;x;`,
 )
 
-var UserConsentTxt = newText(defaultTextStyle, `
+var userConsentTxt = newText(defaultTextStyle, `
 ;w;Would you like to setup ;m;Koshime;x; ;w;in this directory?;x;`,
 )
 
-var UserNameTxt = newText(defaultTextStyle.MarginTop(1).PaddingBottom(1), `
+var userNameTxt = newText(defaultTextStyle.MarginTop(1).PaddingBottom(1), `
 Enter your ;g;Kitsu;x; user name.`,
 )
 
-var ConfirmUsernamePreTxt = newText(defaultTextStyle.MarginTop(1), `
+var confirmUsernamePreTxt = newText(defaultTextStyle.MarginTop(1), `
 ;b;This is the first profile to pop up for that user name:;x;`,
 )
 
-var ConfirmUsernameConsentTxt = newText(defaultTextStyle.MarginTop(1), `
+var confirmUsernameConsentTxt = newText(defaultTextStyle.MarginTop(1), `
 ;b;Does that look like your profile?;x;`,
 )
 
-var UsernameFailedTxt = newText(defaultTextStyle.MarginTop(1), `
+var usernameFailedTxt = newText(defaultTextStyle.MarginTop(1), `
 ;y;User name not found; ;g;try again?;x;`,
 )
 
-var PasswordTxt = newText(defaultTextStyle.MarginTop(1).PaddingBottom(1), `
+var passwordTxt = newText(defaultTextStyle.MarginTop(1).PaddingBottom(1), `
 Enter your ;g;Kitsu;x; password. [;m;It will not be saved;x;]`,
 )
 
-var PasswordFailedTxt = newText(defaultTextStyle.MarginTop(1), `
+var passwordFailedTxt = newText(defaultTextStyle.MarginTop(1), `
 ;r;Authorization Failed. ;b;You entered either an incorrect
 user name or password.
 
