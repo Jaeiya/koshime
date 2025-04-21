@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 )
 
@@ -74,6 +75,11 @@ func GetProfile(userName string) (ProfileData, error) {
 	}
 
 	return data, nil
+}
+
+func GetProfileLink(userName string) string {
+	p, _ := url.JoinPath(usersURL, userName)
+	return p
 }
 
 func getJSON[T any](url string, data *T) error {

@@ -12,6 +12,7 @@ const (
 	apiLibraryURL   = "https://kitsu.app/api/edge/library-entries"
 	apiAnimeURL     = "https://kitsu.app/api/edge/anime"
 	apiUsersURL     = "https://kitsu.app/api/edge/users"
+	usersURL        = "https://kitsu.app/users"
 )
 
 type URLType int
