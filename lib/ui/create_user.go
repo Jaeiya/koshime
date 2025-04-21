@@ -273,8 +273,10 @@ func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.Key().Code {
 		case tea.KeyEnter:
-			m.isLoading = true
-			return m, m.GetAuthToken
+			if !m.isLoading {
+				m.isLoading = true
+				return m, m.GetAuthToken
+			}
 		}
 
 	case FetchedAuthTokenMsg:
