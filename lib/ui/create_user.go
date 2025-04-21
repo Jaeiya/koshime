@@ -352,8 +352,8 @@ func (m userModel) ConsentView() string {
 	yes, no := m.GetYesNo(m.consentPos)
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
-		UserWelcomeMsg,
-		UserConsentMsg,
+		UserWelcomeTxt,
+		UserConsentTxt,
 		no,
 		yes,
 	)
@@ -367,7 +367,7 @@ func (m userModel) UsernameView() (string, *tea.Cursor) {
 	c.Shape = tea.CursorBar
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		UserNameMsg,
+		UserNameTxt,
 		lipgloss.NewStyle().Render(m.input.View()),
 	)
 	c.Y += lipgloss.Height(view)
@@ -378,7 +378,7 @@ func (m userModel) UsernameFailedView() string {
 	yes, no := m.GetYesNo(m.consentPos)
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		UsernameFailedMsg,
+		UsernameFailedTxt,
 		no,
 		yes,
 	)
@@ -407,9 +407,9 @@ func (m userModel) ConfirmUsernameView() string {
  ;w;Profile:;x; %s`, attr.Name, attr.About, attr.Gender, attr.Birthday, attr.Location, createdDate.Local().Format("01/02/2006 3:04 PM"), kitsu.GetProfileLink(userID))), "\n")))
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
-		ConfirmUsernamePreMsg,
+		ConfirmUsernamePreTxt,
 		profileStr,
-		ConfirmUsernameConsentMsg,
+		ConfirmUsernameConsentTxt,
 		no,
 		yes,
 	)
@@ -424,7 +424,7 @@ func (m userModel) PasswordView() (string, *tea.Cursor) {
 	c.Shape = tea.CursorBar
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		PasswordMsg,
+		PasswordTxt,
 		lipgloss.NewStyle().Render(m.input.View()),
 	)
 	c.Y += lipgloss.Height(view)
@@ -435,7 +435,7 @@ func (m userModel) PasswordFailedView() string {
 	yes, no := m.GetYesNo(m.consentPos)
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		PasswordFailedMsg,
+		PasswordFailedTxt,
 		no,
 		yes,
 	)

@@ -9,7 +9,7 @@ import (
 
 var defaultTextStyle = lipgloss.NewStyle().PaddingLeft(3)
 
-var UserWelcomeMsg = defaultTextStyle.
+var UserWelcomeTxt = defaultTextStyle.
 	MarginTop(1).
 	MarginBottom(1).
 	Render(strings.TrimSpace(utils.ColorText(`
@@ -21,38 +21,38 @@ and will only ;y;ever;x; ;b;be used to get an access token.;x;
 
 `)))
 
-var UserConsentMsg = defaultTextStyle.Render(strings.TrimSpace(utils.ColorText(`
+var UserConsentTxt = defaultTextStyle.Render(strings.TrimSpace(utils.ColorText(`
 ;w;Would you like to setup ;m;Koshime;x; ;w;in this directory?;x;
 `)))
 
-var UserNameMsg = defaultTextStyle.MarginTop(1).PaddingBottom(1).Render(strings.TrimSpace(
+var UserNameTxt = defaultTextStyle.MarginTop(1).PaddingBottom(1).Render(strings.TrimSpace(
 	utils.ColorText(`
 Enter your ;g;Kitsu;x; user name.
 `),
 ))
 
-var ConfirmUsernamePreMsg = defaultTextStyle.MarginTop(1).
+var ConfirmUsernamePreTxt = defaultTextStyle.MarginTop(1).
 	Render(strings.TrimSpace(utils.ColorText(`
 ;b;This is the first profile to pop up for that user name:;x;
 `)))
 
-var ConfirmUsernameConsentMsg = defaultTextStyle.MarginTop(1).
+var ConfirmUsernameConsentTxt = defaultTextStyle.MarginTop(1).
 	Render(strings.TrimSpace(utils.ColorText(`
 ;b;Does that look like your profile?;x;
 `)))
 
-var UsernameFailedMsg = defaultTextStyle.MarginTop(1).Render(strings.TrimSpace(
+var UsernameFailedTxt = defaultTextStyle.MarginTop(1).Render(strings.TrimSpace(
 	utils.ColorText(`
 ;y;User name not found; ;g;try again?;x;`),
 ))
 
-var PasswordMsg = defaultTextStyle.MarginTop(1).PaddingBottom(1).Render(strings.TrimSpace(
+var PasswordTxt = defaultTextStyle.MarginTop(1).PaddingBottom(1).Render(strings.TrimSpace(
 	utils.ColorText(`
 Enter your ;g;Kitsu;x; password. [;m;It will not be saved;x;]
 `),
 ))
 
-var PasswordFailedMsg = defaultTextStyle.MarginTop(1).Render(strings.TrimSpace(
+var PasswordFailedTxt = defaultTextStyle.MarginTop(1).Render(strings.TrimSpace(
 	utils.ColorText(`
 ;r;Authorization Failed. ;b;You entered either an incorrect
 user name or password.
