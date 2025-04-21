@@ -12,9 +12,7 @@ import (
 var dbFileName = "koshime.db"
 
 type DBProfile struct {
-	ID string
-	// Profile & library
-	links           []string
+	ID              string
 	SecondsWatched  int
 	CompletedSeries int
 	Username        string
