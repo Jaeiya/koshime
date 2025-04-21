@@ -285,16 +285,15 @@ func (k KitsuURL) QueryAnimeFields(fields []AnimeField) KitsuURL {
 	return k
 }
 
-func GetProfileURL(userName string) (string, error) {
-	u, err := url.Parse(apiUsersURL)
+func getProfileURL(userName string) (string, error) {
+	u, err := NewKitsuURL(UserURL)
 	if err != nil {
 		return "", err
 	}
 
-	q := u.Query()
-	q.Add("filter[name]", userName)
-	q.Add("include", "stats")
+	u = u.QueryUserName(userName).
+		IncludeCategory([]DataCategory{StatsCategory}).
+		PageLimit(1)
 
-	u.RawQuery = q.Encode()
 	return u.String(), nil
 }
