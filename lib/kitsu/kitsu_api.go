@@ -39,6 +39,15 @@ type ProfileData struct {
 			CreatedAt string `json:"createdAt"`
 		}
 	} `json:"data"`
+
+	Included []struct {
+		Attributes struct {
+			Stats struct {
+				SecondsWatched int `json:"time"`
+				CompletedAnime int `json:"completed"`
+			} `json:"statsData"`
+		}
+	} `json:"included"`
 }
 
 func GetAuthToken(userName, password string) (AuthToken, error) {
