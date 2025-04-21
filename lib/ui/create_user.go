@@ -1,6 +1,10 @@
 package ui
 
 import (
+	"fmt"
+	"strings"
+	"time"
+
 	"github.com/charmbracelet/bubbles/v2/help"
 	"github.com/charmbracelet/bubbles/v2/key"
 	"github.com/charmbracelet/bubbles/v2/textinput"
@@ -31,6 +35,8 @@ type ViewState int
 const (
 	ConsentView = ViewState(iota)
 	UsernameView
+	ConfirmUsernameView
+	UsernameFailedView
 	PasswordView
 	PasswordFailedView
 	Completed
@@ -99,17 +105,17 @@ func (User) NewUser() (lib.DBData, bool) {
 }
 
 type userModel struct {
-	keys       keyMap
-	help       help.Model
-	input      textinput.Model
-	consentPos int
-	db         lib.DBData
-	password   string
-	isLoading  bool
-	isAborted  bool
-	authError  error
-	viewState  ViewState
-	blinks     int
+	keys           keyMap
+	help           help.Model
+	input          textinput.Model
+	consentPos     int
+	db             lib.DBData
+	password       string
+	isLoading      bool
+	isAborted      bool
+	fetchedProfile kitsu.ProfileData
+	authError      error
+	viewState      ViewState
 }
 
 func (m userModel) Init() tea.Cmd {
@@ -141,6 +147,10 @@ func (m userModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m, cmd = m.UpdateUserConsent(msg)
 	case UsernameView:
 		m, cmd = m.UpdateUserName(msg)
+	case UsernameFailedView:
+		m, cmd = m.UpdateUsernameFailed(msg)
+	case ConfirmUsernameView:
+		m, cmd = m.UpdateConfirmUsername(msg)
 	case PasswordView:
 		m, cmd = m.UpdatePassword(msg)
 	case PasswordFailedView:
@@ -177,20 +187,105 @@ func (m userModel) UpdateUserConsent(msg tea.Msg) (userModel, tea.Cmd) {
 
 func (m userModel) UpdateUserName(msg tea.Msg) (userModel, tea.Cmd) {
 	var cmd tea.Cmd
-
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.Key().Code {
 		case tea.KeyEnter:
-			m.viewState = PasswordView
-			m.db.Profile.Username = m.input.Value()
-			m.input.Reset()
-			m.input.EchoMode = textinput.EchoPassword
+			if !m.isLoading {
+				m.isLoading = true
+				return m, getProfile(m.input.Value())
+			}
 		}
+
+	case kitsu.ProfileData:
+		m.isLoading = false
+		m.fetchedProfile = msg
+		if len(m.fetchedProfile.Data) == 0 {
+			// Start on Yes
+			m.consentPos = 1
+			m.viewState = UsernameFailedView
+		} else {
+			m.viewState = ConfirmUsernameView
+		}
+
+	// If getting the profile returns an error
+	case error:
+		panic(msg)
+
 	}
 
 	m.input, cmd = m.input.Update(msg)
 	return m, cmd
+}
+
+func getProfile(userName string) func() tea.Msg {
+	return func() tea.Msg {
+		p, err := kitsu.GetProfile(userName)
+		if err != nil {
+			return err
+		}
+		return p
+	}
+}
+
+func (m userModel) UpdateUsernameFailed(msg tea.Msg) (userModel, tea.Cmd) {
+	m = m.updateConsent(msg)
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, m.keys.Enter):
+			if m.consentPos == 0 {
+				m.isAborted = true
+				m.viewState = AbortView
+				return m, tea.Quit
+			}
+			m.consentPos = 0 // reset for future use
+			m.input.Reset()
+			m.viewState = UsernameView
+		}
+	}
+	return m, nil
+}
+
+func (m userModel) UpdateConfirmUsername(msg tea.Msg) (userModel, tea.Cmd) {
+	m = m.updateConsent(msg)
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, m.keys.Enter):
+			if m.consentPos == 0 {
+				m.input.Reset()
+				m.viewState = UsernameView
+				return m, nil
+			}
+
+			m.consentPos = 0 // Reset for future
+			m.viewState = PasswordView
+			m.db.Profile.Username = m.input.Value()
+			m.input.Reset()
+			m.input.EchoMode = textinput.EchoPassword
+			return m, nil
+		}
+	}
+
+	return m, nil
+}
+
+func (m userModel) updateConsent(msg tea.Msg) userModel {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, m.keys.Down):
+			m.consentPos = utils.AbsInt(m.consentPos-1) % 2
+
+		case key.Matches(msg, m.keys.Up):
+			m.consentPos = utils.AbsInt(m.consentPos+1) % 2
+
+		}
+	}
+
+	return m
 }
 
 func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
@@ -259,6 +354,10 @@ func (m userModel) View() (string, *tea.Cursor) {
 		view = m.ConsentView()
 	case UsernameView:
 		view, c = m.UsernameView()
+	case UsernameFailedView:
+		view = m.UsernameFailedView()
+	case ConfirmUsernameView:
+		view = m.ConfirmUsernameView()
 	case PasswordView:
 		view, c = m.PasswordView()
 	case PasswordFailedView:
@@ -267,7 +366,7 @@ func (m userModel) View() (string, *tea.Cursor) {
 		view = m.AbortView()
 	}
 
-	if m.viewState >= UsernameView {
+	if m.viewState == UsernameView || m.viewState == PasswordView || m.viewState == AbortView {
 		return view, c
 	}
 
@@ -287,6 +386,9 @@ func (m userModel) ConsentView() string {
 }
 
 func (m userModel) UsernameView() (string, *tea.Cursor) {
+	if m.isLoading {
+		return defaultTextStyle.MarginTop(1).Render("Loading..."), nil
+	}
 	c := m.input.Cursor()
 	c.Shape = tea.CursorBar
 	view := lipgloss.JoinVertical(
@@ -296,6 +398,47 @@ func (m userModel) UsernameView() (string, *tea.Cursor) {
 	)
 	c.Y += lipgloss.Height(view)
 	return view, c
+}
+
+func (m userModel) UsernameFailedView() string {
+	yes, no := m.GetYesNo(m.consentPos)
+	view := lipgloss.JoinVertical(
+		lipgloss.Left,
+		UsernameFailedMsg,
+		no,
+		yes,
+	)
+	return view
+}
+
+func (m userModel) ConfirmUsernameView() string {
+	yes, no := m.GetYesNo(m.consentPos)
+	userID := m.fetchedProfile.Data[0].ID
+	attr := m.fetchedProfile.Data[0].Attributes
+
+	createdDate, err := time.Parse(time.RFC3339, attr.CreatedAt)
+	if err != nil {
+		panic(err)
+	}
+
+	profileStr := defaultTextStyle.PaddingLeft(5).MarginTop(1).
+		Width(60).
+		Render(utils.ColorText(strings.Trim((fmt.Sprintf(`
+    ;w;Name:;x; ;g;%s;x;
+   ;w;About:;x; %s
+  ;w;Gender:;x; %s
+;w;BirthDay:;x; %s
+;w;Location:;x; %s
+ ;w;Created:;x; %s
+ ;w;Profile:;x; %s`, attr.Name, attr.About, attr.Gender, attr.Birthday, attr.Location, createdDate.Local().Format("01/02/2006 3:04 PM"), kitsu.GetProfileLink(userID))), "\n")))
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		ConfirmUsernamePreMsg,
+		profileStr,
+		ConfirmUsernameConsentMsg,
+		no,
+		yes,
+	)
 }
 
 func (m userModel) PasswordView() (string, *tea.Cursor) {

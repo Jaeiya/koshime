@@ -31,6 +31,21 @@ Enter your ;g;Kitsu;x; user name.
 `),
 ))
 
+var ConfirmUsernamePreMsg = defaultTextStyle.MarginTop(1).
+	Render(strings.TrimSpace(utils.ColorText(`
+;b;This is the first profile to pop up for that user name:;x;
+`)))
+
+var ConfirmUsernameConsentMsg = defaultTextStyle.MarginTop(1).
+	Render(strings.TrimSpace(utils.ColorText(`
+;b;Does that look like your profile?;x;
+`)))
+
+var UsernameFailedMsg = defaultTextStyle.MarginTop(1).Render(strings.TrimSpace(
+	utils.ColorText(`
+;y;User name not found; ;g;try again?;x;`),
+))
+
 var PasswordMsg = defaultTextStyle.MarginTop(1).PaddingBottom(1).Render(strings.TrimSpace(
 	utils.ColorText(`
 Enter your ;g;Kitsu;x; password. [;m;It will not be saved;x;]
