@@ -299,8 +299,6 @@ func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 
 	case AuthTokenErrorMsg:
 		m.isLoading = false
-		m.input.Reset()
-		m.input.EchoMode = textinput.EchoNormal
 		m.viewState = PasswordFailedView
 		m.authError = msg
 
@@ -322,7 +320,8 @@ func (m userModel) UpdatePasswordFailed(msg tea.Msg) (userModel, tea.Cmd) {
 				m.isAborted = true
 				return m, tea.Quit
 			}
-			m.viewState = UsernameView
+			m.input.Reset()
+			m.viewState = PasswordView
 			m.consentPos = 0 // Reset for future
 			return m, nil
 		}

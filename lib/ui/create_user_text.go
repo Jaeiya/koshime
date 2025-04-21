@@ -42,8 +42,8 @@ Enter your ;g;Kitsu;x; password. [;m;It will not be saved;x;]`,
 )
 
 var passwordFailedTxt = newText(defaultTextStyle.MarginTop(1), `
-;r;Authorization Failed. ;b;You entered either an incorrect
-user name or password.
+;r;Authorization Failed. ;b;You must have entered your password
+incorrectly.
 
 ;w;Would you like to ;g;try again?;x;`)
 
