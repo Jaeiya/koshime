@@ -161,15 +161,11 @@ func (m userModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m userModel) UpdateUserConsent(msg tea.Msg) (userModel, tea.Cmd) {
+	m = m.updateConsent(msg)
+
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, m.keys.Down):
-			m.consentPos = utils.AbsInt(m.consentPos-1) % 2
-
-		case key.Matches(msg, m.keys.Up):
-			m.consentPos = utils.AbsInt(m.consentPos+1) % 2
-
 		case key.Matches(msg, m.keys.Enter):
 			if m.consentPos == 0 {
 				m.viewState = AbortView
@@ -179,7 +175,6 @@ func (m userModel) UpdateUserConsent(msg tea.Msg) (userModel, tea.Cmd) {
 			m.viewState = UsernameView
 			m.consentPos = 0 // Reset for future
 			return m, textinput.Blink
-
 		}
 	}
 	return m, nil
@@ -272,22 +267,6 @@ func (m userModel) UpdateConfirmUsername(msg tea.Msg) (userModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m userModel) updateConsent(msg tea.Msg) userModel {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch {
-		case key.Matches(msg, m.keys.Down):
-			m.consentPos = utils.AbsInt(m.consentPos-1) % 2
-
-		case key.Matches(msg, m.keys.Up):
-			m.consentPos = utils.AbsInt(m.consentPos+1) % 2
-
-		}
-	}
-
-	return m
-}
-
 func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 	var cmd tea.Cmd
 
@@ -321,15 +300,11 @@ func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 }
 
 func (m userModel) UpdatePasswordFailed(msg tea.Msg) (userModel, tea.Cmd) {
+	m = m.updateConsent(msg)
+
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, m.keys.Down):
-			m.consentPos = utils.AbsInt(m.consentPos-1) % 2
-
-		case key.Matches(msg, m.keys.Up):
-			m.consentPos = utils.AbsInt(m.consentPos+1) % 2
-
 		case key.Matches(msg, m.keys.Enter):
 			if m.consentPos == 0 {
 				m.viewState = AbortView
@@ -339,7 +314,6 @@ func (m userModel) UpdatePasswordFailed(msg tea.Msg) (userModel, tea.Cmd) {
 			m.viewState = UsernameView
 			m.consentPos = 0 // Reset for future
 			return m, nil
-
 		}
 	}
 
@@ -496,4 +470,20 @@ func (m userModel) GetAuthToken() tea.Msg {
 		return AuthTokenErrorMsg(err)
 	}
 	return FetchedAuthTokenMsg(tokenData)
+}
+
+func (m userModel) updateConsent(msg tea.Msg) userModel {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, m.keys.Down):
+			m.consentPos = utils.AbsInt(m.consentPos-1) % 2
+
+		case key.Matches(msg, m.keys.Up):
+			m.consentPos = utils.AbsInt(m.consentPos+1) % 2
+
+		}
+	}
+
+	return m
 }
