@@ -24,7 +24,10 @@ type DBProfile struct {
 }
 
 type DBLibEntry struct {
-	ID        string
+	// Anime ID
+	ID string
+	// Anime User-library ID - Allows looking up User-specific Anime data
+	LibID     string
 	JPN_Title string
 	ENG_Title string
 	Synonyms  []string
