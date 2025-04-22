@@ -492,7 +492,6 @@ func (m userModel) updateConsent(msg tea.Msg) userModel {
 
 		case key.Matches(msg, m.keys.Up):
 			m.consentPos = utils.AbsInt(m.consentPos+1) % 2
-
 		}
 	}
 
