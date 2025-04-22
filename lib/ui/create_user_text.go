@@ -12,9 +12,8 @@ var defaultTextStyle = lipgloss.NewStyle().PaddingLeft(3)
 var userWelcomeTxt = newText(defaultTextStyle.MarginTop(1).MarginBottom(1), `
 ;g;Welcome to Koshime!
 
-;b;I will need to grab your profile from Kitsu, which requires a
-user name and password. Your password will ;y;not;x; ;b;be saved
-and will only ;y;ever;x; ;b;be used to get an access token.;x;`,
+;b;I need to grab your profile from Kitsu, which will
+require a username and password.`,
 )
 
 var userConsentTxt = newText(defaultTextStyle, `
