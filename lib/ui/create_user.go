@@ -53,22 +53,22 @@ type keyMap struct {
 }
 
 func (km keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{km.Quit, km.Help}
+	return []key.Binding{km.Up, km.Down, km.Enter, km.Help}
 }
 
 func (km keyMap) FullHelp() [][]key.Binding {
 	return [][]key.Binding{
 		{km.Up, km.Down, km.Enter},
-		{km.Help, km.Quit},
+		{km.Quit, km.Help},
 	}
 }
 
 var keys = keyMap{
-	Up:    key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "move up")),
-	Down:  key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "move down")),
+	Up:    key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
+	Down:  key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
 	Enter: key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
 	Quit:  key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "quit")),
-	Help:  key.NewBinding(key.WithKeys("shift+/"), key.WithHelp("?", "toggle help")),
+	Help:  key.NewBinding(key.WithKeys("shift+/"), key.WithHelp("?", "more help")),
 }
 
 type User struct{}
