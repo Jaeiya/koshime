@@ -45,30 +45,23 @@ const (
 )
 
 type keyMap struct {
-	Up    key.Binding
-	Down  key.Binding
-	Enter key.Binding
-	Quit  key.Binding
-	Help  key.Binding
-}
-
-func (km keyMap) ShortHelp() []key.Binding {
-	return []key.Binding{km.Up, km.Down, km.Enter, km.Help}
-}
-
-func (km keyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{km.Up, km.Down, km.Enter},
-		{km.Quit, km.Help},
-	}
+	Up       key.Binding
+	Down     key.Binding
+	Select   key.Binding
+	Submit   key.Binding
+	Abort    key.Binding
+	HelpMore key.Binding
+	HelpLess key.Binding
 }
 
 var keys = keyMap{
-	Up:    key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
-	Down:  key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
-	Enter: key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
-	Quit:  key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "quit")),
-	Help:  key.NewBinding(key.WithKeys("shift+/"), key.WithHelp("?", "more help")),
+	Up:       key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
+	Down:     key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
+	Select:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
+	Submit:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "submit")),
+	HelpMore: key.NewBinding(key.WithKeys("shift+/"), key.WithHelp("?", "more help")),
+	HelpLess: key.NewBinding(key.WithKeys("shift+/"), key.WithHelp("?", "less help")),
+	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
 }
 
 type User struct{}
@@ -92,7 +85,6 @@ func (User) NewUser() (lib.DBData, bool) {
 
 	p := tea.NewProgram(userModel{
 		input:     input,
-		keys:      keys,
 		help:      h,
 		db:        lib.DBData{},
 		viewState: ConsentView,
@@ -106,7 +98,6 @@ func (User) NewUser() (lib.DBData, bool) {
 }
 
 type userModel struct {
-	keys           keyMap
 	help           help.Model
 	input          textinput.Model
 	consentPos     int
@@ -117,6 +108,34 @@ type userModel struct {
 	fetchedProfile kitsu.ProfileData
 	authError      error
 	viewState      ViewState
+}
+
+func (m userModel) ShortHelp() []key.Binding {
+	switch m.viewState {
+	case ConsentView, ConfirmUsernameView, PasswordFailedView, UsernameFailedView:
+		return []key.Binding{
+			keys.Up, keys.Down, keys.Select, keys.HelpMore,
+		}
+	case UsernameView, PasswordView:
+		return []key.Binding{
+			keys.Submit, keys.Abort,
+		}
+	}
+
+	return []key.Binding{}
+}
+
+func (m userModel) FullHelp() [][]key.Binding {
+	switch m.viewState {
+	case ConsentView, ConfirmUsernameView, PasswordFailedView, UsernameFailedView:
+		return [][]key.Binding{
+			{keys.Up, keys.Down, keys.Select},
+			{keys.Abort, keys.HelpLess},
+		}
+	case UsernameView, PasswordView:
+		// All help is already shown with short help
+	}
+	return [][]key.Binding{}
 }
 
 func (m userModel) Init() tea.Cmd {
@@ -131,14 +150,19 @@ func (m userModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.help.Width = msg.Width
 
 	case tea.KeyPressMsg:
-		if key.Matches(msg, m.keys.Quit) {
+		if key.Matches(msg, keys.Abort) {
 			m.isAborted = true
 			m.viewState = AbortView
 			return m, tea.Quit
 		}
 
-		if key.Matches(msg, m.keys.Help) {
-			m.help.ShowAll = !m.help.ShowAll
+		if key.Matches(msg, keys.HelpMore) {
+			switch m.viewState {
+			// Full help not implemented for input fields
+			case UsernameView, PasswordView:
+			default:
+				m.help.ShowAll = !m.help.ShowAll
+			}
 		}
 
 	}
@@ -167,7 +191,7 @@ func (m userModel) UpdateUserConsent(msg tea.Msg) (userModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, m.keys.Enter):
+		case key.Matches(msg, keys.Select):
 			if m.consentPos == 0 {
 				m.viewState = AbortView
 				m.isAborted = true
@@ -229,7 +253,7 @@ func (m userModel) UpdateUsernameFailed(msg tea.Msg) (userModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, m.keys.Enter):
+		case key.Matches(msg, keys.Select):
 			if m.consentPos == 0 {
 				m.isAborted = true
 				m.viewState = AbortView
@@ -249,7 +273,7 @@ func (m userModel) UpdateConfirmUsername(msg tea.Msg) (userModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, m.keys.Enter):
+		case key.Matches(msg, keys.Select):
 			if m.consentPos == 0 {
 				m.input.Reset()
 				m.viewState = UsernameView
@@ -314,7 +338,7 @@ func (m userModel) UpdatePasswordFailed(msg tea.Msg) (userModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, m.keys.Enter):
+		case key.Matches(msg, keys.Select):
 			if m.consentPos == 0 {
 				m.viewState = AbortView
 				m.isAborted = true
@@ -350,11 +374,12 @@ func (m userModel) View() (string, *tea.Cursor) {
 		view = m.AbortView()
 	}
 
-	if m.viewState >= UsernameView {
-		return view, c
+	if c != nil {
+		// Adjust for help text
+		c.Y -= 1
 	}
 
-	helpView := defaultTextStyle.Height(3).PaddingTop(1).Render(m.help.View(m.keys))
+	helpView := defaultTextStyle.Height(3).PaddingTop(1).Render(m.help.View(m))
 	return lipgloss.JoinVertical(lipgloss.Left, view, helpView), c
 }
 
@@ -487,10 +512,10 @@ func (m userModel) updateConsent(msg tea.Msg) userModel {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, m.keys.Down):
+		case key.Matches(msg, keys.Down):
 			m.consentPos = utils.AbsInt(m.consentPos-1) % 2
 
-		case key.Matches(msg, m.keys.Up):
+		case key.Matches(msg, keys.Up):
 			m.consentPos = utils.AbsInt(m.consentPos+1) % 2
 		}
 	}
