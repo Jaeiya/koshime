@@ -13,7 +13,7 @@ var userWelcomeTxt = newText(defaultTextStyle.MarginTop(1).MarginBottom(1), `
 ;g;Welcome to Koshime!
 
 ;b;I need to grab your profile from Kitsu, which will
-require a username and password.`,
+require a ;db;username ;b;and ;db;password;x;.`,
 )
 
 var userConsentTxt = newText(defaultTextStyle, `
