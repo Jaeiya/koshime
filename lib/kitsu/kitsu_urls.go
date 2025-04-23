@@ -98,8 +98,8 @@ func GetAnimeInfoURL(query string, status AnimeStatus, maxItems int) (KitsuURL, 
 		return KitsuURL{}, nil
 	}
 
-	if maxItems > 200 {
-		return KitsuURL{}, fmt.Errorf("max items cannot be larger than 200")
+	if maxItems > 200 || maxItems < 1 {
+		return KitsuURL{}, fmt.Errorf("max items should be between 1 and 200; inclusive")
 	}
 
 	return u.QueryText(query).
