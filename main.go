@@ -41,7 +41,7 @@ func main() {
 
 func InitDatabase(path string) (*lib.Database, error) {
 	if !utils.FileExists(path) {
-		data, isAborted := ui.User{}.NewUser()
+		data, isAborted := ui.NewUser()
 		if isAborted {
 			return &lib.Database{}, errUserAborted
 		}

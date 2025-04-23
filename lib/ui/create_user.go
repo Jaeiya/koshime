@@ -64,9 +64,7 @@ var keys = keyMap{
 	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
 }
 
-type User struct{}
-
-func (User) NewUser() (lib.DBData, bool) {
+func NewUser() (lib.DBData, bool) {
 	h := help.New()
 	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(lipgloss.Color("#787897"))
 	h.Styles.FullKey = h.Styles.ShortKey
