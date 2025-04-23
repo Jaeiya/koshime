@@ -15,6 +15,8 @@ type DBProfile struct {
 	ID              string
 	SecondsWatched  int
 	CompletedSeries int
+	// Last time profile was updated
+	LastUpdate      int
 	Username        string
 	AccessToken     string
 	RefreshToken    string
