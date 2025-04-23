@@ -44,13 +44,19 @@ type Database struct {
 	data     DBData
 }
 
-func (Database) NewDatabase(data DBData) (*Database, error) {
-	db := &Database{false, data}
-	db.isLoaded = true
+func NewDatabase(data *DBData) (*Database, error) {
+	// Initialize empty database
+	if data == nil {
+		db := &Database{}
+		return db, nil
+	}
+
+	db := &Database{true, *data}
 	err := db.Save()
 	if err != nil {
 		return &Database{}, err
 	}
+
 	return db, nil
 }
 
