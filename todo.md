@@ -1,7 +1,7 @@
 ## Simple Menu Design
 
 Command-based functionality is nice, but it can become obtuse and difficult to
-discover. A menu-based approach is a lot more condusive to the common-user.
+discover. A menu-based approach is a lot more conducive to the common-user.
 
 Each function will have its own menu and keyboard shortcuts associated
 with it, that can be learned, in order to make navigation simpler. For instance
