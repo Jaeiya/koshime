@@ -49,7 +49,7 @@ type Database struct {
 	data     DBData
 }
 
-func (Database) New(data DBData) (*Database, error) {
+func (Database) NewDatabase(data DBData) (*Database, error) {
 	db := &Database{false, data}
 	db.isLoaded = true
 	err := db.Save()
