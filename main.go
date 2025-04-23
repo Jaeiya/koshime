@@ -10,16 +10,6 @@ import (
 	"github.com/jaeiya/koshime/lib/utils"
 )
 
-var infoStr = `
-Title: %s
-Season: %s
-Episode: %s
-Encoding: %s
-Source: %s
-Fansub: %s
-
-`
-
 var (
 	errUserAborted = fmt.Errorf("user aborted initialization")
 	dbFilePath     = filepath.Join("./", "koshime.db")
