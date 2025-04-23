@@ -2,6 +2,7 @@ package utils
 
 import (
 	"os"
+	"path/filepath"
 	"strconv"
 )
 
@@ -16,6 +17,20 @@ func GetWorkingDir() string {
 		panic(err)
 	}
 	return wd
+}
+
+func GetExecutableDirPath() string {
+	exePath, err := os.Executable()
+	if err != nil {
+		panic(err)
+	}
+
+	realPath, err := filepath.EvalSymlinks(exePath)
+	if err != nil {
+		panic(err)
+	}
+
+	return filepath.Dir(realPath)
 }
 
 func IsNumber(s string) bool {
