@@ -29,3 +29,16 @@ func AbsInt(i int) int {
 	}
 	return i
 }
+
+func FileExists(path string) bool {
+	info, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+		// Unexpected error: permissions, disk, etc...
+		panic(err)
+	}
+
+	return !info.IsDir()
+}
