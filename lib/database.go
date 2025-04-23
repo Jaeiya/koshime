@@ -34,12 +34,7 @@ type DBLibEntry struct {
 	Slug      string
 }
 
-type DBConfig struct {
-	StripColors bool
-}
-
 type DBData struct {
-	Config  DBConfig
 	Profile DBProfile
 	Library []DBLibEntry
 }
