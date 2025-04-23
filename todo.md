@@ -1,4 +1,4 @@
-## Simple Menu
+## Simple Menu Design
 
 Command-based functionality is nice, but it can become obtuse and difficult to
 discover. A menu-based approach is a lot more condusive to the common-user.
