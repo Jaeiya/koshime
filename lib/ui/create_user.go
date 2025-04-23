@@ -5,15 +5,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Jaeiya/koshime/lib"
+	"github.com/Jaeiya/koshime/lib/kitsu"
+	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/help"
 	"github.com/charmbracelet/bubbles/v2/key"
 	"github.com/charmbracelet/bubbles/v2/textinput"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/jaeiya/koshime/lib"
-	"github.com/jaeiya/koshime/lib/kitsu"
-	"github.com/jaeiya/koshime/lib/utils"
 )
 
 var (

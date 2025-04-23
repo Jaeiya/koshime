@@ -3,8 +3,8 @@ package ui
 import (
 	"strings"
 
+	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/lipgloss/v2"
-	"github.com/jaeiya/koshime/lib/utils"
 )
 
 var defaultTextStyle = lipgloss.NewStyle().PaddingLeft(3)

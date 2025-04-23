@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/jaeiya/koshime/lib/utils"
+	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/shamaton/msgpack/v2"
 )
 

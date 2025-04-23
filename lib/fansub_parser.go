@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/jaeiya/koshime/lib/utils"
+	"github.com/Jaeiya/koshime/lib/utils"
 )
 
 var fansubReplaceMap = map[string]string{

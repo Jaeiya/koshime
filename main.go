@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/jaeiya/koshime/lib"
-	"github.com/jaeiya/koshime/lib/ui"
-	"github.com/jaeiya/koshime/lib/utils"
+	"github.com/Jaeiya/koshime/lib"
+	"github.com/Jaeiya/koshime/lib/ui"
+	"github.com/Jaeiya/koshime/lib/utils"
 )
 
 var (

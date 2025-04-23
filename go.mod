@@ -1,4 +1,4 @@
-module github.com/jaeiya/koshime
+module github.com/Jaeiya/koshime
 
 go 1.24.1
 
