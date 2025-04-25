@@ -7,12 +7,13 @@ import (
 	"strings"
 )
 
+type APIUrl string
+
 const (
-	apiAuthTokenURL = "https://kitsu.app/api/oauth/token"
-	apiLibraryURL   = "https://kitsu.app/api/edge/library-entries"
-	apiAnimeURL     = "https://kitsu.app/api/edge/anime"
-	apiUsersURL     = "https://kitsu.app/api/edge/users"
-	usersURL        = "https://kitsu.app/users"
+	apiAuthTokenURL = APIUrl("https://kitsu.app/api/oauth/token")
+	apiLibraryURL   = APIUrl("https://kitsu.app/api/edge/library-entries")
+	apiAnimeURL     = APIUrl("https://kitsu.app/api/edge/anime")
+	apiUsersURL     = APIUrl("https://kitsu.app/api/edge/users")
 )
 
 type URLType int
@@ -168,11 +169,11 @@ func NewKitsuURL(uType URLType) (KitsuURL, error) {
 
 	switch uType {
 	case LibraryURL:
-		u, err = url.Parse(apiLibraryURL)
+		u, err = url.Parse(string(apiLibraryURL))
 	case AnimeURL:
-		u, err = url.Parse(apiAnimeURL)
+		u, err = url.Parse(string(apiAnimeURL))
 	case UserURL:
-		u, err = url.Parse(apiUsersURL)
+		u, err = url.Parse(string(apiUsersURL))
 	}
 
 	if u == nil {
@@ -286,7 +287,7 @@ func (k KitsuURL) QueryAnimeFields(fields []AnimeField) KitsuURL {
 	return k
 }
 
-func getProfileURL(userName string) (string, error) {
+func getProfileURL(userName string) (APIUrl, error) {
 	u, err := NewKitsuURL(UserURL)
 	if err != nil {
 		return "", err
@@ -296,5 +297,5 @@ func getProfileURL(userName string) (string, error) {
 		IncludeCategory([]DataCategory{StatsCategory}).
 		PageLimit(1)
 
-	return u.String(), nil
+	return APIUrl(u.String()), nil
 }
