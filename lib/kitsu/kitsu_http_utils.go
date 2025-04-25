@@ -12,6 +12,8 @@ import (
 
 const clientAgent = "Koshime/0.1"
 
+var client = &http.Client{}
+
 type KitsuMethod string
 
 const (
@@ -29,8 +31,6 @@ type requestOptions struct {
 	token       string
 }
 
-var client = &http.Client{}
-
 type kitsuContentType string
 
 const (
@@ -38,14 +38,15 @@ const (
 	jsonContent   = kitsuContentType("application/json")
 )
 
-type BadRequestResp struct {
-	Errors []struct {
-		Title  string
-		Detail string
-		Code   string
-		Status string
-	}
-}
+// TODO  Use this to create better HTTP error messages
+// type BadRequestResp struct {
+// 	Errors []struct {
+// 		Title  string
+// 		Detail string
+// 		Code   string
+// 		Status string
+// 	}
+// }
 
 func newKitsuRequest(
 	method, url string,
