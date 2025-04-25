@@ -75,6 +75,7 @@ func newAnimeStatusPayload(libID string, status LibAnimeStatus) ([]byte, error) 
 	payload := struct {
 		Data struct {
 			Id         string `json:"id"`
+			Type       string `json:"type"`
 			Attributes struct {
 				Status string `json:"status"`
 			} `json:"attributes"`
@@ -82,6 +83,7 @@ func newAnimeStatusPayload(libID string, status LibAnimeStatus) ([]byte, error) 
 	}{}
 
 	payload.Data.Id = libID
+	payload.Data.Type = "library-entries"
 	payload.Data.Attributes.Status = string(status)
 	return json.Marshal(payload)
 }
