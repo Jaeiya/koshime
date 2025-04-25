@@ -18,7 +18,7 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 	}
 
 	var data AuthToken
-	err = postJSON(apiAuthTokenURL, payload, "", &data)
+	err = apiPost(apiAuthTokenURL, payload, "", &data)
 	if err != nil {
 		return AuthToken{}, err
 	}
@@ -33,7 +33,7 @@ func GetProfile(userName string) (ProfileData, error) {
 	}
 
 	var data ProfileData
-	err = getJSON(profileURL, &data)
+	err = apiGet(profileURL, &data)
 	if err != nil {
 		return ProfileData{}, err
 	}

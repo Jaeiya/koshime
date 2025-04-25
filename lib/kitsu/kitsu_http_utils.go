@@ -14,7 +14,7 @@ const clientAgent = "Koshime/0.1"
 
 var client = &http.Client{}
 
-func newJSONRequest(method, url string, body io.Reader) (*http.Request, error) {
+func newKitsuRequest(method, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
@@ -30,8 +30,8 @@ func newJSONRequest(method, url string, body io.Reader) (*http.Request, error) {
 	return req, nil
 }
 
-func getJSON[T any](url APIUrl, data *T) error {
-	req, err := newJSONRequest("GET", string(url), nil)
+func apiGet[T any](url APIUrl, data *T) error {
+	req, err := newKitsuRequest("GET", string(url), nil)
 	if err != nil {
 		return err
 	}
@@ -77,8 +77,8 @@ func getJSON[T any](url APIUrl, data *T) error {
 	return nil
 }
 
-func postJSON[T any](url APIUrl, payload []byte, bearerToken string, data *T) error {
-	req, err := newJSONRequest("POST", string(url), bytes.NewBuffer(payload))
+func apiPost[T any](url APIUrl, payload []byte, bearerToken string, data *T) error {
+	req, err := newKitsuRequest("POST", string(url), bytes.NewBuffer(payload))
 	if err != nil {
 		return err
 	}
