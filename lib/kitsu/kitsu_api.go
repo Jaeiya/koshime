@@ -32,7 +32,8 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 }
 
 // AddAnime adds an anime to the users Kitsu library with
-// the specified status.
+// the specified status. On success, the library ID of
+// the added anime is returned.
 func AddAnime(animeID, userID, token string, status LibAnimeStatus) (string, error) {
 	respData := struct {
 		Data struct {
@@ -59,7 +60,7 @@ func AddAnime(animeID, userID, token string, status LibAnimeStatus) (string, err
 }
 
 // SetLibAnimeStatus sets the status of a specific anime within
-// the users library and returns its active status.
+// the users library. On success, the active status is returned.
 func SetLibAnimeStatus(libID, token string, status LibAnimeStatus) (LibAnimeStatus, error) {
 	payload, err := newAnimeStatusPayload(libID, status)
 	if err != nil {
