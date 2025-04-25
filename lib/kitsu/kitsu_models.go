@@ -70,3 +70,18 @@ func newAddAnimePayload(animeID, userID string, status LibAnimeStatus) ([]byte, 
 
 	return json.Marshal(payload)
 }
+
+func newAnimeStatusPayload(libID string, status LibAnimeStatus) ([]byte, error) {
+	payload := struct {
+		Data struct {
+			Id         string `json:"id"`
+			Attributes struct {
+				Status string `json:"status"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}{}
+
+	payload.Data.Id = libID
+	payload.Data.Attributes.Status = string(status)
+	return json.Marshal(payload)
+}
