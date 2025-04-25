@@ -18,12 +18,33 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 	}
 
 	var data AuthToken
-	err = apiPost(apiAuthTokenURL, payload, "", &data)
+	err = apiPost(apiAuthTokenURL, payload, jsonContent, "", &data)
 	if err != nil {
 		return AuthToken{}, err
 	}
 
 	return data, nil
+}
+
+// AddAnime adds an anime to the users Kitsu library with
+// the specified status.
+func AddAnime(animeID, userID, token string, status LibAnimeStatus) (string, error) {
+	respData := struct {
+		Data struct {
+			LibID string `json:"id"`
+		}
+	}{}
+
+	payload, err := newAddAnimePayload(animeID, userID, status)
+	if err != nil {
+		return "", err
+	}
+
+	err = apiPost(apiLibraryURL, payload, vndAPIContent, token, &respData)
+	if err != nil {
+		return "", err
+	}
+	return respData.Data.LibID, nil
 }
 
 func GetProfile(userName string) (ProfileData, error) {

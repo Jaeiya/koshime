@@ -14,14 +14,34 @@ const clientAgent = "Koshime/0.1"
 
 var client = &http.Client{}
 
-func newKitsuRequest(method, url string, body io.Reader) (*http.Request, error) {
+type KitsuContentType string
+
+const (
+	vndAPIContent = KitsuContentType("application/vnd.api+json")
+	jsonContent   = KitsuContentType("application/json")
+)
+
+type BadRequestResp struct {
+	Errors []struct {
+		Title  string
+		Detail string
+		Code   string
+		Status string
+	}
+}
+
+func newKitsuRequest(
+	method, url string,
+	ct KitsuContentType,
+	body io.Reader,
+) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
 		return nil, err
 	}
 
 	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Content-Type", string(ct))
 	}
 	req.Header.Set("User-Agent", clientAgent)
 	req.Header.Set("Accept", "application/vnd.api+json")
@@ -31,7 +51,7 @@ func newKitsuRequest(method, url string, body io.Reader) (*http.Request, error) 
 }
 
 func apiGet[T any](url APIUrl, data *T) error {
-	req, err := newKitsuRequest("GET", string(url), nil)
+	req, err := newKitsuRequest("GET", string(url), vndAPIContent, nil)
 	if err != nil {
 		return err
 	}
@@ -77,8 +97,14 @@ func apiGet[T any](url APIUrl, data *T) error {
 	return nil
 }
 
-func apiPost[T any](url APIUrl, payload []byte, bearerToken string, data *T) error {
-	req, err := newKitsuRequest("POST", string(url), bytes.NewBuffer(payload))
+func apiPost[T any](
+	url APIUrl,
+	payload []byte,
+	ct KitsuContentType,
+	bearerToken string,
+	data *T,
+) error {
+	req, err := newKitsuRequest("POST", string(url), ct, bytes.NewBuffer(payload))
 	if err != nil {
 		return err
 	}
