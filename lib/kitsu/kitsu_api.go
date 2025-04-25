@@ -90,6 +90,25 @@ func SetLibAnimeStatus(libID, token string, status LibAnimeStatus) (LibAnimeStat
 	return LibAnimeStatus(respData.Data.Attributes.Status), nil
 }
 
+// DeleteLibAnime deletes a specific anime from a users
+// library. On success, it should return a 204 HTTP
+// status code.
+func DeleteLibAnime(libID, token string) (int, error) {
+	u := getLibEntryURL(libID)
+	opts := APIReqOptions{
+		method:      apiDelete,
+		url:         u,
+		contentType: vndAPIContent,
+		token:       token,
+	}
+	var none *string
+	status, err := newAPIRequest(opts, none)
+	if err != nil {
+		return status, err
+	}
+	return status, nil
+}
+
 func GetProfile(userName string) (ProfileData, error) {
 	qurl, err := getProfileQURL(userName)
 	if err != nil {

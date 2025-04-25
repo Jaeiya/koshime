@@ -17,10 +17,11 @@ var client = &http.Client{}
 type KitsuMethod string
 
 const (
-	apiGet   = KitsuMethod("GET")
-	apiPost  = KitsuMethod("POST")
-	apiPatch = KitsuMethod("PATCH")
-	apiHead  = KitsuMethod("HEAD")
+	apiGet    = KitsuMethod("GET")
+	apiPost   = KitsuMethod("POST")
+	apiPatch  = KitsuMethod("PATCH")
+	apiHead   = KitsuMethod("HEAD")
+	apiDelete = KitsuMethod("DELETE")
 )
 
 type APIReqOptions struct {
@@ -73,7 +74,7 @@ func newAPIRequest[T any](options APIReqOptions, data *T) (int, error) {
 	var err error
 
 	switch options.method {
-	case apiGet, apiHead:
+	case apiGet, apiHead, apiDelete:
 		req, err = newKitsuRequest(
 			string(options.method),
 			string(options.url),
