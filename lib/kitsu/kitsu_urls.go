@@ -71,26 +71,26 @@ const (
 	//🟡 Kitsu does not always update "upcoming" to "current"
 	// on time, so use this if you want to catch anime
 	// that should be airing within the season.
-	NewAnime = AnimeStatus(CurrentAnime + "," + UpcomingAnime)
+	AnimeNew = AnimeStatus(AnimeAiring + "," + AnimeUpcoming)
 	// Currently Airing
-	CurrentAnime = AnimeStatus("current")
+	AnimeAiring = AnimeStatus("current")
 	// Going to be airing at some point in the future
-	UpcomingAnime = AnimeStatus("upcoming")
+	AnimeUpcoming = AnimeStatus("upcoming")
 	// To be announced
-	TBAAnime = AnimeStatus("tba")
+	AnimeTBA = AnimeStatus("tba")
 	// Confirmed but not released
-	UnreleasedAnime = AnimeStatus("unreleased")
+	AnimeUnreleased = AnimeStatus("unreleased")
 	// Finished airing
-	FinishedAnime = AnimeStatus("finished")
+	AnimeFinished = AnimeStatus("finished")
 )
 
-type LibraryAnimeStatus string
+type LibAnimeStatus string
 
 const (
-	CurrentLibAnime   = LibraryAnimeStatus("current")
-	CompletedLibAnime = LibraryAnimeStatus("completed")
-	DroppedLibAnime   = LibraryAnimeStatus("dropped")
-	PlannedLibAnime   = LibraryAnimeStatus("planned")
+	LibAnimeWatching  = LibAnimeStatus("current")
+	LibAnimeCompleted = LibAnimeStatus("completed")
+	LibAnimeDropped   = LibAnimeStatus("dropped")
+	LibAnimePlanned   = LibAnimeStatus("planned")
 )
 
 func GetAnimeInfoURL(query string, status AnimeStatus, maxItems int) (KitsuURL, error) {
@@ -140,7 +140,7 @@ func GetAnimeLibInfoURL(libIDs []string) (KitsuURL, error) {
 		PageLimit(len(libIDs)), nil
 }
 
-func GetUserLibAnimeURL(userID string, status LibraryAnimeStatus) (KitsuURL, error) {
+func GetUserLibAnimeURL(userID string, status LibAnimeStatus) (KitsuURL, error) {
 	u, err := NewKitsuURL(UserURL)
 	if err != nil {
 		return KitsuURL{}, err
@@ -233,7 +233,7 @@ func (k KitsuURL) QueryAnimeStatus(status AnimeStatus) KitsuURL {
 	return k.queryStatus(string(status))
 }
 
-func (k KitsuURL) QueryLibAnimeStatus(status LibraryAnimeStatus) KitsuURL {
+func (k KitsuURL) QueryLibAnimeStatus(status LibAnimeStatus) KitsuURL {
 	return k.queryStatus(string(status))
 }
 
