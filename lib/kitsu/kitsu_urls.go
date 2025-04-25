@@ -93,8 +93,8 @@ const (
 	LibAnimePlanned   = LibAnimeStatus("planned")
 )
 
-func GetAnimeInfoURL(query string, status AnimeStatus, maxItems int) (KitsuURL, error) {
-	u, err := NewKitsuURL(AnimeURL)
+func GetAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (KitsuURL, error) {
+	u, err := NewQURL(AnimeURL)
 	if err != nil {
 		return KitsuURL{}, nil
 	}
@@ -121,11 +121,11 @@ func GetAnimeInfoURL(query string, status AnimeStatus, maxItems int) (KitsuURL, 
 		), nil
 }
 
-// GetAnimeLibInfoURL requires at least one user library
+// GetAnimeLibInfoQURL requires at least one user library
 // anime ID and returns all relevant information for
 // that entry.
-func GetAnimeLibInfoURL(libIDs []string) (KitsuURL, error) {
-	u, err := NewKitsuURL(LibraryURL)
+func GetAnimeLibInfoQURL(libIDs []string) (KitsuURL, error) {
+	u, err := NewQURL(LibraryURL)
 	if err != nil {
 		return KitsuURL{}, nil
 	}
@@ -140,8 +140,8 @@ func GetAnimeLibInfoURL(libIDs []string) (KitsuURL, error) {
 		PageLimit(len(libIDs)), nil
 }
 
-func GetUserLibAnimeURL(userID string, status LibAnimeStatus) (KitsuURL, error) {
-	u, err := NewKitsuURL(UserURL)
+func GetUserLibAnimeQURL(userID string, status LibAnimeStatus) (KitsuURL, error) {
+	u, err := NewQURL(UserURL)
 	if err != nil {
 		return KitsuURL{}, err
 	}
@@ -155,6 +155,19 @@ func GetUserLibAnimeURL(userID string, status LibAnimeStatus) (KitsuURL, error) 
 		nil
 }
 
+func getProfileQURL(userName string) (KitsuURL, error) {
+	u, err := NewQURL(UserURL)
+	if err != nil {
+		return KitsuURL{}, err
+	}
+
+	u = u.QueryUserName(userName).
+		IncludeCategory([]DataCategory{StatsCategory}).
+		PageLimit(1)
+
+	return u, nil
+}
+
 type KitsuURL struct {
 	url *url.URL
 }
@@ -163,7 +176,12 @@ func (k KitsuURL) String() string {
 	return k.url.String()
 }
 
-func NewKitsuURL(uType URLType) (KitsuURL, error) {
+func (k KitsuURL) ToAPIUrl() APIUrl {
+	return APIUrl(k.url.String())
+}
+
+// NewQURL returns a new Kitsu Query URL.
+func NewQURL(uType URLType) (KitsuURL, error) {
 	var u *url.URL
 	var err error
 
@@ -285,17 +303,4 @@ func (k KitsuURL) QueryAnimeFields(fields []AnimeField) KitsuURL {
 	q.Add("fields[anime]", sb.String())
 	k.url.RawQuery = q.Encode()
 	return k
-}
-
-func getProfileURL(userName string) (APIUrl, error) {
-	u, err := NewKitsuURL(UserURL)
-	if err != nil {
-		return "", err
-	}
-
-	u = u.QueryUserName(userName).
-		IncludeCategory([]DataCategory{StatsCategory}).
-		PageLimit(1)
-
-	return APIUrl(u.String()), nil
 }

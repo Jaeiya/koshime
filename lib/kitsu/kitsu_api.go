@@ -48,13 +48,13 @@ func AddAnime(animeID, userID, token string, status LibAnimeStatus) (string, err
 }
 
 func GetProfile(userName string) (ProfileData, error) {
-	profileURL, err := getProfileURL(userName)
+	qurl, err := getProfileQURL(userName)
 	if err != nil {
 		return ProfileData{}, err
 	}
 
 	var data ProfileData
-	err = apiGet(profileURL, &data)
+	err = apiGet(qurl.ToAPIUrl(), &data)
 	if err != nil {
 		return ProfileData{}, err
 	}
