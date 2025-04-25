@@ -1,5 +1,7 @@
 package kitsu
 
+import "encoding/json"
+
 type AuthToken struct {
 	Token     string `json:"access_token"`
 	TokenType string `json:"token_type"`
@@ -33,4 +35,38 @@ type ProfileData struct {
 			} `json:"statsData"`
 		}
 	} `json:"included"`
+}
+
+func newAddAnimePayload(animeID, userID string, status LibAnimeStatus) ([]byte, error) {
+	payload := struct {
+		Data struct {
+			Type       string `json:"type"`
+			Attributes struct {
+				Status string `json:"status"`
+			} `json:"attributes"`
+			Relationships struct {
+				Anime struct {
+					Data struct {
+						Id   string `json:"id"`
+						Type string `json:"type"`
+					} `json:"data"`
+				} `json:"anime"`
+				User struct {
+					Data struct {
+						Id   string `json:"id"`
+						Type string `json:"type"`
+					} `json:"data"`
+				} `json:"user"`
+			} `json:"relationships"`
+		} `json:"data"`
+	}{}
+
+	payload.Data.Type = "library-entries"
+	payload.Data.Attributes.Status = string(status)
+	payload.Data.Relationships.Anime.Data.Id = animeID
+	payload.Data.Relationships.Anime.Data.Type = "anime"
+	payload.Data.Relationships.User.Data.Id = userID
+	payload.Data.Relationships.User.Data.Type = "users"
+
+	return json.Marshal(payload)
 }
