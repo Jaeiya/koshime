@@ -12,13 +12,30 @@ import (
 
 const clientAgent = "Koshime/0.1"
 
-var client = &http.Client{}
-
-type KitsuContentType string
+type KitsuMethod string
 
 const (
-	vndAPIContent = KitsuContentType("application/vnd.api+json")
-	jsonContent   = KitsuContentType("application/json")
+	apiGet   = KitsuMethod("GET")
+	apiPost  = KitsuMethod("POST")
+	apiPatch = KitsuMethod("PATCH")
+	apiHead  = KitsuMethod("HEAD")
+)
+
+type requestOptions struct {
+	method      KitsuMethod
+	url         APIUrl
+	contentType kitsuContentType
+	payload     []byte
+	token       string
+}
+
+var client = &http.Client{}
+
+type kitsuContentType string
+
+const (
+	vndAPIContent = kitsuContentType("application/vnd.api+json")
+	jsonContent   = kitsuContentType("application/json")
 )
 
 type BadRequestResp struct {
@@ -32,7 +49,7 @@ type BadRequestResp struct {
 
 func newKitsuRequest(
 	method, url string,
-	ct KitsuContentType,
+	ct kitsuContentType,
 	body io.Reader,
 ) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
@@ -50,10 +67,36 @@ func newKitsuRequest(
 	return req, nil
 }
 
-func apiGet[T any](url APIUrl, data *T) error {
-	req, err := newKitsuRequest("GET", string(url), vndAPIContent, nil)
+func newAPIRequest[T any](options requestOptions, data *T) error {
+	var req *http.Request
+	var err error
+
+	switch options.method {
+	case apiGet, apiHead:
+		req, err = newKitsuRequest(
+			string(options.method),
+			string(options.url),
+			options.contentType,
+			nil,
+		)
+	case apiPost, apiPatch:
+		req, err = newKitsuRequest(
+			string(options.method),
+			string(options.url),
+			options.contentType,
+			bytes.NewBuffer(options.payload),
+		)
+	}
 	if err != nil {
 		return err
+	}
+
+	if req == nil {
+		return fmt.Errorf("invalid kitsu http method")
+	}
+
+	if options.token != "" {
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", options.token))
 	}
 
 	resp, err := client.Do(req)
@@ -66,86 +109,9 @@ func apiGet[T any](url APIUrl, data *T) error {
 		return err
 	}
 
-	bodyStr := string(body)
-
-	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
-		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, http.StatusText(resp.StatusCode))
-	}
-
-	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-		return fmt.Errorf(
-			"ClientError::HTTP %d: %s\n%s",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-			bodyStr,
-		)
-	}
-
-	if resp.StatusCode >= 500 {
-		return fmt.Errorf(
-			"ServerError::HTTP %d: %s",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-		)
-	}
-
-	err = json.NewDecoder(bytes.NewReader(body)).Decode(data)
+	err = validateResponse(resp, string(body))
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func apiPost[T any](
-	url APIUrl,
-	payload []byte,
-	ct KitsuContentType,
-	bearerToken string,
-	data *T,
-) error {
-	req, err := newKitsuRequest("POST", string(url), ct, bytes.NewBuffer(payload))
-	if err != nil {
-		return err
-	}
-
-	if bearerToken != "" {
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", bearerToken))
-	}
-
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-
-	body, err := readResponseBody(resp)
-	if err != nil {
-		return err
-	}
-	bodyStr := string(body)
-
-	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
-		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, http.StatusText(resp.StatusCode))
-	}
-
-	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-		if strings.Contains(bodyStr, "invalid_grant") {
-			return fmt.Errorf("invalid username or password")
-		}
-		return fmt.Errorf(
-			"ClientError::HTTP %d: %s\n%s",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-			bodyStr,
-		)
-	}
-
-	if resp.StatusCode >= 500 {
-		return fmt.Errorf(
-			"ServerError::HTTP %d: %s",
-			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
-		)
 	}
 
 	err = json.NewDecoder(bytes.NewReader(body)).Decode(data)
@@ -179,4 +145,31 @@ func readResponseBody(resp *http.Response) ([]byte, error) {
 		return []byte{}, err
 	}
 	return data, nil
+}
+
+func validateResponse(resp *http.Response, body string) error {
+	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+	}
+
+	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+		if strings.Contains(body, "invalid_grant") {
+			return fmt.Errorf("invalid username or password")
+		}
+		return fmt.Errorf(
+			"ClientError::HTTP %d: %s\n%s",
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+			body,
+		)
+	}
+
+	if resp.StatusCode >= 500 {
+		return fmt.Errorf(
+			"ServerError::HTTP %d: %s",
+			resp.StatusCode,
+			http.StatusText(resp.StatusCode),
+		)
+	}
+	return nil
 }
