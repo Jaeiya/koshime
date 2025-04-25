@@ -93,6 +93,11 @@ const (
 	LibAnimePlanned   = LibAnimeStatus("planned")
 )
 
+func getLibEntryURL(libID string) APIUrl {
+	u, _ := url.JoinPath(string(apiLibraryURL), libID)
+	return APIUrl(u)
+}
+
 func GetAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (KitsuURL, error) {
 	u, err := NewQURL(AnimeURL)
 	if err != nil {
