@@ -91,6 +91,7 @@ const (
 	LibAnimeCompleted = LibAnimeStatus("completed")
 	LibAnimeDropped   = LibAnimeStatus("dropped")
 	LibAnimePlanned   = LibAnimeStatus("planned")
+	LibAnimeOnHold    = LibAnimeStatus("on_hold")
 )
 
 func getLibEntryURL(libID string) APIUrl {
