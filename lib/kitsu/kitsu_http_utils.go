@@ -23,7 +23,7 @@ const (
 	apiHead  = KitsuMethod("HEAD")
 )
 
-type requestOptions struct {
+type APIReqOptions struct {
 	method      KitsuMethod
 	url         APIUrl
 	contentType kitsuContentType
@@ -68,7 +68,7 @@ func newKitsuRequest(
 	return req, nil
 }
 
-func newAPIRequest[T any](options requestOptions, data *T) error {
+func newAPIRequest[T any](options APIReqOptions, data *T) error {
 	var req *http.Request
 	var err error
 

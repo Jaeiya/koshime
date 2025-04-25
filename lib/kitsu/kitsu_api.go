@@ -18,13 +18,13 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 	}
 
 	var data AuthToken
-	err = newAPIRequest(requestOptions{
+	opts := APIReqOptions{
 		method:      apiPost,
 		url:         apiAuthTokenURL,
 		payload:     payload,
 		contentType: jsonContent,
-	}, &data)
-	if err != nil {
+	}
+	if err = newAPIRequest(opts, &data); err != nil {
 		return AuthToken{}, err
 	}
 
@@ -46,14 +46,14 @@ func AddAnime(animeID, userID, token string, status LibAnimeStatus) (string, err
 		return "", err
 	}
 
-	err = newAPIRequest(requestOptions{
+	opts := APIReqOptions{
 		method:      apiPost,
 		url:         apiLibraryURL,
 		contentType: vndAPIContent,
 		payload:     payload,
 		token:       token,
-	}, &respData)
-	if err != nil {
+	}
+	if err = newAPIRequest(opts, &respData); err != nil {
 		return "", err
 	}
 	return respData.Data.LibID, nil
@@ -76,14 +76,14 @@ func SetLibAnimeStatus(libID, token string, status LibAnimeStatus) (LibAnimeStat
 		}
 	}{}
 
-	err = newAPIRequest(requestOptions{
+	opts := APIReqOptions{
 		method:      apiPatch,
 		url:         getLibEntryURL(libID),
 		contentType: vndAPIContent,
 		payload:     payload,
 		token:       token,
-	}, &respData)
-	if err != nil {
+	}
+	if err = newAPIRequest(opts, &respData); err != nil {
 		return "", err
 	}
 
@@ -97,7 +97,7 @@ func GetProfile(userName string) (ProfileData, error) {
 	}
 
 	var data ProfileData
-	err = newAPIRequest(requestOptions{
+	err = newAPIRequest(APIReqOptions{
 		method:      apiGet,
 		url:         qurl.ToAPIUrl(),
 		contentType: vndAPIContent,
