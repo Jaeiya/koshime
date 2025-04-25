@@ -2,13 +2,8 @@ package kitsu
 
 import (
 	"encoding/json"
-	"net/http"
 	"net/url"
 )
-
-const clientAgent = "Koshime/0.1"
-
-var client = &http.Client{}
 
 func GetAuthToken(userName, password string) (AuthToken, error) {
 	credentials := map[string]string{

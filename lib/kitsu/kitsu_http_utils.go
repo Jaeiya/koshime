@@ -10,6 +10,10 @@ import (
 	"strings"
 )
 
+const clientAgent = "Koshime/0.1"
+
+var client = &http.Client{}
+
 func newJSONRequest(method, url string, body io.Reader) (*http.Request, error) {
 	req, err := http.NewRequest(method, url, body)
 	if err != nil {
