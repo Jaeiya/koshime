@@ -68,7 +68,7 @@ func newKitsuRequest(
 	return req, nil
 }
 
-func newAPIRequest[T any](options APIReqOptions, data *T) error {
+func newAPIRequest[T any](options APIReqOptions, data *T) (int, error) {
 	var req *http.Request
 	var err error
 
@@ -89,11 +89,11 @@ func newAPIRequest[T any](options APIReqOptions, data *T) error {
 		)
 	}
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	if req == nil {
-		return fmt.Errorf("invalid kitsu http method")
+		return -1, fmt.Errorf("invalid kitsu http method")
 	}
 
 	if options.token != "" {
@@ -102,25 +102,27 @@ func newAPIRequest[T any](options APIReqOptions, data *T) error {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return err
+		return -1, err
 	}
 
 	body, err := readResponseBody(resp)
 	if err != nil {
-		return err
+		return resp.StatusCode, err
 	}
 
 	err = validateResponse(resp, string(body))
 	if err != nil {
-		return err
+		return resp.StatusCode, err
 	}
 
-	err = json.NewDecoder(bytes.NewReader(body)).Decode(data)
-	if err != nil {
-		return err
+	if data != nil {
+		err = json.NewDecoder(bytes.NewReader(body)).Decode(data)
+		if err != nil {
+			return resp.StatusCode, err
+		}
 	}
 
-	return nil
+	return resp.StatusCode, nil
 }
 
 func readResponseBody(resp *http.Response) ([]byte, error) {

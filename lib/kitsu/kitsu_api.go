@@ -24,7 +24,7 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 		payload:     payload,
 		contentType: jsonContent,
 	}
-	if err = newAPIRequest(opts, &data); err != nil {
+	if _, err = newAPIRequest(opts, &data); err != nil {
 		return AuthToken{}, err
 	}
 
@@ -53,7 +53,7 @@ func AddAnime(animeID, userID, token string, status LibAnimeStatus) (string, err
 		payload:     payload,
 		token:       token,
 	}
-	if err = newAPIRequest(opts, &respData); err != nil {
+	if _, err = newAPIRequest(opts, &respData); err != nil {
 		return "", err
 	}
 	return respData.Data.LibID, nil
@@ -83,7 +83,7 @@ func SetLibAnimeStatus(libID, token string, status LibAnimeStatus) (LibAnimeStat
 		payload:     payload,
 		token:       token,
 	}
-	if err = newAPIRequest(opts, &respData); err != nil {
+	if _, err = newAPIRequest(opts, &respData); err != nil {
 		return "", err
 	}
 
@@ -97,7 +97,7 @@ func GetProfile(userName string) (ProfileData, error) {
 	}
 
 	var data ProfileData
-	err = newAPIRequest(APIReqOptions{
+	_, err = newAPIRequest(APIReqOptions{
 		method:      apiGet,
 		url:         qurl.ToAPIUrl(),
 		contentType: vndAPIContent,
