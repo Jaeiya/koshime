@@ -58,6 +58,37 @@ func AddAnime(animeID, userID, token string, status LibAnimeStatus) (string, err
 	return respData.Data.LibID, nil
 }
 
+// SetLibAnimeStatus sets the status of a specific anime within
+// the users library and returns its active status.
+func SetLibAnimeStatus(libID, token string, status LibAnimeStatus) (LibAnimeStatus, error) {
+	payload, err := newAnimeStatusPayload(libID, status)
+	if err != nil {
+		return "", err
+	}
+
+	respData := struct {
+		Data struct {
+			Id         string
+			Attributes struct {
+				Status string
+			}
+		}
+	}{}
+
+	err = newAPIRequest(requestOptions{
+		method:      apiPatch,
+		url:         getLibEntryURL(libID),
+		contentType: vndAPIContent,
+		payload:     payload,
+		token:       token,
+	}, &respData)
+	if err != nil {
+		return "", err
+	}
+
+	return LibAnimeStatus(respData.Data.Attributes.Status), nil
+}
+
 func GetProfile(userName string) (ProfileData, error) {
 	qurl, err := getProfileQURL(userName)
 	if err != nil {
