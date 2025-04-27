@@ -11,7 +11,7 @@ import (
 
 var dbFileName = "koshime.db"
 
-type DBProfile struct {
+type Profile struct {
 	ID              string
 	SecondsWatched  int
 	CompletedSeries int
@@ -23,7 +23,7 @@ type DBProfile struct {
 	TokenExpiration int
 }
 
-type DBLibEntry struct {
+type LibraryEntry struct {
 	// Anime ID
 	ID string
 	// Anime User-library ID - Allows looking up User-specific Anime data
@@ -36,17 +36,17 @@ type DBLibEntry struct {
 	Slug      string
 }
 
-type DBData struct {
-	Profile DBProfile
-	Library []DBLibEntry
+type Data struct {
+	Profile Profile
+	Library []LibraryEntry
 }
 
 type Database struct {
 	isLoaded bool
-	data     DBData
+	data     Data
 }
 
-func NewDatabase(data *DBData) (*Database, error) {
+func NewDatabase(data *Data) (*Database, error) {
 	// Initialize empty database
 	if data == nil {
 		db := &Database{}
@@ -84,9 +84,9 @@ func (db Database) Save() error {
 	return nil
 }
 
-func (db Database) GetData() (*DBData, error) {
+func (db Database) GetData() (*Data, error) {
 	if !db.isLoaded {
-		return &DBData{}, fmt.Errorf("database has not been loaded")
+		return &Data{}, fmt.Errorf("database has not been loaded")
 	}
 	return &db.data, nil
 }

@@ -64,7 +64,7 @@ var keys = keyMap{
 	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
 }
 
-func NewUser() (database.DBData, bool) {
+func NewUser() (database.Data, bool) {
 	h := help.New()
 	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(lipgloss.Color("#787897"))
 	h.Styles.FullKey = h.Styles.ShortKey
@@ -84,7 +84,7 @@ func NewUser() (database.DBData, bool) {
 	p := tea.NewProgram(userModel{
 		input:     input,
 		help:      h,
-		db:        database.DBData{},
+		db:        database.Data{},
 		viewState: ConsentView,
 	})
 	m, err := p.Run()
@@ -99,7 +99,7 @@ type userModel struct {
 	help           help.Model
 	input          textinput.Model
 	consentPos     int
-	db             database.DBData
+	db             database.Data
 	password       string
 	isLoading      bool
 	isAborted      bool
