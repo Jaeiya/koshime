@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/Jaeiya/koshime/lib"
+	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 )
@@ -29,26 +29,28 @@ func main() {
 	// 	fmt.Println("    Date:", entry.Date.Format("01/02/2006 3:04 PM"))
 }
 
-func InitDatabase(path string) (*lib.Database, error) {
+func InitDatabase(path string) (*database.Database, error) {
+	var db *database.Database
+	var err error
 	if !utils.FileExists(path) {
 		data, isAborted := ui.NewUser()
 		if isAborted {
-			return &lib.Database{}, errUserAborted
+			return db, errUserAborted
 		}
-		db, err := lib.NewDatabase(&data)
+		db, err = database.NewDatabase(&data)
 		if err != nil {
-			return &lib.Database{}, err
+			return db, err
 		}
 		err = db.Save()
 		if err != nil {
-			return &lib.Database{}, err
+			return db, err
 		}
 	}
 
-	db, err := lib.NewDatabase(nil)
+	db, err = database.NewDatabase(nil)
 	err = db.Load()
 	if err != nil {
-		return &lib.Database{}, err
+		return db, err
 	}
 	return db, nil
 }

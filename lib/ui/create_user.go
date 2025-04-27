@@ -5,7 +5,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Jaeiya/koshime/lib"
+	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/help"
@@ -64,7 +64,7 @@ var keys = keyMap{
 	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
 }
 
-func NewUser() (lib.DBData, bool) {
+func NewUser() (database.DBData, bool) {
 	h := help.New()
 	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(lipgloss.Color("#787897"))
 	h.Styles.FullKey = h.Styles.ShortKey
@@ -84,7 +84,7 @@ func NewUser() (lib.DBData, bool) {
 	p := tea.NewProgram(userModel{
 		input:     input,
 		help:      h,
-		db:        lib.DBData{},
+		db:        database.DBData{},
 		viewState: ConsentView,
 	})
 	m, err := p.Run()
@@ -99,7 +99,7 @@ type userModel struct {
 	help           help.Model
 	input          textinput.Model
 	consentPos     int
-	db             lib.DBData
+	db             database.DBData
 	password       string
 	isLoading      bool
 	isAborted      bool
