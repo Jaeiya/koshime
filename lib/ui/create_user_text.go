@@ -10,14 +10,15 @@ import (
 var defaultTextStyle = lipgloss.NewStyle().PaddingLeft(3)
 
 var userWelcomeTxt = newText(defaultTextStyle.MarginTop(1).MarginBottom(1), `
-;g;Welcome to Koshime!
+;b;Welcome to ;g;Koshime;b;!
 
-;b;I need to grab your profile from Kitsu, which will
-require a ;db;username ;b;and ;db;password;x;.`,
+;b;Before you continue, make sure you already have
+a Kitsu account. If you don't have one, go to
+this link: ;y;https://kitsu.app;x;`,
 )
 
 var userConsentTxt = newText(defaultTextStyle, `
-;w;Would you like to setup ;m;Koshime;x; ;w;in this directory?;x;`,
+;w;Would you like to setup ;g;Koshime;x; ;w;in this directory?;x;`,
 )
 
 var userNameTxt = newText(defaultTextStyle.MarginTop(1).PaddingBottom(1), `
