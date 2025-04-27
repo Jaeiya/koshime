@@ -37,6 +37,37 @@ type ProfileData struct {
 	} `json:"included"`
 }
 
+type Anime struct {
+	ID         string `json:"id"`
+	Attributes struct {
+		Slug   string `json:"slug"`
+		Titles struct {
+			English string `json:"en"`
+			Romaji  string `json:"en_jp"`
+		} `json:"titles"`
+		Synopsis          string   `json:"synopsis"`
+		CanonicalTitle    string   `json:"canonicalTitle"`
+		AbbreviatedTitles []string `json:"abbreviatedTitles"`
+		AvgRating         string   `json:"averageRating"`
+		AgeRating         string   `json:"ageRating"`
+		StartDate         string   `json:"startDate"`
+		EndDate           string   `json:"endDate"`
+	} `json:"attributes"`
+}
+
+type LibraryAnime struct {
+	Data []struct {
+		LibID      string `json:"id"`
+		Attributes struct {
+			Progress     int    `json:"progress"`
+			ProgressedAt string `json:"progressedAt"`
+			StartedAt    string `json:"startedAt"`
+		} `json:"attributes"`
+	} `json:"data"`
+
+	Included []Anime `json:"included"`
+}
+
 func newAddAnimePayload(animeID, userID string, status LibAnimeStatus) ([]byte, error) {
 	payload := struct {
 		Data struct {
