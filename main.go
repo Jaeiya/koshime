@@ -16,6 +16,7 @@ var (
 )
 
 func main() {
+	fmt.Println("")
 	db, err := InitDatabase(dbFilePath)
 	if err != nil {
 		if errors.Is(err, errUserAborted) {
@@ -41,10 +42,7 @@ func InitDatabase(path string) (*database.Database, error) {
 		if err != nil {
 			return db, err
 		}
-		err = db.Save()
-		if err != nil {
-			return db, err
-		}
+		return db, nil
 	}
 
 	db, err = database.NewDatabase(nil)
