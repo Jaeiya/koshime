@@ -245,13 +245,13 @@ func (m userModel) UpdateUserConsent(msg tea.Msg) (userModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keys.Select):
-			if m.consentPos == 0 {
+			hasConsent := m.getConsentSelection()
+			if !hasConsent {
 				m.viewState = AbortView
 				m.isAborted = true
 				return m, tea.Quit
 			}
 			m.viewState = UsernameView
-			m.consentPos = 0 // Reset for future
 			return m, textinput.Blink
 		}
 	}
@@ -278,22 +278,22 @@ func (m userModel) UpdateUserName(msg tea.Msg) (userModel, tea.Cmd) {
 
 			// User chooses to either abort or try again
 			if state.failed {
-				if m.consentPos == 0 {
+				hasConsented := m.getConsentSelection()
+				if !hasConsented {
 					return m.abort()
 				}
 				m.input.Reset()
-				m.consentPos = 0 // reset for future use
 				state.failed = false
 			}
 
 			// User chooses if profile is theirs or not
 			if state.passed {
-				if m.consentPos == 0 {
+				hasConsented := m.getConsentSelection()
+				if !hasConsented {
 					state.passed = false
 					m.input.Reset()
 					return m, nil
 				}
-				m.consentPos = 0 // update for future use
 				m.input.Reset()
 				m.input.EchoMode = textinput.EchoPassword
 				m.viewState = PasswordView
@@ -322,16 +322,6 @@ func (m userModel) UpdateUserName(msg tea.Msg) (userModel, tea.Cmd) {
 	return m, cmd
 }
 
-func getProfile(userName string) func() tea.Msg {
-	return func() tea.Msg {
-		p, err := kitsu.GetProfile(userName)
-		if err != nil {
-			return FetchErrorMsg(err)
-		}
-		return p
-	}
-}
-
 func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 	var cmd tea.Cmd
 	state := &m.state.password
@@ -351,11 +341,11 @@ func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 			}
 
 			if state.failed {
-				if m.consentPos == 0 {
+				hasConsented := m.getConsentSelection()
+				if !hasConsented {
 					return m.abort()
 				}
 				state.failed = false
-				m.consentPos = 0 // reset for future use
 				m.input.Reset()
 			}
 
@@ -405,10 +395,10 @@ func (m userModel) UpdateLibAnime(msg tea.Msg) (userModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		if key.Matches(msg, keys.Select) {
 			if state.failed {
-				if m.consentPos == 0 {
+				hasConsented := m.getConsentSelection()
+				if !hasConsented {
 					return m.abort()
 				}
-				m.consentPos = 0 // reset for later use
 				m.isLoading = true
 				state.failed = false
 				return m, tea.Batch(m.spinner.Tick, m.GetAnimeLibrary(m.db.Profile.ID))
@@ -654,6 +644,16 @@ func (m userModel) getYesNo(state int) (yes string, no string) {
 	return yes, no
 }
 
+func getProfile(userName string) func() tea.Msg {
+	return func() tea.Msg {
+		p, err := kitsu.GetProfile(userName)
+		if err != nil {
+			return FetchErrorMsg(err)
+		}
+		return p
+	}
+}
+
 func (m userModel) getAuthToken() tea.Msg {
 	userData := m.state.profile.Data[0]
 	tokenData, err := kitsu.GetAuthToken(userData.Attributes.Name, m.input.Value())
@@ -676,6 +676,14 @@ func (m userModel) updateConsent(msg tea.Msg) userModel {
 	}
 
 	return m
+}
+
+func (m *userModel) getConsentSelection() bool {
+	hasConsented := m.consentPos == 1
+	if hasConsented {
+		m.consentPos = 0
+	}
+	return hasConsented
 }
 
 func (m userModel) abort() (userModel, tea.Cmd) {
