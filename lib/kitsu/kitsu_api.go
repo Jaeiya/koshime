@@ -31,6 +31,25 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 	return data, nil
 }
 
+func GetLibraryAnime(userID string, status LibAnimeStatus) (LibraryAnime, error) {
+	u, err := GetUserLibAnimeQURL(userID, status)
+	if err != nil {
+		return LibraryAnime{}, err
+	}
+
+	var respData LibraryAnime
+	opt := APIReqOptions{
+		method:      "GET",
+		url:         u.ToAPIUrl(),
+		contentType: vndAPIContent,
+	}
+	if _, err = newAPIRequest(opt, &respData); err != nil {
+		return LibraryAnime{}, err
+	}
+
+	return respData, nil
+}
+
 // AddAnime adds an anime to the users Kitsu library with
 // the specified status. On success, the library ID of
 // the added anime is returned.
