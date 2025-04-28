@@ -349,7 +349,7 @@ func (Fansub) getEpisode(s string, index int, tokens []string) (season string, e
 		}
 	}
 
-	// Catch "S#" for episode
+	// Catch "S#" for season
 	if s[0] == 'S' {
 		if utils.IsNumber(s[1:]) {
 			return s[1:], ""
