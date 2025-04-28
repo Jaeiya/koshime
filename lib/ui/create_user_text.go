@@ -47,6 +47,12 @@ incorrectly.
 
 ;w;Would you like to ;g;try again?;x;`)
 
+var libAnimeFetchFailedTxt = newText(defaultTextStyle.MarginTop(1), `
+;r;Failed to fetch library anime. ;b;This is probably a
+temporary failure.
+
+;w;Would you like to ;g;try again?;x;`)
+
 func newText(style lipgloss.Style, text string) string {
 	return style.Render(utils.ColorText(strings.TrimSpace(text)))
 }

@@ -29,6 +29,7 @@ var (
 
 type (
 	FetchedAuthTokenMsg kitsu.AuthToken
+	FetchedLibAnimeMsg  kitsu.LibraryAnime
 	FetchErrorMsg       error
 )
 
@@ -38,6 +39,7 @@ const (
 	ConsentView = ViewState(iota)
 	UsernameView
 	PasswordView
+	LibraryAnimeView
 	AbortView
 	Completed
 )
@@ -114,6 +116,10 @@ type userModel struct {
 			failed bool
 			passed bool
 		}
+		libAnime struct {
+			failed bool
+			passed bool
+		}
 	}
 	db          database.Data
 	password    string
@@ -152,6 +158,17 @@ func (m userModel) ShortHelp() []key.Binding {
 		return []key.Binding{
 			keys.Submit, keys.Abort,
 		}
+
+	case LibraryAnimeView:
+		state := m.state.libAnime
+		if state.passed {
+			return []key.Binding{
+				keys.Submit, keys.Abort,
+			}
+		}
+		return []key.Binding{
+			keys.Up, keys.Down, keys.Select,
+		}
 	}
 
 	return []key.Binding{}
@@ -164,7 +181,7 @@ func (m userModel) FullHelp() [][]key.Binding {
 			{keys.Up, keys.Down, keys.Select},
 			{keys.Abort, keys.HelpLess},
 		}
-	case UsernameView, PasswordView:
+	case UsernameView, PasswordView, LibraryAnimeView:
 		// All help is already shown with short help
 	}
 	return [][]key.Binding{}
@@ -207,6 +224,8 @@ func (m userModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m, cmd = m.UpdateUserName(msg)
 	case PasswordView:
 		m, cmd = m.UpdatePassword(msg)
+	case LibraryAnimeView:
+		m, cmd = m.UpdateLibAnime(msg)
 	}
 
 	cmds = append(cmds, cmd)
@@ -339,6 +358,13 @@ func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 				m.consentPos = 0 // reset for future use
 				m.input.Reset()
 			}
+
+			if state.passed && !m.isLoading {
+				m.isLoading = true
+				m.loadingText = "Getting Library Anime"
+				m.viewState = LibraryAnimeView
+				return m, tea.Batch(m.spinner.Tick, m.GetAnimeLibrary(m.db.Profile.ID))
+			}
 		}
 
 	case FetchedAuthTokenMsg:
@@ -356,7 +382,7 @@ func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 		m.db.Profile.Username = userData.Attributes.Name
 		m.db.Profile.CompletedSeries = userStats.Attributes.Stats.CompletedAnime
 		m.db.Profile.SecondsWatched = userStats.Attributes.Stats.SecondsWatched
-		return m, tea.Quit
+		return m, nil
 
 	case FetchErrorMsg:
 		m.isLoading = false
@@ -366,6 +392,61 @@ func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 
 	m.input, cmd = m.input.Update(msg)
 	return m, cmd
+}
+
+func (m userModel) UpdateLibAnime(msg tea.Msg) (userModel, tea.Cmd) {
+	state := &m.state.libAnime
+
+	if state.failed {
+		m = m.updateConsent(msg)
+	}
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		if key.Matches(msg, keys.Select) {
+			if state.failed {
+				if m.consentPos == 0 {
+					return m.abort()
+				}
+				m.consentPos = 0 // reset for later use
+				m.isLoading = true
+				state.failed = false
+				return m, tea.Batch(m.spinner.Tick, m.GetAnimeLibrary(m.db.Profile.ID))
+			}
+
+			if state.passed {
+				m.viewState = Completed
+				return m, tea.Quit
+			}
+		}
+
+	case FetchedLibAnimeMsg:
+		var entries []database.LibraryEntry
+		for i, entry := range msg.Data {
+			anime := msg.Included[i]
+			entries = append(entries, database.LibraryEntry{
+				ID:        anime.ID,
+				LibID:     entry.LibID,
+				JPN_Title: anime.Attributes.Titles.Romaji,
+				ENG_Title: anime.Attributes.Titles.English,
+				Synonyms:  anime.Attributes.AltTitles,
+				Episodes:  anime.Attributes.EpCount,
+				Progress:  entry.Attributes.Progress,
+				Slug:      anime.Attributes.Slug,
+			})
+		}
+		m.db.Library = entries
+		state.passed = true
+		m.isLoading = false
+
+	case FetchErrorMsg:
+		// Default to yes
+		m.consentPos = 1
+		m.isLoading = false
+		state.failed = true
+		m.fetchError = msg
+	}
+	return m, nil
 }
 
 func (m userModel) View() (string, *tea.Cursor) {
@@ -378,6 +459,10 @@ func (m userModel) View() (string, *tea.Cursor) {
 		view, c = m.usernameView()
 	case PasswordView:
 		view, c = m.passwordView()
+	case LibraryAnimeView:
+		view = m.libAnimeView()
+	case Completed:
+		view = ""
 	case AbortView:
 		view = m.abortView()
 	}
@@ -507,15 +592,48 @@ func (m userModel) passwordView() (string, *tea.Cursor) {
 	return view, c
 }
 
+func (m userModel) libAnimeView() string {
+	if m.isLoading {
+		return m.loadingView()
+	}
+
+	if m.state.libAnime.failed {
+		s := defaultTextStyle.MarginTop(1).Width(60).Render(m.fetchError.Error())
+		yes, no := m.getYesNo(m.consentPos)
+		view := lipgloss.JoinVertical(
+			lipgloss.Left,
+			s,
+			libAnimeFetchFailedTxt,
+			no,
+			yes,
+		)
+		return view
+	}
+
+	if m.state.libAnime.passed {
+		loadedStr := defaultTextStyle.PaddingBottom(1).
+			Render(
+				utils.ColorText(
+					fmt.Sprintf(
+						";b;Loaded ;w;%d ;b;Anime from your watch list",
+						len(m.db.Library),
+					),
+				),
+			)
+		continueStr := defaultTextStyle.
+			Foreground(ansi.BrightGreen).
+			Render("> Continue")
+		return lipgloss.JoinVertical(lipgloss.Left, loadedStr, continueStr)
+	}
+
+	return ""
+}
+
 func (m userModel) loadingView() string {
 	spinnerStr := spinnerStyle.Render(strings.Repeat(m.spinner.View(), 3))
 	return defaultTextStyle.Render(
 		fmt.Sprintf("%s %s %s", spinnerStr, loadingStyle.Render(m.loadingText), spinnerStr),
 	)
-}
-
-func (m userModel) completedView() string {
-	return ""
 }
 
 func (m userModel) abortView() string {
@@ -564,4 +682,14 @@ func (m userModel) abort() (userModel, tea.Cmd) {
 	m.isAborted = true
 	m.viewState = AbortView
 	return m, tea.Quit
+}
+
+func (m userModel) GetAnimeLibrary(userID string) func() tea.Msg {
+	return func() tea.Msg {
+		data, err := kitsu.GetLibraryAnime(userID, kitsu.LibAnimeWatching)
+		if err != nil {
+			return FetchErrorMsg(err)
+		}
+		return FetchedLibAnimeMsg(data)
+	}
 }
