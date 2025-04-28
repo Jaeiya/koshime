@@ -49,26 +49,6 @@ const (
 // 	}
 // }
 
-func newKitsuRequest(
-	method, url string,
-	ct kitsuContentType,
-	body io.Reader,
-) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return nil, err
-	}
-
-	if body != nil {
-		req.Header.Set("Content-Type", string(ct))
-	}
-	req.Header.Set("User-Agent", clientAgent)
-	req.Header.Set("Accept", "application/vnd.api+json")
-	req.Header.Set("Accept-Encoding", "gzip")
-
-	return req, nil
-}
-
 func newAPIRequest[T any](options APIReqOptions, data *T) (int, error) {
 	var req *http.Request
 	var err error
@@ -124,6 +104,26 @@ func newAPIRequest[T any](options APIReqOptions, data *T) (int, error) {
 	}
 
 	return resp.StatusCode, nil
+}
+
+func newKitsuRequest(
+	method, url string,
+	ct kitsuContentType,
+	body io.Reader,
+) (*http.Request, error) {
+	req, err := http.NewRequest(method, url, body)
+	if err != nil {
+		return nil, err
+	}
+
+	if body != nil {
+		req.Header.Set("Content-Type", string(ct))
+	}
+	req.Header.Set("User-Agent", clientAgent)
+	req.Header.Set("Accept", "application/vnd.api+json")
+	req.Header.Set("Accept-Encoding", "gzip")
+
+	return req, nil
 }
 
 func readResponseBody(resp *http.Response) ([]byte, error) {
