@@ -567,7 +567,7 @@ func (m userModel) passwordView() (string, *tea.Cursor) {
 		return lipgloss.JoinVertical(lipgloss.Left,
 			header,
 			defaultTextStyle.Width(60).PaddingBottom(1).Render(content),
-			defaultTextStyle.Foreground(ansi.BrightGreen).Render("> Hit enter to continue"),
+			defaultTextStyle.Foreground(ansi.BrightGreen).Render("> Continue"),
 		), nil
 	}
 
