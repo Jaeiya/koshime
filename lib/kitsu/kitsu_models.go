@@ -48,6 +48,7 @@ type Anime struct {
 		AltTitles []string `json:"abbreviatedTitles"`
 		AvgRating string   `json:"averageRating"`
 		AgeRating string   `json:"ageRating"`
+		EpCount   int      `json:"episodeCount"`
 		StartDate string   `json:"startDate"`
 		EndDate   string   `json:"endDate"`
 		Slug      string   `json:"slug"`
