@@ -1,19 +1,16 @@
 package lib
 
 import (
-	"compress/gzip"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
 
+	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/antchfx/xmlquery"
 	"github.com/antchfx/xpath"
 )
-
-var rssClient http.Client
 
 type RSSResult struct {
 	Content string
@@ -59,39 +56,15 @@ func (RSS) Get(link string, query string) (RSSResult, error) {
 		return RSSResult{}, err
 	}
 
-	req.Header.Set("User-Agent", "Koshime/0.1")
-	req.Header.Set("Accept", "application/xml")
-	req.Header.Set("Accept-Encoding", "gzip")
-
-	resp, err := rssClient.Do(req)
+	var httpUtil utils.Http
+	resp, err := httpUtil.Do(req, "application/xml", "")
 	if err != nil {
 		return RSSResult{}, err
 	}
 
-	var body []byte
-
-	if resp.Header.Get("Content-Encoding") == "gzip" {
-		reader, err := gzip.NewReader(resp.Body)
-		defer reader.Close()
-		if err != nil {
-			return RSSResult{}, err
-		}
-
-		body, err = io.ReadAll(reader)
-		if err != nil {
-			return RSSResult{}, err
-		}
-
-	} else {
-		body, err = io.ReadAll(resp.Body)
-		if err != nil {
-			return RSSResult{}, err
-		}
-	}
-
 	return RSSResult{
 		Host:    parsedURL.Host,
-		Content: string(body),
+		Content: string(resp.Body),
 	}, nil
 }
 
