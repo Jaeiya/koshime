@@ -48,12 +48,12 @@ const (
 // }
 
 func newAPIRequest[T any](options APIReqOptions, data *T) (int, error) {
-	var req *http.Request
-	var err error
-
 	method := string(options.method)
 	url := string(options.url)
 	contentType := string(options.contentType)
+
+	var req *http.Request
+	var err error
 
 	switch options.method {
 	case apiGet, apiHead, apiDelete:
