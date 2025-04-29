@@ -87,6 +87,7 @@ const (
 type LibAnimeStatus string
 
 const (
+	// This is the "Currently Watching" library filter in Kitsu
 	LibAnimeWatching  = LibAnimeStatus("current")
 	LibAnimeCompleted = LibAnimeStatus("completed")
 	LibAnimeDropped   = LibAnimeStatus("dropped")
@@ -99,17 +100,17 @@ func getLibEntryURL(libID string) APIUrl {
 	return APIUrl(u)
 }
 
-func GetAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (KitsuURL, error) {
+func GetAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (APIUrl, error) {
 	u, err := NewQURL(AnimeURL)
 	if err != nil {
-		return KitsuURL{}, nil
+		return "", nil
 	}
 
 	if maxItems > 200 || maxItems < 1 {
-		return KitsuURL{}, fmt.Errorf("max items should be between 1 and 200; inclusive")
+		return "", fmt.Errorf("max items should be between 1 and 200; inclusive")
 	}
 
-	return u.QueryText(query).
+	u = u.QueryText(query).
 		PageLimit(maxItems).
 		QueryAnimeType(TV).
 		QueryAnimeStatus(status).
@@ -124,70 +125,68 @@ func GetAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (KitsuURL,
 				SynopsisField,
 				AgeRatingField,
 			},
-		), nil
+		)
+
+	return APIUrl(u.Build()), nil
 }
 
 // GetAnimeLibInfoQURL requires at least one user library
 // anime ID and returns all relevant information for
 // that entry.
-func GetAnimeLibInfoQURL(libIDs []string) (KitsuURL, error) {
+func GetAnimeLibInfoQURL(libIDs []string) (APIUrl, error) {
 	u, err := NewQURL(LibraryURL)
 	if err != nil {
-		return KitsuURL{}, nil
+		return "", nil
 	}
 
-	return u.QueryIDs(libIDs).
+	u = u.QueryIDs(libIDs).
 		IncludeCategory([]DataCategory{AnimeCategory}).
 		QueryAnimeFields([]AnimeField{
 			EpisodeCountField,
 			AverageRatingField,
 			SynopsisField,
 		}).
-		PageLimit(len(libIDs)), nil
+		PageLimit(len(libIDs))
+
+	return APIUrl(u.Build()), nil
 }
 
-func GetUserLibAnimeQURL(userID string, status LibAnimeStatus) (KitsuURL, error) {
+func GetUserLibAnimeQURL(userID string, status LibAnimeStatus) (APIUrl, error) {
 	u, err := NewQURL(UserURL)
 	if err != nil {
-		return KitsuURL{}, err
+		return "", err
 	}
 
 	// Point to users library specifically
 	u.url = u.url.JoinPath(userID, "library-entries")
 
-	return u.QueryLibAnimeStatus(status).
-			PageLimit(200).
-			IncludeCategory([]DataCategory{AnimeCategory}),
-		nil
+	u = u.QueryLibAnimeStatus(status).
+		PageLimit(200).
+		IncludeCategory([]DataCategory{AnimeCategory})
+
+	return APIUrl(u.Build()), nil
 }
 
-func getProfileQURL(userName string) (KitsuURL, error) {
+func getProfileQURL(userName string) (APIUrl, error) {
 	u, err := NewQURL(UserURL)
 	if err != nil {
-		return KitsuURL{}, err
+		return "", err
 	}
 
 	u = u.QueryUserName(userName).
 		IncludeCategory([]DataCategory{StatsCategory}).
 		PageLimit(1)
 
-	return u, nil
+	return APIUrl(u.Build()), nil
 }
 
 type KitsuURL struct {
-	url *url.URL
-}
-
-func (k KitsuURL) String() string {
-	return k.url.String()
-}
-
-func (k KitsuURL) ToAPIUrl() APIUrl {
-	return APIUrl(k.url.String())
+	url   *url.URL
+	query url.Values
 }
 
 // NewQURL returns a new Kitsu Query URL.
-func NewQURL(uType URLType) (KitsuURL, error) {
+func NewQURL(uType URLType) (*KitsuURL, error) {
 	var u *url.URL
 	var err error
 
@@ -205,79 +204,61 @@ func NewQURL(uType URLType) (KitsuURL, error) {
 		if err != nil {
 			e = err
 		}
-		return KitsuURL{}, e
+		return &KitsuURL{}, e
 	}
 
-	return KitsuURL{u}, err
+	return &KitsuURL{u, u.Query()}, err
 }
 
-func (k KitsuURL) QueryText(text string) KitsuURL {
-	q := k.url.Query()
-	q.Add("filter[text]", text)
-	k.url.RawQuery = q.Encode()
+func (k *KitsuURL) QueryText(text string) *KitsuURL {
+	k.query.Add("filter[text]", text)
 	return k
 }
 
-func (k KitsuURL) PageLimit(limit int) KitsuURL {
-	q := k.url.Query()
-	q.Add("page[limit]", strconv.Itoa(limit))
-	k.url.RawQuery = q.Encode()
+func (k *KitsuURL) PageLimit(limit int) *KitsuURL {
+	k.query.Add("page[limit]", strconv.Itoa(limit))
 	return k
 }
 
-func (k KitsuURL) QueryUserName(name string) KitsuURL {
-	q := k.url.Query()
-	q.Add("filter[name]", name)
-	k.url.RawQuery = q.Encode()
+func (k *KitsuURL) QueryUserName(name string) *KitsuURL {
+	k.query.Add("filter[name]", name)
 	return k
 }
 
-func (k KitsuURL) QueryUserID(id string) KitsuURL {
-	q := k.url.Query()
-	q.Add("filter[user_id]", id)
-	k.url.RawQuery = q.Encode()
+func (k *KitsuURL) QueryUserID(id string) *KitsuURL {
+	k.query.Add("filter[user_id]", id)
 	return k
 }
 
-func (k KitsuURL) QueryIDs(ids []string) KitsuURL {
-	q := k.url.Query()
-	q.Add("filter[id]", strings.Join(ids, ","))
-	k.url.RawQuery = q.Encode()
+func (k *KitsuURL) QueryIDs(ids []string) *KitsuURL {
+	k.query.Add("filter[id]", strings.Join(ids, ","))
 	return k
 }
 
-func (k KitsuURL) QueryAnimeType(aType AnimeType) KitsuURL {
-	q := k.url.Query()
-	q.Add("filter[subtype]", string(aType))
-	k.url.RawQuery = q.Encode()
+func (k *KitsuURL) QueryAnimeType(aType AnimeType) *KitsuURL {
+	k.query.Add("filter[subtype]", string(aType))
 	return k
 }
 
-func (k KitsuURL) QueryAnimeStatus(status AnimeStatus) KitsuURL {
+func (k *KitsuURL) QueryAnimeStatus(status AnimeStatus) *KitsuURL {
 	return k.queryStatus(string(status))
 }
 
-func (k KitsuURL) QueryLibAnimeStatus(status LibAnimeStatus) KitsuURL {
+func (k *KitsuURL) QueryLibAnimeStatus(status LibAnimeStatus) *KitsuURL {
 	return k.queryStatus(string(status))
 }
 
-func (k KitsuURL) queryStatus(status string) KitsuURL {
-	q := k.url.Query()
-	q.Add("filter[status]", string(status))
-	k.url.RawQuery = q.Encode()
+func (k *KitsuURL) queryStatus(status string) *KitsuURL {
+	k.query.Add("filter[status]", string(status))
 	return k
 }
 
-func (k KitsuURL) QueryMediaType(mType string) KitsuURL {
-	q := k.url.Query()
-	q.Add("filter[kind]", string(mType))
-	k.url.RawQuery = q.Encode()
+func (k *KitsuURL) QueryMediaType(mType string) *KitsuURL {
+	k.query.Add("filter[kind]", string(mType))
 	return k
 }
 
-func (k KitsuURL) IncludeCategory(cats []DataCategory) KitsuURL {
-	q := k.url.Query()
-
+func (k *KitsuURL) IncludeCategory(cats []DataCategory) *KitsuURL {
 	var sb strings.Builder
 	sb.Grow(5*len(cats) + 1)
 
@@ -288,14 +269,11 @@ func (k KitsuURL) IncludeCategory(cats []DataCategory) KitsuURL {
 		sb.WriteString(string(c))
 	}
 
-	q.Add("include", sb.String())
-	k.url.RawQuery = q.Encode()
+	k.query.Add("include", sb.String())
 	return k
 }
 
-func (k KitsuURL) QueryAnimeFields(fields []AnimeField) KitsuURL {
-	q := k.url.Query()
-
+func (k *KitsuURL) QueryAnimeFields(fields []AnimeField) *KitsuURL {
 	var sb strings.Builder
 	sb.Grow(13 * len(fields))
 
@@ -306,7 +284,11 @@ func (k KitsuURL) QueryAnimeFields(fields []AnimeField) KitsuURL {
 		sb.WriteString(string(f))
 	}
 
-	q.Add("fields[anime]", sb.String())
-	k.url.RawQuery = q.Encode()
+	k.query.Add("fields[anime]", sb.String())
 	return k
+}
+
+func (k *KitsuURL) Build() string {
+	k.url.RawQuery = k.query.Encode()
+	return k.url.String()
 }

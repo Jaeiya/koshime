@@ -32,7 +32,7 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 }
 
 func GetLibraryAnime(userID string, status LibAnimeStatus) (LibraryAnime, error) {
-	u, err := GetUserLibAnimeQURL(userID, status)
+	qurl, err := GetUserLibAnimeQURL(userID, status)
 	if err != nil {
 		return LibraryAnime{}, err
 	}
@@ -40,7 +40,7 @@ func GetLibraryAnime(userID string, status LibAnimeStatus) (LibraryAnime, error)
 	var respData LibraryAnime
 	opt := APIReqOptions{
 		method:      apiGet,
-		url:         u.ToAPIUrl(),
+		url:         qurl,
 		contentType: vndAPIContent,
 	}
 	if _, err = newAPIRequest(opt, &respData); err != nil {
@@ -113,10 +113,9 @@ func SetLibAnimeStatus(libID, token string, status LibAnimeStatus) (LibAnimeStat
 // library. On success, it should return a 204 HTTP
 // status code.
 func DeleteLibAnime(libID, token string) (int, error) {
-	u := getLibEntryURL(libID)
 	opts := APIReqOptions{
 		method:      apiDelete,
-		url:         u,
+		url:         getLibEntryURL(libID),
 		contentType: vndAPIContent,
 		token:       token,
 	}
@@ -137,7 +136,7 @@ func GetProfile(userName string) (ProfileData, error) {
 	var data ProfileData
 	_, err = newAPIRequest(APIReqOptions{
 		method:      apiGet,
-		url:         qurl.ToAPIUrl(),
+		url:         qurl,
 		contentType: vndAPIContent,
 	}, &data)
 	if err != nil {
