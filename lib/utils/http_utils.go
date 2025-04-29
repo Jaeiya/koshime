@@ -59,26 +59,18 @@ func (h Http) Do(req *http.Request, accept, contentType string) (HttpResponse, e
 }
 
 func (Http) ReadResponseBody(resp *http.Response) ([]byte, error) {
-	var reader io.ReadCloser
-	var err error
+	defer resp.Body.Close()
+
+	reader := io.Reader(resp.Body)
+
 	if resp.Header.Get("Content-Encoding") == "gzip" {
-		reader, err = gzip.NewReader(resp.Body)
+		gzReader, err := gzip.NewReader(resp.Body)
 		if err != nil {
-			resp.Body.Close()
-			return []byte{}, err
+			return nil, err
 		}
-		defer func() {
-			reader.Close()
-			resp.Body.Close()
-		}()
-	} else {
-		reader = resp.Body
-		defer reader.Close()
+		defer gzReader.Close()
+		reader = gzReader
 	}
 
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		return []byte{}, err
-	}
-	return data, nil
+	return io.ReadAll(reader)
 }
