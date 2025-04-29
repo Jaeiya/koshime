@@ -54,7 +54,7 @@ func (RSS) Get(link string, query string) (RSSResult, error) {
 	}
 
 	query = url.QueryEscape(query)
-	req, err := http.NewRequest("GET", strings.ReplaceAll(link, "$q", query), nil)
+	req, err := http.NewRequest("GET", strings.Replace(link, "$q", query, 1), nil)
 	if err != nil {
 		return RSSResult{}, err
 	}
