@@ -39,7 +39,7 @@ func GetLibraryAnime(userID string, status LibAnimeStatus) (LibraryAnime, error)
 
 	var respData LibraryAnime
 	opt := APIReqOptions{
-		method:      "GET",
+		method:      apiGet,
 		url:         u.ToAPIUrl(),
 		contentType: vndAPIContent,
 	}
