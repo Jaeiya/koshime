@@ -100,8 +100,8 @@ func getLibEntryURL(libID string) APIUrl {
 	return APIUrl(u)
 }
 
-func GetAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (APIUrl, error) {
-	u, err := NewQURL(AnimeURL)
+func getAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (APIUrl, error) {
+	u, err := newQURL(AnimeURL)
 	if err != nil {
 		return "", nil
 	}
@@ -130,11 +130,11 @@ func GetAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (APIUrl, e
 	return APIUrl(u.Build()), nil
 }
 
-// GetAnimeLibInfoQURL requires at least one user library
+// getAnimeLibInfoQURL requires at least one user library
 // anime ID and returns all relevant information for
 // that entry.
-func GetAnimeLibInfoQURL(libIDs []string) (APIUrl, error) {
-	u, err := NewQURL(LibraryURL)
+func getAnimeLibInfoQURL(libIDs []string) (APIUrl, error) {
+	u, err := newQURL(LibraryURL)
 	if err != nil {
 		return "", nil
 	}
@@ -151,8 +151,8 @@ func GetAnimeLibInfoQURL(libIDs []string) (APIUrl, error) {
 	return APIUrl(u.Build()), nil
 }
 
-func GetUserLibAnimeQURL(userID string, status LibAnimeStatus) (APIUrl, error) {
-	u, err := NewQURL(UserURL)
+func getUserLibAnimeQURL(userID string, status LibAnimeStatus) (APIUrl, error) {
+	u, err := newQURL(UserURL)
 	if err != nil {
 		return "", err
 	}
@@ -168,7 +168,7 @@ func GetUserLibAnimeQURL(userID string, status LibAnimeStatus) (APIUrl, error) {
 }
 
 func getProfileQURL(userName string) (APIUrl, error) {
-	u, err := NewQURL(UserURL)
+	u, err := newQURL(UserURL)
 	if err != nil {
 		return "", err
 	}
@@ -185,8 +185,8 @@ type KitsuURL struct {
 	query url.Values
 }
 
-// NewQURL returns a new Kitsu Query URL.
-func NewQURL(uType URLType) (*KitsuURL, error) {
+// newQURL returns a new Kitsu Query URL.
+func newQURL(uType URLType) (*KitsuURL, error) {
 	var u *url.URL
 	var err error
 

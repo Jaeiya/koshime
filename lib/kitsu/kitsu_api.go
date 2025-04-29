@@ -32,7 +32,7 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 }
 
 func GetLibraryAnime(userID string, status LibAnimeStatus) (LibraryAnime, error) {
-	qurl, err := GetUserLibAnimeQURL(userID, status)
+	qurl, err := getUserLibAnimeQURL(userID, status)
 	if err != nil {
 		return LibraryAnime{}, err
 	}
