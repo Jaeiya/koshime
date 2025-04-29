@@ -74,7 +74,7 @@ func newAPIRequest[T any](options APIReqOptions, data *T) (int, error) {
 	}
 
 	var httpUtil utils.Http
-	resp, err := httpUtil.Do(req, "application/vnd.api+json", contentType)
+	resp, err := httpUtil.Do(req, string(vndAPIContent), contentType)
 	if err != nil {
 		return -1, err
 	}
