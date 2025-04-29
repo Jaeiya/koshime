@@ -2,15 +2,13 @@ package kitsu
 
 import (
 	"bytes"
-	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"io"
 	"net/http"
 	"strings"
-)
 
-const clientAgent = "Koshime/0.1"
+	"github.com/Jaeiya/koshime/lib/utils"
+)
 
 var client = &http.Client{}
 
@@ -53,21 +51,15 @@ func newAPIRequest[T any](options APIReqOptions, data *T) (int, error) {
 	var req *http.Request
 	var err error
 
+	method := string(options.method)
+	url := string(options.url)
+	contentType := string(options.contentType)
+
 	switch options.method {
 	case apiGet, apiHead, apiDelete:
-		req, err = newKitsuRequest(
-			string(options.method),
-			string(options.url),
-			options.contentType,
-			nil,
-		)
+		req, err = http.NewRequest(method, url, nil)
 	case apiPost, apiPatch:
-		req, err = newKitsuRequest(
-			string(options.method),
-			string(options.url),
-			options.contentType,
-			bytes.NewBuffer(options.payload),
-		)
+		req, err = http.NewRequest(method, url, bytes.NewBuffer(options.payload))
 	}
 	if err != nil {
 		return -1, err
@@ -81,23 +73,19 @@ func newAPIRequest[T any](options APIReqOptions, data *T) (int, error) {
 		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", options.token))
 	}
 
-	resp, err := client.Do(req)
+	var httpUtil utils.Http
+	resp, err := httpUtil.Do(req, "application/vnd.api+json", contentType)
 	if err != nil {
 		return -1, err
 	}
 
-	body, err := readResponseBody(resp)
-	if err != nil {
-		return resp.StatusCode, err
-	}
-
-	err = validateResponse(resp, string(body))
+	err = validateResponse(resp)
 	if err != nil {
 		return resp.StatusCode, err
 	}
 
 	if data != nil {
-		err = json.NewDecoder(bytes.NewReader(body)).Decode(data)
+		err = json.NewDecoder(bytes.NewReader(resp.Body)).Decode(data)
 		if err != nil {
 			return resp.StatusCode, err
 		}
@@ -106,54 +94,11 @@ func newAPIRequest[T any](options APIReqOptions, data *T) (int, error) {
 	return resp.StatusCode, nil
 }
 
-func newKitsuRequest(
-	method, url string,
-	ct kitsuContentType,
-	body io.Reader,
-) (*http.Request, error) {
-	req, err := http.NewRequest(method, url, body)
-	if err != nil {
-		return nil, err
-	}
+func validateResponse(resp utils.HttpResponse) error {
+	body := string(resp.Body)
 
-	if body != nil {
-		req.Header.Set("Content-Type", string(ct))
-	}
-	req.Header.Set("User-Agent", clientAgent)
-	req.Header.Set("Accept", "application/vnd.api+json")
-	req.Header.Set("Accept-Encoding", "gzip")
-
-	return req, nil
-}
-
-func readResponseBody(resp *http.Response) ([]byte, error) {
-	var reader io.ReadCloser
-	var err error
-	if resp.Header.Get("Content-Encoding") == "gzip" {
-		reader, err = gzip.NewReader(resp.Body)
-		if err != nil {
-			resp.Body.Close()
-			return []byte{}, err
-		}
-		defer func() {
-			reader.Close()
-			resp.Body.Close()
-		}()
-	} else {
-		reader = resp.Body
-		defer reader.Close()
-	}
-
-	data, err := io.ReadAll(reader)
-	if err != nil {
-		return []byte{}, err
-	}
-	return data, nil
-}
-
-func validateResponse(resp *http.Response, body string) error {
 	if resp.StatusCode >= 300 && resp.StatusCode < 400 {
-		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, http.StatusText(resp.StatusCode))
+		return fmt.Errorf("HTTP %d: %s", resp.StatusCode, resp.StatusText)
 	}
 
 	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
@@ -163,7 +108,7 @@ func validateResponse(resp *http.Response, body string) error {
 		return fmt.Errorf(
 			"ClientError::HTTP %d: %s\n%s",
 			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
+			resp.StatusText,
 			body,
 		)
 	}
@@ -172,7 +117,7 @@ func validateResponse(resp *http.Response, body string) error {
 		return fmt.Errorf(
 			"ServerError::HTTP %d: %s",
 			resp.StatusCode,
-			http.StatusText(resp.StatusCode),
+			resp.StatusText,
 		)
 	}
 	return nil
