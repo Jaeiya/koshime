@@ -606,10 +606,10 @@ func (m userModel) abort() (userModel, tea.Cmd) {
 func (m userModel) getYesNo(state int) (yes string, no string) {
 	if state == 0 {
 		no = selectNoStyle.Render("> No")
-		yes = textStyle.Render(" Yes")
+		yes = textStyle.Render("  Yes")
 	} else {
 		yes = selectYesStyle.Render("> Yes")
-		no = textStyle.MarginTop(1).Render(" No")
+		no = textStyle.MarginTop(1).Render("  No")
 	}
 	return yes, no
 }
