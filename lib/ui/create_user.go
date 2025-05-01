@@ -17,19 +17,6 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-var (
-	style            = lipgloss.NewStyle()
-	inputPromptStyle = style.Foreground(ansi.BrightGreen)
-	inputTextStyle   = style.Foreground(ansi.BrightWhite)
-	helpDescStyle    = style.Foreground(lipgloss.Color("#56566B"))
-	helpKeyStyle     = style.Foreground(lipgloss.Color("#787897"))
-	loadingStyle     = style.Foreground(ansi.BrightBlue)
-	spinnerStyle     = style.Foreground(ansi.BrightGreen)
-
-	selectedYes = defaultTextStyle.Foreground(ansi.BrightGreen).Render("> Yes")
-	selectedNo  = defaultTextStyle.MarginTop(1).Foreground(ansi.BrightMagenta).Render("> No")
-)
-
 type (
 	FetchedAuthTokenMsg = kitsu.AuthToken
 	FetchProfileMsg     = database.Profile
@@ -210,7 +197,7 @@ func (m userModel) View() (string, *tea.Cursor) {
 		c.Y -= 1
 	}
 
-	helpView := defaultTextStyle.Height(3).PaddingTop(1).Render(m.help.View(m))
+	helpView := textStyle.Height(3).PaddingTop(1).Render(m.help.View(m))
 	return lipgloss.JoinVertical(lipgloss.Left, view, helpView), c
 }
 
@@ -469,7 +456,7 @@ func (m userModel) usernameView() (string, *tea.Cursor) {
 			panic(err)
 		}
 
-		profileStr := defaultTextStyle.PaddingLeft(5).MarginTop(1).
+		profileStr := textStyle.PaddingLeft(5).MarginTop(1).
 			Width(60).
 			Render(utils.ColorText(strings.Trim((fmt.Sprintf(`
     ;w;Name:;x; ;g;%s;x;
@@ -530,7 +517,7 @@ func (m userModel) passwordView() (string, *tea.Cursor) {
 			m.state.userData.Profile.AccessToken,
 			m.state.userData.Profile.RefreshToken,
 		))
-		header := defaultTextStyle.Align(lipgloss.Center).
+		header := textStyle.Align(lipgloss.Center).
 			Width(lipgloss.Width(content)).
 			Foreground(ansi.BrightBlue).
 			PaddingBottom(1).
@@ -538,8 +525,8 @@ func (m userModel) passwordView() (string, *tea.Cursor) {
 
 		return lipgloss.JoinVertical(lipgloss.Left,
 			header,
-			defaultTextStyle.Width(60).PaddingBottom(1).Render(content),
-			defaultTextStyle.Foreground(ansi.BrightGreen).Render("> Continue"),
+			textStyle.Width(60).PaddingBottom(1).Render(content),
+			textStyle.Foreground(ansi.BrightGreen).Render("> Continue"),
 		), nil
 	}
 
@@ -560,7 +547,7 @@ func (m userModel) libAnimeView() string {
 	}
 
 	if m.state.libAnime.failed {
-		s := defaultTextStyle.MarginTop(1).Width(60).Render(m.fetchError.Error())
+		s := textStyle.MarginTop(1).Width(60).Render(m.fetchError.Error())
 		yes, no := m.getYesNo(m.state.consentPos)
 		view := lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -573,7 +560,7 @@ func (m userModel) libAnimeView() string {
 	}
 
 	if m.state.libAnime.passed {
-		loadedStr := defaultTextStyle.PaddingBottom(1).
+		loadedStr := textStyle.PaddingBottom(1).
 			Render(
 				utils.ColorText(
 					fmt.Sprintf(
@@ -582,7 +569,7 @@ func (m userModel) libAnimeView() string {
 					),
 				),
 			)
-		continueStr := defaultTextStyle.
+		continueStr := textStyle.
 			Foreground(ansi.BrightGreen).
 			Render("> Continue")
 		return lipgloss.JoinVertical(lipgloss.Left, loadedStr, continueStr)
@@ -593,7 +580,7 @@ func (m userModel) libAnimeView() string {
 
 func (m userModel) loadingView() string {
 	spinnerStr := spinnerStyle.Render(strings.Repeat(m.spinner.View(), 3))
-	return defaultTextStyle.Render(
+	return textStyle.Render(
 		fmt.Sprintf(
 			"%s %s %s",
 			spinnerStr,
@@ -618,11 +605,11 @@ func (m userModel) abort() (userModel, tea.Cmd) {
 
 func (m userModel) getYesNo(state int) (yes string, no string) {
 	if state == 0 {
-		no = selectedNo
-		yes = defaultTextStyle.Render(" Yes")
+		no = selectNoStyle.Render("> No")
+		yes = textStyle.Render(" Yes")
 	} else {
-		yes = selectedYes
-		no = defaultTextStyle.MarginTop(1).Render(" No")
+		yes = selectYesStyle.Render("> Yes")
+		no = textStyle.MarginTop(1).Render(" No")
 	}
 	return yes, no
 }
