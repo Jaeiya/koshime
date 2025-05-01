@@ -167,8 +167,6 @@ func (m userModel) FullHelp() [][]key.Binding {
 			{keys.Up, keys.Down, keys.Select},
 			{keys.Abort, keys.HelpLess},
 		}
-	case UsernameView, PasswordView, LibraryAnimeView:
-		// All help is already shown with short help
 	}
 	return [][]key.Binding{}
 }
