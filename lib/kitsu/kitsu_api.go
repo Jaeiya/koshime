@@ -2,7 +2,9 @@ package kitsu
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/Jaeiya/koshime/lib/database"
 )
@@ -144,23 +146,43 @@ func DeleteLibAnime(libID, token string) (int, error) {
 	return status, nil
 }
 
-func GetProfile(userName string) (ProfileData, error) {
+func GetProfile(userName string) (database.Profile, error) {
 	qurl, err := getProfileQURL(userName)
 	if err != nil {
-		return ProfileData{}, err
+		return database.Profile{}, err
 	}
 
-	var data ProfileData
+	var respData ProfileData
 	_, err = newAPIRequest(APIReqOptions{
 		method:      apiGet,
 		url:         qurl,
 		contentType: vndAPIContent,
-	}, &data)
+	}, &respData)
 	if err != nil {
-		return ProfileData{}, err
+		return database.Profile{}, err
 	}
 
-	return data, nil
+	if len(respData.Data) == 0 {
+		return database.Profile{}, fmt.Errorf("profile not found")
+	}
+
+	profileData := respData.Data[0]
+	profileStats := respData.Included[0]
+
+	profile := database.Profile{
+		ID:              profileData.ID,
+		Username:        profileData.Attributes.Name,
+		About:           profileData.Attributes.About,
+		Birthday:        profileData.Attributes.Birthday,
+		Location:        profileData.Attributes.Location,
+		Gender:          profileData.Attributes.Gender,
+		CreatedAt:       profileData.Attributes.CreatedAt,
+		SecondsWatched:  profileStats.Attributes.Stats.SecondsWatched,
+		CompletedSeries: profileStats.Attributes.Stats.CompletedAnime,
+		LastUpdateSec:   time.Now().Unix(),
+	}
+
+	return profile, nil
 }
 
 func GetProfileLink(userName string) string {

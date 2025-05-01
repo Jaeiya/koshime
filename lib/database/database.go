@@ -15,12 +15,17 @@ type Profile struct {
 	ID              string
 	SecondsWatched  int
 	CompletedSeries int
-	// Last time profile was updated
-	LastUpdate      int
 	Username        string
+	About           string
+	Location        string
+	Birthday        string
+	Gender          string
+	CreatedAt       string
 	AccessToken     string
 	RefreshToken    string
 	TokenExpiration int
+	// Last time the profile was retrieved
+	LastUpdateSec int64
 }
 
 type LibraryEntry struct {
