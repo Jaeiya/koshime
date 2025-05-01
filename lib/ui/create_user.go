@@ -18,10 +18,13 @@ import (
 )
 
 var (
-	questionStyle = defaultTextStyle.Foreground(ansi.BrightWhite)
-	selectedStyle = defaultTextStyle.Foreground(ansi.BrightMagenta)
-	loadingStyle  = lipgloss.NewStyle().Foreground(ansi.BrightBlue)
-	spinnerStyle  = lipgloss.NewStyle().Foreground(ansi.BrightGreen)
+	style            = lipgloss.NewStyle()
+	inputPromptStyle = style.Foreground(ansi.BrightGreen)
+	inputTextStyle   = style.Foreground(ansi.BrightWhite)
+	helpDescStyle    = style.Foreground(lipgloss.Color("#56566B"))
+	helpKeyStyle     = style.Foreground(lipgloss.Color("#787897"))
+	loadingStyle     = style.Foreground(ansi.BrightBlue)
+	spinnerStyle     = style.Foreground(ansi.BrightGreen)
 
 	selectedYes = defaultTextStyle.Foreground(ansi.BrightGreen).Render("> Yes")
 	selectedNo  = defaultTextStyle.MarginTop(1).Foreground(ansi.BrightMagenta).Render("> No")
@@ -67,10 +70,10 @@ var keys = keyMap{
 
 func NewUser() (database.Data, bool) {
 	h := help.New()
-	h.Styles.ShortKey = h.Styles.ShortKey.Foreground(lipgloss.Color("#787897"))
+	h.Styles.ShortKey = helpKeyStyle
 	h.Styles.FullKey = h.Styles.ShortKey
 
-	h.Styles.ShortDesc = h.Styles.ShortDesc.Foreground(lipgloss.Color("#56566B"))
+	h.Styles.ShortDesc = helpDescStyle
 	h.Styles.FullDesc = h.Styles.ShortDesc
 
 	input := textinput.New()
@@ -79,8 +82,8 @@ func NewUser() (database.Data, bool) {
 	input.CharLimit = 30
 	input.Prompt = "   > "
 	input.EchoCharacter = '•'
-	input.Styles.Focused.Prompt = lipgloss.NewStyle().Foreground(ansi.BrightGreen)
-	input.Styles.Focused.Text = lipgloss.NewStyle().Foreground(ansi.BrightWhite)
+	input.Styles.Focused.Prompt = inputPromptStyle
+	input.Styles.Focused.Text = inputTextStyle
 
 	s := spinner.New(spinner.WithSpinner(spinner.Spinner{
 		Frames: []string{"⠋", "⠙", "⠚", "⠞", "⠖", "⠦", "⠴", "⠲", "⠳", "⠓"},
