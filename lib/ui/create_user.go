@@ -246,11 +246,8 @@ func (m userModel) UpdateUserConsent(msg tea.Msg) (userModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keys.Select):
-			hasConsented := m.getConsentSelection()
-			if !hasConsented {
-				m.state.view = AbortView
-				m.state.isAborted = true
-				return m, tea.Quit
+			if !m.isConsenting() {
+				return m.abort()
 			}
 			m.state.view = UsernameView
 			return m, textinput.Blink
@@ -279,8 +276,7 @@ func (m userModel) UpdateUserName(msg tea.Msg) (userModel, tea.Cmd) {
 
 			// User chooses to either abort or try again
 			if state.failed {
-				hasConsented := m.getConsentSelection()
-				if !hasConsented {
+				if !m.isConsenting() {
 					return m.abort()
 				}
 				m.input.Reset()
@@ -289,8 +285,7 @@ func (m userModel) UpdateUserName(msg tea.Msg) (userModel, tea.Cmd) {
 
 			// User chooses if profile is theirs or not
 			if state.passed {
-				hasConsented := m.getConsentSelection()
-				if !hasConsented {
+				if !m.isConsenting() {
 					state.passed = false
 					m.input.Reset()
 					return m, nil
@@ -344,8 +339,7 @@ func (m userModel) UpdatePassword(msg tea.Msg) (userModel, tea.Cmd) {
 			}
 
 			if state.failed {
-				hasConsented := m.getConsentSelection()
-				if !hasConsented {
+				if !m.isConsenting() {
 					return m.abort()
 				}
 				state.failed = false
@@ -390,8 +384,7 @@ func (m userModel) UpdateLibAnime(msg tea.Msg) (userModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		if key.Matches(msg, keys.Select) {
 			if state.failed {
-				hasConsented := m.getConsentSelection()
-				if !hasConsented {
+				if !m.isConsenting() {
 					return m.abort()
 				}
 				m.state.loading.active = true
@@ -614,7 +607,7 @@ func (m userModel) getYesNo(state int) (yes string, no string) {
 	return yes, no
 }
 
-func (m *userModel) getConsentSelection() bool {
+func (m *userModel) isConsenting() bool {
 	hasConsented := m.state.consentPos == 1
 	if hasConsented {
 		m.state.consentPos = 0
