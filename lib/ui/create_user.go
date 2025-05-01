@@ -136,42 +136,25 @@ type userModel struct {
 func (m userModel) ShortHelp() []key.Binding {
 	switch m.state.view {
 	case ConsentView:
-		return []key.Binding{
-			keys.Up, keys.Down, keys.Select, keys.HelpMore,
-		}
+		return []key.Binding{keys.Up, keys.Down, keys.Select, keys.HelpMore}
 
 	case UsernameView:
-		state := m.state.username
-		if state.failed || state.passed {
-			return []key.Binding{
-				keys.Up, keys.Down, keys.Select,
-			}
+		if m.state.username.failed || m.state.username.passed {
+			return []key.Binding{keys.Up, keys.Down, keys.Select}
 		}
-		return []key.Binding{
-			keys.Submit, keys.Abort,
-		}
+		return []key.Binding{keys.Submit, keys.Abort}
 
 	case PasswordView:
-		state := m.state.password
-		if state.failed {
-			return []key.Binding{
-				keys.Up, keys.Down, keys.Select,
-			}
+		if m.state.password.failed {
+			return []key.Binding{keys.Up, keys.Down, keys.Select}
 		}
-		return []key.Binding{
-			keys.Submit, keys.Abort,
-		}
+		return []key.Binding{keys.Submit, keys.Abort}
 
 	case LibraryAnimeView:
-		state := m.state.libAnime
-		if state.passed {
-			return []key.Binding{
-				keys.Submit, keys.Abort,
-			}
+		if m.state.libAnime.passed {
+			return []key.Binding{keys.Submit, keys.Abort}
 		}
-		return []key.Binding{
-			keys.Up, keys.Down, keys.Select,
-		}
+		return []key.Binding{keys.Up, keys.Down, keys.Select}
 	}
 
 	return []key.Binding{}
