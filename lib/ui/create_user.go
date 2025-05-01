@@ -29,7 +29,7 @@ var (
 
 type (
 	FetchedAuthTokenMsg kitsu.AuthToken
-	FetchedLibAnimeMsg  kitsu.LibraryAnime
+	FetchedLibAnimeMsg  []database.LibraryEntry
 	FetchErrorMsg       error
 )
 
@@ -411,21 +411,7 @@ func (m userModel) UpdateLibAnime(msg tea.Msg) (userModel, tea.Cmd) {
 		}
 
 	case FetchedLibAnimeMsg:
-		var entries []database.LibraryEntry
-		for i, entry := range msg.Data {
-			anime := msg.Included[i]
-			entries = append(entries, database.LibraryEntry{
-				ID:        anime.ID,
-				LibID:     entry.LibID,
-				JPN_Title: anime.Attributes.Titles.Romaji,
-				ENG_Title: anime.Attributes.Titles.English,
-				Synonyms:  anime.Attributes.AltTitles,
-				Episodes:  anime.Attributes.EpCount,
-				Progress:  entry.Attributes.Progress,
-				Slug:      anime.Attributes.Slug,
-			})
-		}
-		m.db.Library = entries
+		m.db.Library = msg
 		state.passed = true
 		m.isLoading = false
 

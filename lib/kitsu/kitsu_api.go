@@ -3,6 +3,8 @@ package kitsu
 import (
 	"encoding/json"
 	"net/url"
+
+	"github.com/Jaeiya/koshime/lib/database"
 )
 
 func GetAuthToken(userName, password string) (AuthToken, error) {
@@ -31,10 +33,10 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 	return data, nil
 }
 
-func GetLibraryAnime(userID string, status LibAnimeStatus) (LibraryAnime, error) {
+func GetLibraryAnime(userID string, status LibAnimeStatus) ([]database.LibraryEntry, error) {
 	qurl, err := getUserLibAnimeQURL(userID, status)
 	if err != nil {
-		return LibraryAnime{}, err
+		return nil, err
 	}
 
 	var respData LibraryAnime
@@ -44,10 +46,25 @@ func GetLibraryAnime(userID string, status LibAnimeStatus) (LibraryAnime, error)
 		contentType: vndAPIContent,
 	}
 	if _, err = newAPIRequest(opt, &respData); err != nil {
-		return LibraryAnime{}, err
+		return nil, err
 	}
 
-	return respData, nil
+	entries := make([]database.LibraryEntry, len(respData.Data))
+	for i, item := range respData.Data {
+		anime := respData.Included[i]
+		entries[i] = database.LibraryEntry{
+			ID:        respData.Included[i].ID,
+			LibID:     item.LibID,
+			JPN_Title: anime.Attributes.Titles.Romaji,
+			ENG_Title: anime.Attributes.Titles.English,
+			Synonyms:  anime.Attributes.AltTitles,
+			Episodes:  anime.Attributes.EpCount,
+			Progress:  item.Attributes.Progress,
+			Slug:      anime.Attributes.Slug,
+		}
+	}
+
+	return entries, nil
 }
 
 // AddAnime adds an anime to the users Kitsu library with
