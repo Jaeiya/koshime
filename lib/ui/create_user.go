@@ -133,44 +133,6 @@ type userModel struct {
 	state      state
 }
 
-func (m userModel) ShortHelp() []key.Binding {
-	switch m.state.view {
-	case ConsentView:
-		return []key.Binding{keys.Up, keys.Down, keys.Select, keys.HelpMore}
-
-	case UsernameView:
-		if m.state.username.failed || m.state.username.passed {
-			return []key.Binding{keys.Up, keys.Down, keys.Select}
-		}
-		return []key.Binding{keys.Submit, keys.Abort}
-
-	case PasswordView:
-		if m.state.password.failed {
-			return []key.Binding{keys.Up, keys.Down, keys.Select}
-		}
-		return []key.Binding{keys.Submit, keys.Abort}
-
-	case LibraryAnimeView:
-		if m.state.libAnime.passed {
-			return []key.Binding{keys.Submit, keys.Abort}
-		}
-		return []key.Binding{keys.Up, keys.Down, keys.Select}
-	}
-
-	return []key.Binding{}
-}
-
-func (m userModel) FullHelp() [][]key.Binding {
-	switch m.state.view {
-	case ConsentView:
-		return [][]key.Binding{
-			{keys.Up, keys.Down, keys.Select},
-			{keys.Abort, keys.HelpLess},
-		}
-	}
-	return [][]key.Binding{}
-}
-
 func (m userModel) Init() tea.Cmd {
 	return nil
 }
@@ -220,6 +182,71 @@ func (m userModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m userModel) View() (string, *tea.Cursor) {
+	var c *tea.Cursor
+	var view string
+	switch m.state.view {
+	case ConsentView:
+		view = m.consentView()
+	case UsernameView:
+		view, c = m.usernameView()
+	case PasswordView:
+		view, c = m.passwordView()
+	case LibraryAnimeView:
+		view = m.libAnimeView()
+	case Completed:
+		view = ""
+	case AbortView:
+		view = m.abortView()
+	}
+
+	if c != nil {
+		// Adjust for help text
+		c.Y -= 1
+	}
+
+	helpView := defaultTextStyle.Height(3).PaddingTop(1).Render(m.help.View(m))
+	return lipgloss.JoinVertical(lipgloss.Left, view, helpView), c
+}
+
+func (m userModel) ShortHelp() []key.Binding {
+	switch m.state.view {
+	case ConsentView:
+		return []key.Binding{keys.Up, keys.Down, keys.Select, keys.HelpMore}
+
+	case UsernameView:
+		if m.state.username.failed || m.state.username.passed {
+			return []key.Binding{keys.Up, keys.Down, keys.Select}
+		}
+		return []key.Binding{keys.Submit, keys.Abort}
+
+	case PasswordView:
+		if m.state.password.failed {
+			return []key.Binding{keys.Up, keys.Down, keys.Select}
+		}
+		return []key.Binding{keys.Submit, keys.Abort}
+
+	case LibraryAnimeView:
+		if m.state.libAnime.passed {
+			return []key.Binding{keys.Submit, keys.Abort}
+		}
+		return []key.Binding{keys.Up, keys.Down, keys.Select}
+	}
+
+	return []key.Binding{}
+}
+
+func (m userModel) FullHelp() [][]key.Binding {
+	switch m.state.view {
+	case ConsentView:
+		return [][]key.Binding{
+			{keys.Up, keys.Down, keys.Select},
+			{keys.Abort, keys.HelpLess},
+		}
+	}
+	return [][]key.Binding{}
 }
 
 func (m userModel) UpdateUserConsent(msg tea.Msg) (userModel, tea.Cmd) {
@@ -401,33 +428,6 @@ func (m userModel) UpdateLibAnime(msg tea.Msg) (userModel, tea.Cmd) {
 		m.fetchError = msg
 	}
 	return m, nil
-}
-
-func (m userModel) View() (string, *tea.Cursor) {
-	var c *tea.Cursor
-	var view string
-	switch m.state.view {
-	case ConsentView:
-		view = m.consentView()
-	case UsernameView:
-		view, c = m.usernameView()
-	case PasswordView:
-		view, c = m.passwordView()
-	case LibraryAnimeView:
-		view = m.libAnimeView()
-	case Completed:
-		view = ""
-	case AbortView:
-		view = m.abortView()
-	}
-
-	if c != nil {
-		// Adjust for help text
-		c.Y -= 1
-	}
-
-	helpView := defaultTextStyle.Height(3).PaddingTop(1).Render(m.help.View(m))
-	return lipgloss.JoinVertical(lipgloss.Left, view, helpView), c
 }
 
 func (m userModel) consentView() string {
