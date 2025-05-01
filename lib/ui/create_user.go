@@ -231,8 +231,8 @@ func (m userModel) UpdateUserConsent(msg tea.Msg) (userModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keys.Select):
-			hasConsent := m.getConsentSelection()
-			if !hasConsent {
+			hasConsented := m.getConsentSelection()
+			if !hasConsented {
 				m.state.view = AbortView
 				m.state.isAborted = true
 				return m, tea.Quit
