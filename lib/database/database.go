@@ -71,6 +71,10 @@ func NewDatabase(data *Data) (*Database, error) {
 	return db, nil
 }
 
+// Load loads an existing database. In order to initialize
+// the database properly, you can either pass the data
+// directly to the constructor or use this function
+// to load it from file.
 func (db *Database) Load() error {
 	if db.isLoaded {
 		return nil
