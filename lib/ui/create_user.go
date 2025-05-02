@@ -584,10 +584,7 @@ func (m userModel) loadingView() string {
 }
 
 func (m userModel) abortView() string {
-	return lipgloss.NewStyle().
-		MarginTop(1).
-		MarginLeft(2).
-		Render(utils.ColorText(";g;>>> ;y;Koshime Setup Aborted ;g;<<<;x;"))
+	return abortStyle.Render(utils.ColorText(";g;>>> ;y;Koshime Setup Aborted ;g;<<<;x;"))
 }
 
 func (m userModel) abort() (userModel, tea.Cmd) {

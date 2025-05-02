@@ -16,4 +16,5 @@ var (
 	helpKeyStyle     = style.Foreground(lipgloss.Color("#787897"))
 	inputPromptStyle = style.Foreground(ansi.BrightGreen)
 	inputTextStyle   = style.Foreground(ansi.BrightWhite)
+	abortStyle       = style.MarginTop(1).MarginLeft(2)
 )
