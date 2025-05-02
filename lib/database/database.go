@@ -80,6 +80,19 @@ func (db *Database) Load() error {
 	return nil
 }
 
+// SaveProfile overwrites the existing profile with
+// the specified one.
+func (db *Database) SaveProfile(p Profile) error {
+	db.data.Profile = p
+	return db.Save()
+}
+
+// SaveLibrary overwrites the existing library with
+// the specified one.
+func (db *Database) SaveLibrary(p []LibraryEntry) error {
+	db.data.Library = p
+	return db.Save()
+}
 func (db Database) Save() error {
 	bytes, err := msgpack.Marshal(db.data)
 	if err != nil {
