@@ -24,9 +24,9 @@ var foregroundStyleMap = map[string]lipgloss.Style{
 	";x;":  style.Foreground(ansi.White), // Reset to default color
 }
 
-// ColorText replaces special color code strings (e.g., ";r;" for Bright Red)
-// with their corresponding ANSI terminal color codes and returns
-// the modified string.
+// ColorText replaces special strings (e.g., ";r;" for Bright Red) with
+// their corresponding lipgloss foreground color and returns the
+// modified string.
 func ColorText(text string) string {
 	return renderStyledTokens(text, foregroundStyleMap)
 }
