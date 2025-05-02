@@ -75,6 +75,8 @@ func NewUI(dbPath string) (UIModel, error) {
 		return model, err
 	}
 
+	model.db = db
+
 	return model, nil
 }
 
