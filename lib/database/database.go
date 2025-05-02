@@ -136,12 +136,17 @@ func (db *Database) AddAnime(entry LibraryEntry) error {
 	return db.Save()
 }
 
-func (db *Database) RemoveAnime(id string) error {
+func (db *Database) RemoveAnimeById(id string) error {
 	for i, entry := range db.data.Library {
 		if entry.ID == id {
 			db.data.Library = slices.Delete(db.data.Library, i, i+1)
 		}
 	}
+	return db.Save()
+}
+
+func (db *Database) RemoveAnimeByIndex(index LibraryIndex) error {
+	db.data.Library = slices.Delete(db.data.Library, int(index), int(index)+1)
 	return db.Save()
 }
 
