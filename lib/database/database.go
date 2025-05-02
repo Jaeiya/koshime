@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/shamaton/msgpack/v2"
@@ -93,6 +94,21 @@ func (db *Database) SaveLibrary(p []LibraryEntry) error {
 	db.data.Library = p
 	return db.Save()
 }
+
+func (db *Database) AddLibEntry(entry LibraryEntry) error {
+	db.data.Library = append(db.data.Library, entry)
+	return db.Save()
+}
+
+func (db *Database) RemoveLibEntry(id string) error {
+	for i, entry := range db.data.Library {
+		if entry.ID == id {
+			db.data.Library = slices.Delete(db.data.Library, i, i+1)
+		}
+	}
+	return db.Save()
+}
+
 func (db Database) Save() error {
 	bytes, err := msgpack.Marshal(db.data)
 	if err != nil {
