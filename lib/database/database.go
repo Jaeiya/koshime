@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/shamaton/msgpack/v2"
@@ -81,6 +82,23 @@ func (db *Database) Load() error {
 	return nil
 }
 
+// FindAnime uses the query to do a partial lookup against
+// all available anime titles, including synonyms, and
+// returns all matches found.
+func (db Database) FindAnime(query string) ([]LibraryEntry, error) {
+	query = strings.ToLower(query)
+	var entries []LibraryEntry
+	for _, entry := range db.data.Library {
+		if hasTitleMatches(entry, query) {
+			entries = append(entries, entry)
+		}
+	}
+	if len(entries) == 0 {
+		return entries, fmt.Errorf("entry not found")
+	}
+	return entries, nil
+}
+
 // SaveProfile overwrites the existing profile with
 // the specified one.
 func (db *Database) SaveProfile(p Profile) error {
@@ -123,4 +141,14 @@ func (db Database) GetData() (*Data, error) {
 		return &Data{}, fmt.Errorf("database has not been loaded")
 	}
 	return &db.data, nil
+}
+
+func hasTitleMatches(e LibraryEntry, q string) bool {
+	if strings.Contains(strings.ToLower(e.ENG_Title), q) ||
+		strings.Contains(strings.ToLower(e.JPN_Title), q) {
+		return true
+	}
+	return slices.ContainsFunc(e.Synonyms, func(s string) bool {
+		return strings.Contains(strings.ToLower(s), q)
+	})
 }
