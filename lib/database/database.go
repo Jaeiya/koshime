@@ -159,6 +159,9 @@ func (db *Database) UpdateAnime(i LibraryIndex, entry LibraryEntry) error {
 }
 
 func (db Database) Save() error {
+	if !db.isLoaded {
+		return fmt.Errorf("database was not initialized properly")
+	}
 	bytes, err := msgpack.Marshal(db.data)
 	if err != nil {
 		return err
