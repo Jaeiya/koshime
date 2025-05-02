@@ -7,50 +7,70 @@ import (
 	"github.com/charmbracelet/lipgloss/v2"
 )
 
-var userWelcomeTxt = newText(textStyle.MarginTop(1).MarginBottom(1), `
-;b;Welcome to ;g;Koshime;b;!
+var userWelcomeTxt = newText([]string{
+	`;b;Welcome to ;g;Koshime;b;!`,
+	`;b;Before you continue, make sure you already have a Kitsu
+account. If not, sign-up here: ;y;https://kitsu.app`,
+	`;w;Would you like to setup ;g;Koshime ;w;in this directory?`,
+}, true)
 
-;b;Before you continue, make sure you already have
-a Kitsu account. If you don't have one, go to
-this link: ;y;https://kitsu.app;x;`,
+var userNameTxt = newText([]string{`Enter your ;g;Kitsu;x; user name.`}, true)
+
+var confirmUsernamePreTxt = newText(
+	[]string{`;b;This is the first profile to pop up for that user name:;x;`},
+	true,
 )
 
-var userConsentTxt = newText(textStyle, `
-;w;Would you like to setup ;g;Koshime;x; ;w;in this directory?;x;`,
+var confirmUsernameConsentTxt = newText(
+	[]string{`;b;Does that look like your profile?;x;`},
+	true,
 )
 
-var userNameTxt = newText(textStyle.MarginTop(1).PaddingBottom(1), `
-Enter your ;g;Kitsu;x; user name.`,
+var usernameFailedTxt = newText([]string{`;y;User name not found; ;g;try again?;x;`}, true)
+
+var passwordTxt = newText(
+	[]string{`Enter your ;g;Kitsu;x; password. [;m;It will not be saved;x;]`},
+	true,
 )
 
-var confirmUsernamePreTxt = newText(textStyle.MarginTop(1), `
-;b;This is the first profile to pop up for that user name:;x;`,
-)
+var passwordFailedTxt = newText([]string{
+	`;r;Authorization Failed. ;b;You must have entered your password incorrectly.`,
+	`;w;Would you like to ;g;try again?;x;`,
+}, true)
 
-var confirmUsernameConsentTxt = newText(textStyle.MarginTop(1), `
-;b;Does that look like your profile?;x;`,
-)
+var libAnimeFetchFailedTxt = newText([]string{
+	`;r;Failed to fetch library anime. ;b;This is probably a temporary failure.`,
+	`;w;Would you like to ;g;try again?;x;`,
+}, true)
 
-var usernameFailedTxt = newText(textStyle.MarginTop(1), `
-;y;User name not found; ;g;try again?;x;`,
-)
+func newText(text []string, includeMargin bool) string {
+	for i, para := range text {
+		margin := 1
+		if i == 0 || includeMargin == false {
+			margin = 0
+		}
+		para = strings.ReplaceAll(para, "\n", " ")
+		text[i] = textStyle.MarginTop(margin).Render(utils.ColorText(para))
+	}
 
-var passwordTxt = newText(textStyle.MarginTop(1).PaddingBottom(1), `
-Enter your ;g;Kitsu;x; password. [;m;It will not be saved;x;]`,
-)
+	return lipgloss.JoinVertical(lipgloss.Left, text...)
+}
 
-var passwordFailedTxt = newText(textStyle.MarginTop(1), `
-;r;Authorization Failed. ;b;You must have entered your password
-incorrectly.
+func createList(props []string, values []string) string {
+	var sb strings.Builder
 
-;w;Would you like to ;g;try again?;x;`)
+	propStyle := style.Width(9).Foreground(lipgloss.BrightWhite)
+	valStyle := style.Width(40)
 
-var libAnimeFetchFailedTxt = newText(textStyle.MarginTop(1), `
-;r;Failed to fetch library anime. ;b;This is probably a
-temporary failure.
+	for i, prop := range props {
+		sb.WriteString(
+			lipgloss.JoinHorizontal(
+				lipgloss.Left,
+				propStyle.Align(lipgloss.Right).Render(prop)+": ",
+				valStyle.Render(utils.ColorText(values[i])),
+			) + "\n",
+		)
+	}
 
-;w;Would you like to ;g;try again?;x;`)
-
-func newText(style lipgloss.Style, text string) string {
-	return style.Render(utils.ColorText(strings.TrimSpace(text)))
+	return style.MarginTop(1).MarginLeft(5).Render(sb.String())
 }

@@ -1,6 +1,8 @@
 package utils
 
-import "strings"
+import (
+	"strings"
+)
 
 /*
 ReplaceAll uses the token map to replace all keys with the

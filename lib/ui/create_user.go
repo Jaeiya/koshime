@@ -418,7 +418,6 @@ func (m userModel) consentView() string {
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		userWelcomeTxt,
-		userConsentTxt,
 		no,
 		yes,
 	)
@@ -449,24 +448,14 @@ func (m userModel) usernameView() (string, *tea.Cursor) {
 			panic(err)
 		}
 
-		profileStr := textStyle.PaddingLeft(5).MarginTop(1).
-			Width(60).
-			Render(utils.ColorText(strings.Trim((fmt.Sprintf(`
-    ;w;Name:;x; ;g;%s;x;
-   ;w;About:;x; %s
-  ;w;Gender:;x; %s
-;w;BirthDay:;x; %s
-;w;Location:;x; %s
- ;w;Created:;x; %s
- ;w;Profile:;x; %s`,
-				p.Username,
-				p.About,
-				p.Gender,
-				p.Birthday,
-				p.Location,
-				createdDate.Local().Format("01/02/2006 3:04 PM"),
-				kitsu.GetProfileLink(p.ID))), "\n")),
-			)
+		profileStr := createList([]string{
+			"Name", "About", "Gender", "BirthDay", "Location", "Created", "Profile",
+		}, []string{
+			fmt.Sprintf(";g;%s", p.Username), p.About, p.Gender, p.Birthday, p.Location,
+			createdDate.Local().Format("01/02/2006 3:04 PM"),
+			kitsu.GetProfileLink(p.ID),
+		})
+
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			confirmUsernamePreTxt,
@@ -505,20 +494,22 @@ func (m userModel) passwordView() (string, *tea.Cursor) {
 	}
 
 	if m.state.password.passed {
-		content := utils.ColorText(fmt.Sprintf(
-			";c;Access Token\n;bk;%s\n\n;c;Refresh Token\n;bk;%s",
-			m.state.userData.Profile.AccessToken,
-			m.state.userData.Profile.RefreshToken,
-		))
-		header := textStyle.Align(lipgloss.Center).
-			Width(lipgloss.Width(content)).
+		tokensStr := newText([]string{
+			";c;Access Token",
+			";bk;" + m.state.userData.Profile.AccessToken,
+			"",
+			";c;Refresh Token",
+			";bk;" + m.state.userData.Profile.RefreshToken,
+		}, false)
+		header := lipgloss.NewStyle().Align(lipgloss.Center).
+			Width(lipgloss.Width(tokensStr) - 3).
 			Foreground(ansi.BrightBlue).
 			PaddingBottom(1).
 			Render("Your Token Credentials")
 
 		return lipgloss.JoinVertical(lipgloss.Left,
 			header,
-			textStyle.Width(60).PaddingBottom(1).Render(content),
+			textStyle.PaddingBottom(1).Render(tokensStr),
 			textStyle.Foreground(ansi.BrightGreen).Render("> Continue"),
 		), nil
 	}
