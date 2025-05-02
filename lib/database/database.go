@@ -128,6 +128,10 @@ func (db Database) GetAnime(libIndexes ...LibraryIndex) ([]LibraryEntry, error) 
 	return entries, nil
 }
 
+func (db Database) GetAllAnime() []LibraryEntry {
+	return utils.CopySlice(db.data.Library)
+}
+
 // SaveProfile overwrites the existing profile with
 // the specified one.
 func (db *Database) SaveProfile(p Profile) error {
