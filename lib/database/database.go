@@ -100,6 +100,20 @@ func (db Database) FindLibAnimeIndex(query string) ([]LibraryIndex, error) {
 	}
 	return indexes, nil
 }
+
+// GetAnime will retrieve library anime using the specified
+// library indexes.
+func (db Database) GetAnime(libIndexes ...LibraryIndex) ([]LibraryEntry, error) {
+	entries := make([]LibraryEntry, len(libIndexes))
+	for i, libIndex := range libIndexes {
+		if libIndex < 0 || int(libIndex) >= len(db.data.Library) {
+			return []LibraryEntry{}, fmt.Errorf(
+				"library anime index (%d) does not exist",
+				libIndex,
+			)
+		}
+		entries[i] = db.data.Library[libIndex]
+	}
 	return entries, nil
 }
 
