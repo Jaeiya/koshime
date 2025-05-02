@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/Jaeiya/koshime/lib/database"
@@ -121,6 +122,12 @@ func (m UIModel) View() (string, *tea.Cursor) {
 	case AbortView:
 		return abortStyle.Render(
 			utils.ColorText(";g;>>> ;y;User Aborted Operation ;g;<<<"),
+		), nil
+
+	case None:
+		anime := m.db.GetAllAnime()
+		return style.PaddingTop(1).PaddingLeft(3).Render(
+			utils.ColorText(fmt.Sprintf(";g;%d ;w;Library Entries Loaded", len(anime))),
 		), nil
 	}
 
