@@ -131,6 +131,11 @@ func (db *Database) RemoveAnime(id string) error {
 	return db.Save()
 }
 
+func (db *Database) UpdateAnime(i LibraryIndex, entry LibraryEntry) error {
+	db.data.Library[i] = entry
+	return db.Save()
+}
+
 func (db Database) Save() error {
 	bytes, err := msgpack.Marshal(db.data)
 	if err != nil {
