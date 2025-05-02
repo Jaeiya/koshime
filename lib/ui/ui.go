@@ -85,11 +85,20 @@ func (ui UIModel) Init() tea.Cmd {
 }
 
 func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var err error
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		if msg.String() == "esc" {
 			return m, func() tea.Msg { return AbortMsg{} }
 		}
+
+	case SetupUserFinishedMsg:
+		m.state.internal.view = None
+		m.db, err = database.NewDatabase(&m.state.userSetup.userData)
+		if err != nil {
+			panic(err)
+		}
+		return m, tea.Quit
 
 	case AbortMsg:
 		m.state.internal.view = AbortView
@@ -97,15 +106,23 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 
-	return m.UpdateUserSetup(msg)
+	switch m.state.internal.view {
+	case SetupUserView:
+		return m.UpdateUserSetup(msg)
+	}
+	return m, nil
 }
 
 func (m UIModel) View() (string, *tea.Cursor) {
 	switch m.state.internal.view {
+	case SetupUserView:
+		return m.ViewUserSetup()
+
 	case AbortView:
 		return abortStyle.Render(
 			utils.ColorText(";g;>>> ;y;User Aborted Operation ;g;<<<"),
 		), nil
 	}
-	return m.ViewUserSetup()
+
+	return "missing view", nil
 }
