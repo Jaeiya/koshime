@@ -104,6 +104,9 @@ func (db Database) FindLibAnimeIndex(query string) ([]LibraryIndex, error) {
 // GetAnime will retrieve library anime using the specified
 // library indexes.
 func (db Database) GetAnime(libIndexes ...LibraryIndex) ([]LibraryEntry, error) {
+	if len(libIndexes) == 0 {
+		return []LibraryEntry{}, fmt.Errorf("missing indexes to lookup")
+	}
 	entries := make([]LibraryEntry, len(libIndexes))
 	for i, libIndex := range libIndexes {
 		if libIndex < 0 || int(libIndex) >= len(db.data.Library) {
