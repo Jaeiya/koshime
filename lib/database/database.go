@@ -84,7 +84,10 @@ func (db *Database) Load() error {
 	if err != nil {
 		return err
 	}
-	msgpack.Unmarshal(file, &db.data)
+	err = msgpack.Unmarshal(file, &db.data)
+	if err != nil {
+		return err
+	}
 	db.isLoaded = true
 	return nil
 }
