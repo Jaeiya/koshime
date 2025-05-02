@@ -117,12 +117,12 @@ func (db *Database) SaveLibrary(p []LibraryEntry) error {
 	return db.Save()
 }
 
-func (db *Database) AddLibEntry(entry LibraryEntry) error {
+func (db *Database) AddAnime(entry LibraryEntry) error {
 	db.data.Library = append(db.data.Library, entry)
 	return db.Save()
 }
 
-func (db *Database) RemoveLibEntry(id string) error {
+func (db *Database) RemoveAnime(id string) error {
 	for i, entry := range db.data.Library {
 		if entry.ID == id {
 			db.data.Library = slices.Delete(db.data.Library, i, i+1)
