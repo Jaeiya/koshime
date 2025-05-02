@@ -56,7 +56,8 @@ type Database struct {
 }
 
 func NewDatabase(data *Data) (*Database, error) {
-	// Initialize empty database
+	// Initialize empty database when it needs
+	// to be loaded from file
 	if data == nil {
 		db := &Database{}
 		return db, nil
