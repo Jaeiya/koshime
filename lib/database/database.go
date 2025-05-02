@@ -164,13 +164,6 @@ func (db Database) Save() error {
 	return nil
 }
 
-func (db Database) GetData() (*Data, error) {
-	if !db.isLoaded {
-		return &Data{}, fmt.Errorf("database has not been loaded")
-	}
-	return &db.data, nil
-}
-
 func hasTitleMatches(e LibraryEntry, q string) bool {
 	if strings.Contains(strings.ToLower(e.ENG_Title), q) ||
 		strings.Contains(strings.ToLower(e.JPN_Title), q) {
