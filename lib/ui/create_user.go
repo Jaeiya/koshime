@@ -471,7 +471,7 @@ func (m userModel) usernameView() (string, *tea.Cursor) {
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		userNameTxt,
-		lipgloss.NewStyle().Render(m.input.View()),
+		style.MarginTop(1).Render(m.input.View()),
 	)
 	c.Y += lipgloss.Height(view)
 	return view, c
@@ -519,7 +519,7 @@ func (m userModel) passwordView() (string, *tea.Cursor) {
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		passwordTxt,
-		lipgloss.NewStyle().Render(m.input.View()),
+		style.MarginTop(1).Render(m.input.View()),
 	)
 	c.Y += lipgloss.Height(view)
 	return view, c
