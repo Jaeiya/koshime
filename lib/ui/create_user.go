@@ -29,7 +29,6 @@ const (
 	UsernameView
 	PasswordView
 	LibraryAnimeView
-	Completed
 )
 
 type userSetupKeyMap struct {
@@ -131,8 +130,6 @@ func (m UIModel) ViewUserSetup() (string, *tea.Cursor) {
 		view, c = m.passwordView()
 	case LibraryAnimeView:
 		view = m.libAnimeView()
-	case Completed:
-		view = ""
 	}
 
 	// Always keep margin from prompt
@@ -349,8 +346,7 @@ func (m UIModel) UpdateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 			}
 
 			if state.libAnime.passed {
-				state.view = Completed
-				return m, tea.Quit
+				return m, func() tea.Msg { return SetupUserFinishedMsg{} }
 			}
 		}
 
