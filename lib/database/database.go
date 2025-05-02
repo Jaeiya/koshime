@@ -13,6 +13,8 @@ import (
 
 var dbFileName = "koshime.db"
 
+type LibraryIndex int
+
 type Profile struct {
 	ID              string
 	SecondsWatched  int
@@ -82,20 +84,22 @@ func (db *Database) Load() error {
 	return nil
 }
 
-// FindAnime uses the query to do a partial lookup against
-// all available anime titles, including synonyms, and
-// returns all matches found.
-func (db Database) FindAnime(query string) ([]LibraryEntry, error) {
+// FindLibAnimeIndex uses the query to do a partial lookup against
+// all available anime titles, including synonyms, and returns
+// the library index of all matches found.
+func (db Database) FindLibAnimeIndex(query string) ([]LibraryIndex, error) {
 	query = strings.ToLower(query)
-	var entries []LibraryEntry
-	for _, entry := range db.data.Library {
+	var indexes []LibraryIndex
+	for i, entry := range db.data.Library {
 		if hasTitleMatches(entry, query) {
-			entries = append(entries, entry)
+			indexes = append(indexes, LibraryIndex(i))
 		}
 	}
-	if len(entries) == 0 {
-		return entries, fmt.Errorf("entry not found")
+	if len(indexes) == 0 {
+		return indexes, fmt.Errorf("entry not found")
 	}
+	return indexes, nil
+}
 	return entries, nil
 }
 
