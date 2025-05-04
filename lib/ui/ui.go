@@ -229,10 +229,6 @@ func (m *UIModel) setConsentStartPos(c Consent) {
 	m.state.internal.consentPos = c
 }
 
-func (m UIModel) abort() tea.Msg {
-	return AbortMsg{}
-}
-
 func (m UIModel) isLoading() bool {
 	return m.state.internal.loading.active
 }
@@ -255,4 +251,8 @@ func (m UIModel) viewLoading() string {
 			spinnerStr,
 		),
 	)
+}
+
+func (m UIModel) abort() tea.Msg {
+	return AbortMsg{}
 }
