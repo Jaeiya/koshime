@@ -37,8 +37,24 @@ type (
 	SetupUserFinishedMsg struct{}
 )
 
+type Consent int
+
+const (
+	No = Consent(iota)
+	Yes
+)
+
 type uiState struct {
-	view UIView
+	view       UIView
+	consentPos Consent
+}
+
+func (s *uiState) SetConsent(c Consent) {
+	s.consentPos = c
+}
+
+func (s uiState) IsConsenting() bool {
+	return s.consentPos == Yes
 }
 
 type UIModel struct {
