@@ -114,11 +114,11 @@ func (m UIModel) ViewUserSetup() (string, *tea.Cursor) {
 	case SetupConsentView:
 		view = m.viewConsent(userWelcomeTxt)
 	case SetupUsernameView:
-		view, c = m.setupUsernameView()
+		view, c = m.viewSetupUsername()
 	case SetupPasswordView:
-		view, c = m.setupPasswordView()
+		view, c = m.viewSetupPassword()
 	case SetupLibraryView:
-		view = m.setupLibraryView()
+		view = m.viewSetupLibrary()
 	}
 
 	// Always keep margin from prompt
@@ -348,10 +348,10 @@ func (m UIModel) UpdateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m UIModel) setupUsernameView() (string, *tea.Cursor) {
+func (m UIModel) viewSetupUsername() (string, *tea.Cursor) {
 	state := m.state.userSetup
 	if state.loading.active {
-		return m.loadingView(), nil
+		return m.viewLoading(), nil
 	}
 
 	if state.username.failed {
@@ -388,10 +388,10 @@ func (m UIModel) setupUsernameView() (string, *tea.Cursor) {
 	return view, c
 }
 
-func (m UIModel) setupPasswordView() (string, *tea.Cursor) {
+func (m UIModel) viewSetupPassword() (string, *tea.Cursor) {
 	state := m.state.userSetup
 	if state.loading.active {
-		return m.loadingView(), nil
+		return m.viewLoading(), nil
 	}
 
 	if state.password.failed {
@@ -430,10 +430,10 @@ func (m UIModel) setupPasswordView() (string, *tea.Cursor) {
 	return view, c
 }
 
-func (m UIModel) setupLibraryView() string {
+func (m UIModel) viewSetupLibrary() string {
 	state := m.state.userSetup
 	if state.loading.active {
-		return m.loadingView()
+		return m.viewLoading()
 	}
 
 	if state.libAnime.failed {
@@ -460,7 +460,7 @@ func (m UIModel) setupLibraryView() string {
 	return ""
 }
 
-func (m UIModel) loadingView() string {
+func (m UIModel) viewLoading() string {
 	spinnerStr := spinnerStyle.Render(strings.Repeat(m.spinner.View(), 3))
 	return textStyle.Render(
 		fmt.Sprintf(
