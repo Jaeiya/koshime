@@ -45,11 +45,7 @@ type userSetupState struct {
 	userData   database.Data
 	view       userSetupView
 	fetchError error
-	loading    struct {
-		active bool
-		text   string
-	}
-	username struct {
+	username   struct {
 		failed bool
 		passed bool
 	}
@@ -97,11 +93,6 @@ func (m UIModel) UpdateUserSetup(msg tea.Msg) (UIModel, tea.Cmd) {
 	}
 
 	cmds = append(cmds, cmd)
-
-	if state.loading.active {
-		m.spinner, cmd = m.spinner.Update(msg)
-		cmds = append(cmds, cmd)
-	}
 
 	return m, tea.Batch(cmds...)
 }
@@ -160,9 +151,9 @@ func (m UIModel) updateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.Key().Code {
 		case tea.KeyEnter:
-			if !state.username.failed && !state.username.passed && !state.loading.active {
-				state.loading.active = true
-				state.loading.text = "Loading Profile"
+			if !state.username.failed && !state.username.passed && !m.isLoading() {
+				m.setLoadingState(true)
+				m.setLoadingText("Loading Profile")
 				return m, tea.Batch(m.spinner.Tick, m.getProfile(m.input.Value()))
 			}
 
@@ -190,13 +181,13 @@ func (m UIModel) updateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 		}
 
 	case FetchProfileMsg:
-		state.loading.active = false
+		m.setLoadingState(false)
 		state.userData.Profile = msg
 		state.username.passed = true
 
 	// If getting the profile returns an error
 	case FetchErrorMsg:
-		state.loading.active = false
+		m.setLoadingState(false)
 		if strings.Contains(msg.Error(), "profile not found") {
 			state.username.failed = true
 			m.setConsentStartPos(Yes)
@@ -268,9 +259,9 @@ func (m UIModel) updatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch msg.Key().Code {
 		case tea.KeyEnter:
-			if !state.password.failed && !state.password.passed && !state.loading.active {
-				state.loading.active = true
-				state.loading.text = "Getting Access Token"
+			if !state.password.failed && !state.password.passed && !m.isLoading() {
+				m.setLoadingState(true)
+				m.setLoadingText("Getting Access Token")
 				return m, tea.Batch(m.spinner.Tick, m.getAuthToken)
 			}
 
@@ -282,16 +273,16 @@ func (m UIModel) updatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
 				m.input.Reset()
 			}
 
-			if state.password.passed && !state.loading.active {
-				state.loading.active = true
-				state.loading.text = "Getting Library Anime"
+			if state.password.passed && !m.isLoading() {
+				m.setLoadingState(true)
+				m.setLoadingText("Getting Library Anime")
 				state.view = SetupLibraryView
 				return m, tea.Batch(m.spinner.Tick, m.getAnimeLibrary(state.userData.Profile.ID))
 			}
 		}
 
 	case FetchedAuthTokenMsg:
-		state.loading.active = false
+		m.setLoadingState(false)
 		state.password.passed = true
 
 		state.userData.Profile.AccessToken = msg.Token
@@ -300,7 +291,7 @@ func (m UIModel) updatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
 		return m, nil
 
 	case FetchErrorMsg:
-		state.loading.active = false
+		m.setLoadingState(false)
 		state.password.failed = true
 		state.fetchError = msg
 	}
@@ -323,7 +314,7 @@ func (m UIModel) updateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 				if !m.isConsenting() {
 					return m, m.abort
 				}
-				state.loading.active = true
+				m.setLoadingState(true)
 				state.libAnime.failed = false
 				return m, tea.Batch(m.spinner.Tick, m.getAnimeLibrary(state.userData.Profile.ID))
 			}
@@ -336,11 +327,11 @@ func (m UIModel) updateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 	case FetchedLibAnimeMsg:
 		state.userData.Library = msg
 		state.libAnime.passed = true
-		state.loading.active = false
+		m.setLoadingState(false)
 
 	case FetchErrorMsg:
 		m.setConsentStartPos(Yes)
-		state.loading.active = false
+		m.setLoadingState(false)
 		state.libAnime.failed = true
 		state.fetchError = msg
 	}
@@ -349,7 +340,7 @@ func (m UIModel) updateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 
 func (m UIModel) viewSetupUsername() (string, *tea.Cursor) {
 	state := m.state.userSetup
-	if state.loading.active {
+	if m.isLoading() {
 		return m.viewLoading(), nil
 	}
 
@@ -389,7 +380,7 @@ func (m UIModel) viewSetupUsername() (string, *tea.Cursor) {
 
 func (m UIModel) viewSetupPassword() (string, *tea.Cursor) {
 	state := m.state.userSetup
-	if state.loading.active {
+	if m.isLoading() {
 		return m.viewLoading(), nil
 	}
 
@@ -431,7 +422,7 @@ func (m UIModel) viewSetupPassword() (string, *tea.Cursor) {
 
 func (m UIModel) viewSetupLibrary() string {
 	state := m.state.userSetup
-	if state.loading.active {
+	if m.isLoading() {
 		return m.viewLoading()
 	}
 
@@ -457,18 +448,6 @@ func (m UIModel) viewSetupLibrary() string {
 	}
 
 	return ""
-}
-
-func (m UIModel) viewLoading() string {
-	spinnerStr := spinnerStyle.Render(strings.Repeat(m.spinner.View(), 3))
-	return textStyle.Render(
-		fmt.Sprintf(
-			"%s %s %s",
-			spinnerStr,
-			loadingStyle.Render(m.state.userSetup.loading.text),
-			spinnerStr,
-		),
-	)
 }
 
 func (m UIModel) getProfile(userName string) func() tea.Msg {

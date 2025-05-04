@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/Jaeiya/koshime/lib/database"
@@ -48,6 +49,10 @@ const (
 type uiState struct {
 	view       UIView
 	consentPos Consent
+	loading    struct {
+		active bool
+		text   string
+	}
 }
 
 type UIModel struct {
@@ -107,6 +112,11 @@ func (ui UIModel) Init() tea.Cmd {
 
 func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var err error
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
+
+	state := &m.state.internal
+
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		if msg.String() == "esc" {
@@ -114,7 +124,7 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case SetupUserFinishedMsg:
-		m.state.internal.view = None
+		state.view = None
 		m.db, err = database.NewDatabase(&m.state.userSetup.userData)
 		if err != nil {
 			panic(err)
@@ -122,16 +132,28 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case AbortMsg:
-		m.state.internal.view = AbortView
+		state.view = AbortView
 		return m, tea.Quit
 
 	}
 
-	switch m.state.internal.view {
-	case SetupUserView:
-		return m.UpdateUserSetup(msg)
+	// Temporary
+	if state.view == None {
+		return m, tea.Quit
 	}
-	return m, nil
+
+	if m.isLoading() {
+		m.spinner, cmd = m.spinner.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	switch state.view {
+	case SetupUserView:
+		m, cmd = m.UpdateUserSetup(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m UIModel) View() (string, *tea.Cursor) {
@@ -209,4 +231,28 @@ func (m *UIModel) setConsentStartPos(c Consent) {
 
 func (m UIModel) abort() tea.Msg {
 	return AbortMsg{}
+}
+
+func (m UIModel) isLoading() bool {
+	return m.state.internal.loading.active
+}
+
+func (m *UIModel) setLoadingState(s bool) {
+	m.state.internal.loading.active = s
+}
+
+func (m *UIModel) setLoadingText(s string) {
+	m.state.internal.loading.text = s
+}
+
+func (m UIModel) viewLoading() string {
+	spinnerStr := spinnerStyle.Render(strings.Repeat(m.spinner.View(), 3))
+	return textStyle.Render(
+		fmt.Sprintf(
+			"%s %s %s",
+			spinnerStr,
+			loadingStyle.Render(m.state.internal.loading.text),
+			spinnerStr,
+		),
+	)
 }
