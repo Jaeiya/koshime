@@ -15,7 +15,8 @@ type AuthToken struct {
 
 type ProfileData struct {
 	Data []struct {
-		ID         string `json:"id"`
+		ID string `json:"id"`
+		// CreatedAt & Name are the only values that can by relied on.
 		Attributes struct {
 			Name     string `json:"name"`
 			About    string `json:"about"`
@@ -42,12 +43,12 @@ type Anime struct {
 	Attributes struct {
 		CanonicalTitle string `json:"canonicalTitle"`
 		Titles         struct {
-			English string `json:"en"`
+			English string `json:"en"` // Can be empty
 			Romaji  string `json:"en_jp"`
 		} `json:"titles"`
-		AltTitles []string `json:"abbreviatedTitles"`
+		AltTitles []string `json:"abbreviatedTitles"` // Can be empty
 		AvgRating string   `json:"averageRating"`
-		AgeRating string   `json:"ageRating"`
+		AgeRating string   `json:"ageRating"` // Can be empty
 		EpCount   int      `json:"episodeCount"`
 		StartDate string   `json:"startDate"`
 		EndDate   string   `json:"endDate"`

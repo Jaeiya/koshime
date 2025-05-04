@@ -59,7 +59,7 @@ func GetLibraryAnime(userID string, status LibAnimeStatus) ([]database.LibraryEn
 			LibID:     item.LibID,
 			JPN_Title: anime.Attributes.Titles.Romaji,
 			ENG_Title: anime.Attributes.Titles.English,
-			Synonyms:  anime.Attributes.AltTitles,
+			AltTitles: anime.Attributes.AltTitles,
 			Episodes:  anime.Attributes.EpCount,
 			Progress:  item.Attributes.Progress,
 			Slug:      anime.Attributes.Slug,

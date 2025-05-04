@@ -39,7 +39,7 @@ type LibraryEntry struct {
 	LibID     string
 	JPN_Title string
 	ENG_Title string
-	Synonyms  []string
+	AltTitles []string
 	Episodes  int
 	Progress  int
 	Slug      string
@@ -93,7 +93,7 @@ func (db *Database) Load() error {
 }
 
 // FindLibAnimeIndex uses the query to do a partial lookup against
-// all available anime titles, including synonyms, and returns
+// all available anime titles, including alt titles, and returns
 // the library index of all matches found.
 func (db Database) FindLibAnimeIndex(query string) ([]LibraryIndex, error) {
 	query = strings.ToLower(query)
@@ -187,7 +187,7 @@ func hasTitleMatches(e LibraryEntry, q string) bool {
 		strings.Contains(strings.ToLower(e.JPN_Title), q) {
 		return true
 	}
-	return slices.ContainsFunc(e.Synonyms, func(s string) bool {
+	return slices.ContainsFunc(e.AltTitles, func(s string) bool {
 		return strings.Contains(strings.ToLower(s), q)
 	})
 }
