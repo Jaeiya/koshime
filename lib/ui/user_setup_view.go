@@ -42,7 +42,6 @@ type userSetupKeyMap struct {
 }
 
 type userSetupState struct {
-	isAborted  bool
 	userData   database.Data
 	view       userSetupView
 	fetchError error
