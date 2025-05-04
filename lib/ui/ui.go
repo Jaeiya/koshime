@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/v2/spinner"
 	"github.com/charmbracelet/bubbles/v2/textinput"
 	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss/v2"
 )
 
 type UIView int
@@ -47,14 +48,6 @@ const (
 type uiState struct {
 	view       UIView
 	consentPos Consent
-}
-
-func (s *uiState) SetConsent(c Consent) {
-	s.consentPos = c
-}
-
-func (s uiState) IsConsenting() bool {
-	return s.consentPos == Yes
 }
 
 type UIModel struct {
@@ -175,4 +168,41 @@ func (m UIModel) FullHelp() [][]key.Binding {
 		return m.UserSetupFullHelp()
 	}
 	return [][]key.Binding{}
+}
+
+func (m UIModel) updateConsent(msg tea.Msg) UIModel {
+	state := &m.state.internal
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, keyMap.Down):
+			state.consentPos = Yes
+		case key.Matches(msg, keyMap.Up):
+			state.consentPos = No
+		}
+	}
+	return m
+}
+
+func (m UIModel) viewConsent(msg ...string) string {
+	state := m.state.internal
+	var yes, no string
+	if state.consentPos == No {
+		no = selectNoStyle.Render("> No")
+		yes = textStyle.Render("  Yes")
+	} else {
+		yes = selectYesStyle.Render("> Yes")
+		no = textStyle.MarginTop(1).Render("  No")
+	}
+
+	msg = append(msg, no, yes)
+	return lipgloss.JoinVertical(lipgloss.Left, msg...)
+}
+
+func (m UIModel) isConsenting() bool {
+	return m.state.internal.consentPos == Yes
+}
+
+func (m *UIModel) setConsent(c Consent) {
+	m.state.internal.consentPos = c
 }

@@ -42,7 +42,6 @@ type userSetupKeyMap struct {
 }
 
 type userSetupState struct {
-	consentPos int
 	isAborted  bool
 	userData   database.Data
 	view       userSetupView
@@ -113,7 +112,7 @@ func (m UIModel) ViewUserSetup() (string, *tea.Cursor) {
 	var view string
 	switch m.state.userSetup.view {
 	case SetupConsentView:
-		view = m.setupUserConsentView()
+		view = m.viewConsent(userWelcomeTxt)
 	case SetupUsernameView:
 		view, c = m.setupUsernameView()
 	case SetupPasswordView:
@@ -134,7 +133,7 @@ func (m UIModel) ViewUserSetup() (string, *tea.Cursor) {
 }
 
 func (m UIModel) UpdateUserConsent(msg tea.Msg) (UIModel, tea.Cmd) {
-	m = m.updateUserSetupConsent(msg)
+	m = m.updateConsent(msg)
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
@@ -155,7 +154,7 @@ func (m UIModel) UpdateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 	state := &m.state.userSetup
 
 	if state.username.failed || state.username.passed {
-		m = m.updateUserSetupConsent(msg)
+		m = m.updateConsent(msg)
 	}
 
 	switch msg := msg.(type) {
@@ -201,8 +200,7 @@ func (m UIModel) UpdateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 		state.loading.active = false
 		if strings.Contains(msg.Error(), "profile not found") {
 			state.username.failed = true
-			// Default to yes
-			state.consentPos = 1
+			m.setConsent(Yes)
 		} else {
 			// FIX  we should display a proper error, not panic
 			panic(msg)
@@ -264,7 +262,7 @@ func (m UIModel) UpdatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
 	state := &m.state.userSetup
 
 	if state.password.failed {
-		m = m.updateUserSetupConsent(msg)
+		m = m.updateConsent(msg)
 	}
 
 	switch msg := msg.(type) {
@@ -316,7 +314,7 @@ func (m UIModel) UpdateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 	state := &m.state.userSetup
 
 	if state.libAnime.failed {
-		m = m.updateUserSetupConsent(msg)
+		m = m.updateConsent(msg)
 	}
 
 	switch msg := msg.(type) {
@@ -342,23 +340,12 @@ func (m UIModel) UpdateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 		state.loading.active = false
 
 	case FetchErrorMsg:
-		// Default to yes
-		state.consentPos = 1
+		m.setConsent(Yes)
 		state.loading.active = false
 		state.libAnime.failed = true
 		state.fetchError = msg
 	}
 	return m, nil
-}
-
-func (m UIModel) setupUserConsentView() string {
-	yes, no := m.getYesNo(m.state.userSetup.consentPos)
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		userWelcomeTxt,
-		no,
-		yes,
-	)
 }
 
 func (m UIModel) setupUsernameView() (string, *tea.Cursor) {
@@ -368,18 +355,10 @@ func (m UIModel) setupUsernameView() (string, *tea.Cursor) {
 	}
 
 	if state.username.failed {
-		yes, no := m.getYesNo(state.consentPos)
-		view := lipgloss.JoinVertical(
-			lipgloss.Left,
-			usernameFailedTxt,
-			no,
-			yes,
-		)
-		return view, nil
+		return m.viewConsent(usernameFailedTxt), nil
 	}
 
 	if state.username.passed {
-		yes, no := m.getYesNo(state.consentPos)
 		p := state.userData.Profile
 
 		createdDate, err := time.Parse(time.RFC3339, p.CreatedAt)
@@ -395,14 +374,7 @@ func (m UIModel) setupUsernameView() (string, *tea.Cursor) {
 			kitsu.GetProfileLink(p.ID),
 		})
 
-		return lipgloss.JoinVertical(
-			lipgloss.Left,
-			confirmUsernamePreTxt,
-			profileStr,
-			confirmUsernameConsentTxt,
-			no,
-			yes,
-		), nil
+		return m.viewConsent(confirmUsernamePreTxt, profileStr, confirmUsernameConsentTxt), nil
 	}
 
 	c := m.input.Cursor()
@@ -423,14 +395,7 @@ func (m UIModel) setupPasswordView() (string, *tea.Cursor) {
 	}
 
 	if state.password.failed {
-		yes, no := m.getYesNo(state.consentPos)
-		view := lipgloss.JoinVertical(
-			lipgloss.Left,
-			passwordFailedTxt,
-			no,
-			yes,
-		)
-		return view, nil
+		return m.viewConsent(passwordFailedTxt), nil
 	}
 
 	if state.password.passed {
@@ -473,15 +438,7 @@ func (m UIModel) setupLibraryView() string {
 
 	if state.libAnime.failed {
 		s := textStyle.MarginTop(1).Width(60).Render(state.fetchError.Error())
-		yes, no := m.getYesNo(state.consentPos)
-		view := lipgloss.JoinVertical(
-			lipgloss.Left,
-			s,
-			libAnimeFetchFailedTxt,
-			no,
-			yes,
-		)
-		return view
+		return m.viewConsent(s, libAnimeFetchFailedTxt)
 	}
 
 	if state.libAnime.passed {
@@ -517,40 +474,6 @@ func (m UIModel) loadingView() string {
 
 func (m UIModel) abort() tea.Msg {
 	return AbortMsg{}
-}
-
-func (m UIModel) getYesNo(state int) (yes string, no string) {
-	if state == 0 {
-		no = selectNoStyle.Render("> No")
-		yes = textStyle.Render("  Yes")
-	} else {
-		yes = selectYesStyle.Render("> Yes")
-		no = textStyle.MarginTop(1).Render("  No")
-	}
-	return yes, no
-}
-
-func (m *UIModel) isConsenting() bool {
-	hasConsented := m.state.userSetup.consentPos == 1
-	if hasConsented {
-		m.state.userSetup.consentPos = 0
-	}
-	return hasConsented
-}
-
-func (m UIModel) updateUserSetupConsent(msg tea.Msg) UIModel {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch {
-		case key.Matches(msg, keyMap.Down):
-			m.state.userSetup.consentPos = utils.AbsInt(m.state.userSetup.consentPos-1) % 2
-
-		case key.Matches(msg, keyMap.Up):
-			m.state.userSetup.consentPos = utils.AbsInt(m.state.userSetup.consentPos+1) % 2
-		}
-	}
-
-	return m
 }
 
 func (m UIModel) getProfile(userName string) func() tea.Msg {
