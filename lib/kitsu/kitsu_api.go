@@ -186,6 +186,6 @@ func GetProfile(userName string) (database.Profile, error) {
 }
 
 func GetProfileLink(userName string) string {
-	p, _ := url.JoinPath("https://kitsu.app/users", userName)
+	p, _ := url.JoinPath(KitsuDomain+"/users", userName)
 	return p
 }
