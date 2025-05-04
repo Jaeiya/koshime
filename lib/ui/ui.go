@@ -137,11 +137,6 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 
-	// Temporary
-	if state.view == None {
-		return m, tea.Quit
-	}
-
 	if m.isLoading() {
 		m.spinner, cmd = m.spinner.Update(msg)
 		cmds = append(cmds, cmd)
@@ -151,6 +146,10 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case SetupUserView:
 		m, cmd = m.UpdateUserSetup(msg)
 		cmds = append(cmds, cmd)
+
+	// Temporary
+	case None:
+		return m, tea.Quit
 	}
 
 	return m, tea.Batch(cmds...)
