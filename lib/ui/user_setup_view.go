@@ -200,7 +200,7 @@ func (m UIModel) UpdateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 		state.loading.active = false
 		if strings.Contains(msg.Error(), "profile not found") {
 			state.username.failed = true
-			m.setConsent(Yes)
+			m.setConsentStartPos(Yes)
 		} else {
 			// FIX  we should display a proper error, not panic
 			panic(msg)
@@ -340,7 +340,7 @@ func (m UIModel) UpdateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 		state.loading.active = false
 
 	case FetchErrorMsg:
-		m.setConsent(Yes)
+		m.setConsentStartPos(Yes)
 		state.loading.active = false
 		state.libAnime.failed = true
 		state.fetchError = msg

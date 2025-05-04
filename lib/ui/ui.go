@@ -203,7 +203,7 @@ func (m UIModel) isConsenting() bool {
 	return m.state.internal.consentPos == Yes
 }
 
-func (m *UIModel) setConsent(c Consent) {
+func (m *UIModel) setConsentStartPos(c Consent) {
 	m.state.internal.consentPos = c
 }
 
