@@ -472,10 +472,6 @@ func (m UIModel) viewLoading() string {
 	)
 }
 
-func (m UIModel) abort() tea.Msg {
-	return AbortMsg{}
-}
-
 func (m UIModel) getProfile(userName string) func() tea.Msg {
 	return func() tea.Msg {
 		p, err := kitsu.GetProfile(userName)

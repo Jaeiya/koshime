@@ -206,3 +206,7 @@ func (m UIModel) isConsenting() bool {
 func (m *UIModel) setConsent(c Consent) {
 	m.state.internal.consentPos = c
 }
+
+func (m UIModel) abort() tea.Msg {
+	return AbortMsg{}
+}
