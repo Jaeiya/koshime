@@ -132,10 +132,11 @@ func getAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (APIUrl, e
 	return APIUrl(u.Build()), nil
 }
 
-// getAnimeLibInfoQURL requires at least one user library
-// anime ID and returns all relevant information for
-// that entry.
 func getAnimeLibInfoQURL(libIDs []string) (APIUrl, error) {
+	if len(libIDs) == 0 {
+		return "", fmt.Errorf("the provided slice of IDs is empty")
+	}
+
 	u, err := newQURL(LibraryURL)
 	if err != nil {
 		return "", nil
@@ -187,7 +188,6 @@ type KitsuURL struct {
 	query url.Values
 }
 
-// newQURL returns a new Kitsu Query URL.
 func newQURL(uType URLType) (*KitsuURL, error) {
 	var u *url.URL
 	var err error
