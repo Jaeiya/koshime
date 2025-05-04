@@ -192,6 +192,14 @@ func (m UIModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
+func (m UIModel) isConsenting() bool {
+	return m.state.internal.consentPos == Yes
+}
+
+func (m *UIModel) setConsentStartPos(c Consent) {
+	m.state.internal.consentPos = c
+}
+
 func (m UIModel) updateConsent(msg tea.Msg) UIModel {
 	state := &m.state.internal
 	switch msg := msg.(type) {
@@ -219,14 +227,6 @@ func (m UIModel) viewConsent(msg ...string) string {
 
 	msg = append(msg, no, yes)
 	return lipgloss.JoinVertical(lipgloss.Left, msg...)
-}
-
-func (m UIModel) isConsenting() bool {
-	return m.state.internal.consentPos == Yes
-}
-
-func (m *UIModel) setConsentStartPos(c Consent) {
-	m.state.internal.consentPos = c
 }
 
 func (m UIModel) isLoading() bool {
