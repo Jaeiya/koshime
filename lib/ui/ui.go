@@ -91,7 +91,7 @@ func NewUI(dbPath string) (UIModel, error) {
 	model := UIModel{help: h, input: input, spinner: s}
 
 	if !utils.FileExists(dbPath) {
-		model.state.internal.view = SetupUserView
+		model.SetViewState(SetupUserView)
 		return model, nil
 	}
 
@@ -115,8 +115,6 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
-	state := &m.state.internal
-
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		if msg.String() == "esc" {
@@ -124,7 +122,7 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case SetupUserFinishedMsg:
-		state.view = None
+		m.SetViewState(None)
 		m.db, err = database.NewDatabase(&m.state.userSetup.userData)
 		if err != nil {
 			panic(err)
@@ -132,7 +130,7 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case AbortMsg:
-		state.view = AbortView
+		m.SetViewState(AbortView)
 		return m, tea.Quit
 
 	}
@@ -142,7 +140,7 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	switch state.view {
+	switch m.state.internal.view {
 	case SetupUserView:
 		m, cmd = m.UpdateUserSetup(msg)
 		cmds = append(cmds, cmd)
@@ -153,6 +151,10 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m *UIModel) SetViewState(view UIView) {
+	m.state.internal.view = view
 }
 
 func (m UIModel) View() (string, *tea.Cursor) {
