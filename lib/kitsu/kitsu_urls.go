@@ -7,13 +7,15 @@ import (
 	"strings"
 )
 
+const KitsuDomain = "https://kitsu.app"
+
 type APIUrl string
 
 const (
-	apiAuthTokenURL = APIUrl("https://kitsu.app/api/oauth/token")
-	apiLibraryURL   = APIUrl("https://kitsu.app/api/edge/library-entries")
-	apiAnimeURL     = APIUrl("https://kitsu.app/api/edge/anime")
-	apiUsersURL     = APIUrl("https://kitsu.app/api/edge/users")
+	apiAuthTokenURL = APIUrl(KitsuDomain + "/api/oauth/token")
+	apiLibraryURL   = APIUrl(KitsuDomain + "/api/edge/library-entries")
+	apiAnimeURL     = APIUrl(KitsuDomain + "/api/edge/anime")
+	apiUsersURL     = APIUrl(KitsuDomain + "/api/edge/users")
 )
 
 type URLType int
