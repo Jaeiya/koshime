@@ -113,13 +113,13 @@ func (m UIModel) ViewUserSetup() (string, *tea.Cursor) {
 	var view string
 	switch m.state.userSetup.view {
 	case SetupConsentView:
-		view = m.consentView()
+		view = m.setupUserConsentView()
 	case SetupUsernameView:
-		view, c = m.usernameView()
+		view, c = m.setupUsernameView()
 	case SetupPasswordView:
-		view, c = m.passwordView()
+		view, c = m.setupPasswordView()
 	case SetupLibraryView:
-		view = m.libAnimeView()
+		view = m.setupLibraryView()
 	}
 
 	// Always keep margin from prompt
@@ -134,7 +134,7 @@ func (m UIModel) ViewUserSetup() (string, *tea.Cursor) {
 }
 
 func (m UIModel) UpdateUserConsent(msg tea.Msg) (UIModel, tea.Cmd) {
-	m = m.updateConsent(msg)
+	m = m.updateUserSetupConsent(msg)
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
@@ -155,7 +155,7 @@ func (m UIModel) UpdateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 	state := &m.state.userSetup
 
 	if state.username.failed || state.username.passed {
-		m = m.updateConsent(msg)
+		m = m.updateUserSetupConsent(msg)
 	}
 
 	switch msg := msg.(type) {
@@ -264,7 +264,7 @@ func (m UIModel) UpdatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
 	state := &m.state.userSetup
 
 	if state.password.failed {
-		m = m.updateConsent(msg)
+		m = m.updateUserSetupConsent(msg)
 	}
 
 	switch msg := msg.(type) {
@@ -316,7 +316,7 @@ func (m UIModel) UpdateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 	state := &m.state.userSetup
 
 	if state.libAnime.failed {
-		m = m.updateConsent(msg)
+		m = m.updateUserSetupConsent(msg)
 	}
 
 	switch msg := msg.(type) {
@@ -351,7 +351,7 @@ func (m UIModel) UpdateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m UIModel) consentView() string {
+func (m UIModel) setupUserConsentView() string {
 	yes, no := m.getYesNo(m.state.userSetup.consentPos)
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -361,7 +361,7 @@ func (m UIModel) consentView() string {
 	)
 }
 
-func (m UIModel) usernameView() (string, *tea.Cursor) {
+func (m UIModel) setupUsernameView() (string, *tea.Cursor) {
 	state := m.state.userSetup
 	if state.loading.active {
 		return m.loadingView(), nil
@@ -416,7 +416,7 @@ func (m UIModel) usernameView() (string, *tea.Cursor) {
 	return view, c
 }
 
-func (m UIModel) passwordView() (string, *tea.Cursor) {
+func (m UIModel) setupPasswordView() (string, *tea.Cursor) {
 	state := m.state.userSetup
 	if state.loading.active {
 		return m.loadingView(), nil
@@ -465,7 +465,7 @@ func (m UIModel) passwordView() (string, *tea.Cursor) {
 	return view, c
 }
 
-func (m UIModel) libAnimeView() string {
+func (m UIModel) setupLibraryView() string {
 	state := m.state.userSetup
 	if state.loading.active {
 		return m.loadingView()
@@ -538,7 +538,7 @@ func (m *UIModel) isConsenting() bool {
 	return hasConsented
 }
 
-func (m UIModel) updateConsent(msg tea.Msg) UIModel {
+func (m UIModel) updateUserSetupConsent(msg tea.Msg) UIModel {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
