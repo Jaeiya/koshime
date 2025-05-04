@@ -143,10 +143,6 @@ func (m UIModel) ViewUserSetup() (string, *tea.Cursor) {
 	return lipgloss.JoinVertical(lipgloss.Left, style.MarginTop(1).Render(view), helpView), c
 }
 
-func (m UIModel) Help() string {
-	return m.help.View(m)
-}
-
 func (m UIModel) ShortHelp() []key.Binding {
 	state := m.state.userSetup
 
