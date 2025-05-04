@@ -214,6 +214,51 @@ func (m UIModel) UpdateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 	return m, cmd
 }
 
+func (m UIModel) UserSetupShortHelp() []key.Binding {
+	state := m.state.userSetup
+
+	switch state.view {
+	case SetupConsentView:
+		return []key.Binding{
+			keyMap.Up,
+			keyMap.Down,
+			keyMap.Select,
+			keyMap.HelpMore,
+		}
+
+	case SetupUsernameView:
+		if state.username.failed || state.username.passed {
+			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+		}
+		return []key.Binding{keyMap.Submit, keyMap.Abort}
+
+	case SetupPasswordView:
+		if state.password.failed {
+			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+		}
+		return []key.Binding{keyMap.Submit, keyMap.Abort}
+
+	case SetupLibraryView:
+		if state.libAnime.passed {
+			return []key.Binding{keyMap.Submit, keyMap.Abort}
+		}
+		return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+	}
+
+	return []key.Binding{}
+}
+
+func (m UIModel) UserSetupFullHelp() [][]key.Binding {
+	switch m.state.userSetup.view {
+	case SetupConsentView:
+		return [][]key.Binding{
+			{keyMap.Up, keyMap.Down, keyMap.Select},
+			{keyMap.Abort, keyMap.HelpLess},
+		}
+	}
+	return [][]key.Binding{}
+}
+
 func (m UIModel) UpdatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
 	var cmd tea.Cmd
 	state := &m.state.userSetup

@@ -146,46 +146,17 @@ func (m UIModel) View() (string, *tea.Cursor) {
 }
 
 func (m UIModel) ShortHelp() []key.Binding {
-	state := m.state.userSetup
-
-	switch state.view {
-	case SetupConsentView:
-		return []key.Binding{
-			keyMap.Up,
-			keyMap.Down,
-			keyMap.Select,
-			keyMap.HelpMore,
-		}
-
-	case SetupUsernameView:
-		if state.username.failed || state.username.passed {
-			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
-		}
-		return []key.Binding{keyMap.Submit, keyMap.Abort}
-
-	case SetupPasswordView:
-		if state.password.failed {
-			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
-		}
-		return []key.Binding{keyMap.Submit, keyMap.Abort}
-
-	case SetupLibraryView:
-		if state.libAnime.passed {
-			return []key.Binding{keyMap.Submit, keyMap.Abort}
-		}
-		return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+	switch m.state.internal.view {
+	case SetupUserView:
+		return m.UserSetupShortHelp()
 	}
-
 	return []key.Binding{}
 }
 
 func (m UIModel) FullHelp() [][]key.Binding {
-	switch m.state.userSetup.view {
-	case SetupConsentView:
-		return [][]key.Binding{
-			{keyMap.Up, keyMap.Down, keyMap.Select},
-			{keyMap.Abort, keyMap.HelpLess},
-		}
+	switch m.state.internal.view {
+	case SetupUserView:
+		return m.UserSetupFullHelp()
 	}
 	return [][]key.Binding{}
 }
