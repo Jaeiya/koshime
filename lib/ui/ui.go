@@ -20,6 +20,13 @@ type UIView int
 const (
 	None = UIView(iota)
 	SetupUserView
+	MenuView
+	WatchAnimeView
+	AddAnimeView
+	FindAnimeView
+	DropAnimeView
+	RSSView
+	MaintenanceView
 	AbortView
 )
 
