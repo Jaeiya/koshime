@@ -7,6 +7,7 @@ import (
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/help"
+	"github.com/charmbracelet/bubbles/v2/key"
 	"github.com/charmbracelet/bubbles/v2/spinner"
 	"github.com/charmbracelet/bubbles/v2/textinput"
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -19,6 +20,16 @@ const (
 	SetupUserView
 	AbortView
 )
+
+var keyMap = userSetupKeyMap{
+	Up:       key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
+	Down:     key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
+	Select:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
+	Submit:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "submit")),
+	HelpMore: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more help")),
+	HelpLess: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "less help")),
+	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
+}
 
 type (
 	AbortMsg             struct{}
@@ -132,4 +143,49 @@ func (m UIModel) View() (string, *tea.Cursor) {
 	}
 
 	return "missing view", nil
+}
+
+func (m UIModel) ShortHelp() []key.Binding {
+	state := m.state.userSetup
+
+	switch state.view {
+	case SetupConsentView:
+		return []key.Binding{
+			keyMap.Up,
+			keyMap.Down,
+			keyMap.Select,
+			keyMap.HelpMore,
+		}
+
+	case SetupUsernameView:
+		if state.username.failed || state.username.passed {
+			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+		}
+		return []key.Binding{keyMap.Submit, keyMap.Abort}
+
+	case SetupPasswordView:
+		if state.password.failed {
+			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+		}
+		return []key.Binding{keyMap.Submit, keyMap.Abort}
+
+	case SetupLibraryView:
+		if state.libAnime.passed {
+			return []key.Binding{keyMap.Submit, keyMap.Abort}
+		}
+		return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+	}
+
+	return []key.Binding{}
+}
+
+func (m UIModel) FullHelp() [][]key.Binding {
+	switch m.state.userSetup.view {
+	case SetupConsentView:
+		return [][]key.Binding{
+			{keyMap.Up, keyMap.Down, keyMap.Select},
+			{keyMap.Abort, keyMap.HelpLess},
+		}
+	}
+	return [][]key.Binding{}
 }

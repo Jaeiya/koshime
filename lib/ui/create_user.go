@@ -25,10 +25,10 @@ type (
 type userSetupView int
 
 const (
-	ConsentView = userSetupView(iota)
-	UsernameView
-	PasswordView
-	LibraryAnimeView
+	SetupConsentView = userSetupView(iota)
+	SetupUsernameView
+	SetupPasswordView
+	SetupLibraryView
 )
 
 type userSetupKeyMap struct {
@@ -39,16 +39,6 @@ type userSetupKeyMap struct {
 	Abort    key.Binding
 	HelpMore key.Binding
 	HelpLess key.Binding
-}
-
-var userSetupKeys = userSetupKeyMap{
-	Up:       key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
-	Down:     key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
-	Select:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
-	Submit:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "submit")),
-	HelpMore: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more help")),
-	HelpLess: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "less help")),
-	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
 }
 
 type userSetupState struct {
@@ -86,10 +76,10 @@ func (m UIModel) UpdateUserSetup(msg tea.Msg) (UIModel, tea.Cmd) {
 		m.help.Width = msg.Width
 
 	case tea.KeyPressMsg:
-		if key.Matches(msg, userSetupKeys.HelpMore) {
+		if key.Matches(msg, keyMap.HelpMore) {
 			switch state.view {
 			// Full help not implemented for input fields
-			case UsernameView, PasswordView:
+			case SetupUsernameView, SetupPasswordView:
 			default:
 				m.help.ShowAll = !m.help.ShowAll
 			}
@@ -98,13 +88,13 @@ func (m UIModel) UpdateUserSetup(msg tea.Msg) (UIModel, tea.Cmd) {
 	}
 
 	switch state.view {
-	case ConsentView:
+	case SetupConsentView:
 		m, cmd = m.UpdateUserConsent(msg)
-	case UsernameView:
+	case SetupUsernameView:
 		m, cmd = m.UpdateUserName(msg)
-	case PasswordView:
+	case SetupPasswordView:
 		m, cmd = m.UpdatePassword(msg)
-	case LibraryAnimeView:
+	case SetupLibraryView:
 		m, cmd = m.UpdateLibAnime(msg)
 	}
 
@@ -122,13 +112,13 @@ func (m UIModel) ViewUserSetup() (string, *tea.Cursor) {
 	var c *tea.Cursor
 	var view string
 	switch m.state.userSetup.view {
-	case ConsentView:
+	case SetupConsentView:
 		view = m.consentView()
-	case UsernameView:
+	case SetupUsernameView:
 		view, c = m.usernameView()
-	case PasswordView:
+	case SetupPasswordView:
 		view, c = m.passwordView()
-	case LibraryAnimeView:
+	case SetupLibraryView:
 		view = m.libAnimeView()
 	}
 
@@ -143,62 +133,17 @@ func (m UIModel) ViewUserSetup() (string, *tea.Cursor) {
 	return lipgloss.JoinVertical(lipgloss.Left, style.MarginTop(1).Render(view), helpView), c
 }
 
-func (m UIModel) ShortHelp() []key.Binding {
-	state := m.state.userSetup
-
-	switch state.view {
-	case ConsentView:
-		return []key.Binding{
-			userSetupKeys.Up,
-			userSetupKeys.Down,
-			userSetupKeys.Select,
-			userSetupKeys.HelpMore,
-		}
-
-	case UsernameView:
-		if state.username.failed || state.username.passed {
-			return []key.Binding{userSetupKeys.Up, userSetupKeys.Down, userSetupKeys.Select}
-		}
-		return []key.Binding{userSetupKeys.Submit, userSetupKeys.Abort}
-
-	case PasswordView:
-		if state.password.failed {
-			return []key.Binding{userSetupKeys.Up, userSetupKeys.Down, userSetupKeys.Select}
-		}
-		return []key.Binding{userSetupKeys.Submit, userSetupKeys.Abort}
-
-	case LibraryAnimeView:
-		if state.libAnime.passed {
-			return []key.Binding{userSetupKeys.Submit, userSetupKeys.Abort}
-		}
-		return []key.Binding{userSetupKeys.Up, userSetupKeys.Down, userSetupKeys.Select}
-	}
-
-	return []key.Binding{}
-}
-
-func (m UIModel) FullHelp() [][]key.Binding {
-	switch m.state.userSetup.view {
-	case ConsentView:
-		return [][]key.Binding{
-			{userSetupKeys.Up, userSetupKeys.Down, userSetupKeys.Select},
-			{userSetupKeys.Abort, userSetupKeys.HelpLess},
-		}
-	}
-	return [][]key.Binding{}
-}
-
 func (m UIModel) UpdateUserConsent(msg tea.Msg) (UIModel, tea.Cmd) {
 	m = m.updateConsent(msg)
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, userSetupKeys.Select):
+		case key.Matches(msg, keyMap.Select):
 			if !m.isConsenting() {
 				return m, m.abort
 			}
-			m.state.userSetup.view = UsernameView
+			m.state.userSetup.view = SetupUsernameView
 			return m, textinput.Blink
 		}
 	}
@@ -241,7 +186,7 @@ func (m UIModel) UpdateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 				}
 				m.input.Reset()
 				m.input.EchoMode = textinput.EchoPassword
-				state.view = PasswordView
+				state.view = SetupPasswordView
 				return m, nil
 			}
 		}
@@ -298,7 +243,7 @@ func (m UIModel) UpdatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
 			if state.password.passed && !state.loading.active {
 				state.loading.active = true
 				state.loading.text = "Getting Library Anime"
-				state.view = LibraryAnimeView
+				state.view = SetupLibraryView
 				return m, tea.Batch(m.spinner.Tick, m.getAnimeLibrary(state.userData.Profile.ID))
 			}
 		}
@@ -331,7 +276,7 @@ func (m UIModel) UpdateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
-		if key.Matches(msg, userSetupKeys.Select) {
+		if key.Matches(msg, keyMap.Select) {
 			if state.libAnime.failed {
 				if !m.isConsenting() {
 					return m, m.abort
@@ -552,10 +497,10 @@ func (m UIModel) updateConsent(msg tea.Msg) UIModel {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, userSetupKeys.Down):
+		case key.Matches(msg, keyMap.Down):
 			m.state.userSetup.consentPos = utils.AbsInt(m.state.userSetup.consentPos-1) % 2
 
-		case key.Matches(msg, userSetupKeys.Up):
+		case key.Matches(msg, keyMap.Up):
 			m.state.userSetup.consentPos = utils.AbsInt(m.state.userSetup.consentPos+1) % 2
 		}
 	}
