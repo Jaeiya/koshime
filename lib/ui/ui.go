@@ -123,7 +123,7 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case SetupUserFinishedMsg:
 		m.SetViewState(None)
-		m.db, err = database.NewDatabase(&m.state.userSetup.userData)
+		m.db, err = database.NewDatabase(&m.state.userSetup.data)
 		if err != nil {
 			panic(err)
 		}

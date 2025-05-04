@@ -42,7 +42,7 @@ type userSetupKeyMap struct {
 }
 
 type userSetupState struct {
-	userData   database.Data
+	data       database.Data
 	view       userSetupView
 	fetchError error
 	username   struct {
@@ -182,7 +182,7 @@ func (m UIModel) updateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 
 	case FetchProfileMsg:
 		m.setLoadingState(false)
-		state.userData.Profile = msg
+		state.data.Profile = msg
 		state.username.passed = true
 
 	// If getting the profile returns an error
@@ -277,7 +277,7 @@ func (m UIModel) updatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
 				m.setLoadingState(true)
 				m.setLoadingText("Getting Library Anime")
 				state.view = SetupLibraryView
-				return m, tea.Batch(m.spinner.Tick, m.getAnimeLibrary(state.userData.Profile.ID))
+				return m, tea.Batch(m.spinner.Tick, m.getAnimeLibrary(state.data.Profile.ID))
 			}
 		}
 
@@ -285,9 +285,9 @@ func (m UIModel) updatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
 		m.setLoadingState(false)
 		state.password.passed = true
 
-		state.userData.Profile.AccessToken = msg.Token
-		state.userData.Profile.RefreshToken = msg.RefreshToken
-		state.userData.Profile.TokenExpiration = msg.ExpiresIn
+		state.data.Profile.AccessToken = msg.Token
+		state.data.Profile.RefreshToken = msg.RefreshToken
+		state.data.Profile.TokenExpiration = msg.ExpiresIn
 		return m, nil
 
 	case FetchErrorMsg:
@@ -316,7 +316,7 @@ func (m UIModel) updateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 				}
 				m.setLoadingState(true)
 				state.libAnime.failed = false
-				return m, tea.Batch(m.spinner.Tick, m.getAnimeLibrary(state.userData.Profile.ID))
+				return m, tea.Batch(m.spinner.Tick, m.getAnimeLibrary(state.data.Profile.ID))
 			}
 
 			if state.libAnime.passed {
@@ -325,7 +325,7 @@ func (m UIModel) updateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 		}
 
 	case FetchedLibAnimeMsg:
-		state.userData.Library = msg
+		state.data.Library = msg
 		state.libAnime.passed = true
 		m.setLoadingState(false)
 
@@ -349,7 +349,7 @@ func (m UIModel) viewSetupUsername() (string, *tea.Cursor) {
 	}
 
 	if state.username.passed {
-		p := state.userData.Profile
+		p := state.data.Profile
 
 		createdDate, err := time.Parse(time.RFC3339, p.CreatedAt)
 		if err != nil {
@@ -391,10 +391,10 @@ func (m UIModel) viewSetupPassword() (string, *tea.Cursor) {
 	if state.password.passed {
 		tokensStr := newText([]string{
 			";c;Access Token",
-			";bk;" + state.userData.Profile.AccessToken,
+			";bk;" + state.data.Profile.AccessToken,
 			"",
 			";c;Refresh Token",
-			";bk;" + state.userData.Profile.RefreshToken,
+			";bk;" + state.data.Profile.RefreshToken,
 		}, false)
 		header := lipgloss.NewStyle().Align(lipgloss.Center).
 			Width(lipgloss.Width(tokensStr) - 3).
@@ -437,7 +437,7 @@ func (m UIModel) viewSetupLibrary() string {
 				utils.ColorText(
 					fmt.Sprintf(
 						";b;Loaded ;w;%d ;b;Anime from your watch list",
-						len(state.userData.Library),
+						len(state.data.Library),
 					),
 				),
 			)
@@ -462,7 +462,7 @@ func (m UIModel) getProfile(userName string) func() tea.Msg {
 
 func (m UIModel) getAuthToken() tea.Msg {
 	tokenData, err := kitsu.GetAuthToken(
-		m.state.userSetup.userData.Profile.Username,
+		m.state.userSetup.data.Profile.Username,
 		m.input.Value(),
 	)
 	if err != nil {
