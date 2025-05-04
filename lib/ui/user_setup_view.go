@@ -88,13 +88,13 @@ func (m UIModel) UpdateUserSetup(msg tea.Msg) (UIModel, tea.Cmd) {
 
 	switch state.view {
 	case SetupConsentView:
-		m, cmd = m.UpdateUserConsent(msg)
+		m, cmd = m.updateUserConsent(msg)
 	case SetupUsernameView:
-		m, cmd = m.UpdateUserName(msg)
+		m, cmd = m.updateUserName(msg)
 	case SetupPasswordView:
-		m, cmd = m.UpdatePassword(msg)
+		m, cmd = m.updatePassword(msg)
 	case SetupLibraryView:
-		m, cmd = m.UpdateLibAnime(msg)
+		m, cmd = m.updateLibAnime(msg)
 	}
 
 	cmds = append(cmds, cmd)
@@ -132,7 +132,7 @@ func (m UIModel) ViewUserSetup() (string, *tea.Cursor) {
 	return lipgloss.JoinVertical(lipgloss.Left, style.MarginTop(1).Render(view), helpView), c
 }
 
-func (m UIModel) UpdateUserConsent(msg tea.Msg) (UIModel, tea.Cmd) {
+func (m UIModel) updateUserConsent(msg tea.Msg) (UIModel, tea.Cmd) {
 	m = m.updateConsent(msg)
 
 	switch msg := msg.(type) {
@@ -149,7 +149,7 @@ func (m UIModel) UpdateUserConsent(msg tea.Msg) (UIModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m UIModel) UpdateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
+func (m UIModel) updateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 	var cmd tea.Cmd
 	state := &m.state.userSetup
 
@@ -212,7 +212,7 @@ func (m UIModel) UpdateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m UIModel) UserSetupShortHelp() []key.Binding {
+func (m UIModel) userSetupShortHelp() []key.Binding {
 	state := m.state.userSetup
 
 	switch state.view {
@@ -246,7 +246,7 @@ func (m UIModel) UserSetupShortHelp() []key.Binding {
 	return []key.Binding{}
 }
 
-func (m UIModel) UserSetupFullHelp() [][]key.Binding {
+func (m UIModel) userSetupFullHelp() [][]key.Binding {
 	switch m.state.userSetup.view {
 	case SetupConsentView:
 		return [][]key.Binding{
@@ -257,7 +257,7 @@ func (m UIModel) UserSetupFullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m UIModel) UpdatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
+func (m UIModel) updatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
 	var cmd tea.Cmd
 	state := &m.state.userSetup
 
@@ -310,7 +310,7 @@ func (m UIModel) UpdatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m UIModel) UpdateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
+func (m UIModel) updateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
 	state := &m.state.userSetup
 
 	if state.libAnime.failed {

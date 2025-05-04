@@ -157,7 +157,7 @@ func (m UIModel) View() (string, *tea.Cursor) {
 func (m UIModel) ShortHelp() []key.Binding {
 	switch m.state.internal.view {
 	case SetupUserView:
-		return m.UserSetupShortHelp()
+		return m.userSetupShortHelp()
 	}
 	return []key.Binding{}
 }
@@ -165,7 +165,7 @@ func (m UIModel) ShortHelp() []key.Binding {
 func (m UIModel) FullHelp() [][]key.Binding {
 	switch m.state.internal.view {
 	case SetupUserView:
-		return m.UserSetupFullHelp()
+		return m.userSetupFullHelp()
 	}
 	return [][]key.Binding{}
 }
