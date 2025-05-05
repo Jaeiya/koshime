@@ -208,7 +208,8 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if msg.String() == "ctrl+c" {
-			return m, func() tea.Msg { return AbortMsg{} }
+			state.view = AbortView
+			return m, tea.Quit
 		}
 
 	case SetupUserFinishedMsg:
