@@ -35,6 +35,29 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 	return data, nil
 }
 
+func FindAnime(q string, status AnimeStatus, maxItems int) ([]Anime, error) {
+	qurl, err := getAnimeInfoQURL(q, status, maxItems)
+	if err != nil {
+		return []Anime{}, nil
+	}
+
+	var respData struct {
+		Data []Anime `json:"data"`
+	}
+
+	opt := APIReqOptions{
+		method:      apiGet,
+		url:         qurl,
+		contentType: vndAPIContent,
+	}
+
+	if _, err = newAPIRequest(opt, &respData); err != nil {
+		return []Anime{}, err
+	}
+
+	return respData.Data, nil
+}
+
 func GetLibraryAnime(userID string, status LibAnimeStatus) ([]database.LibraryEntry, error) {
 	qurl, err := getUserLibAnimeQURL(userID, status)
 	if err != nil {
