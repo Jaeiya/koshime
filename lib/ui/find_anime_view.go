@@ -1,8 +1,6 @@
 package ui
 
 import (
-	"time"
-
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/charmbracelet/bubbles/v2/key"
 	"github.com/charmbracelet/bubbles/v2/list"
@@ -34,7 +32,8 @@ type findMenuModel struct {
 		width  int
 		height int
 	}
-	state struct {
+	maxResults int
+	state      struct {
 		view    MenuFindView
 		results []kitsu.Anime
 		find    struct {
@@ -44,11 +43,10 @@ type findMenuModel struct {
 	}
 }
 
-func NewFindMenuModel() findMenuModel {
+func NewFindMenuModel(maxResults int) findMenuModel {
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	l.SetShowTitle(true)
 	l.DisableQuitKeybindings()
-
 	input := textinput.New()
 	input.SetWidth(30)
 	input.Focus()
@@ -58,14 +56,14 @@ func NewFindMenuModel() findMenuModel {
 	input.Styles.Focused.Prompt = inputPromptStyle
 	input.Styles.Focused.Text = inputTextStyle
 
-	return findMenuModel{list: l, input: input, loader: NewLoader()}
+	return findMenuModel{list: l, input: input, loader: NewLoader(), maxResults: maxResults}
 }
 
 func (m findMenuModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m findMenuModel) Update(msg tea.Msg) (findMenuModel, tea.Cmd) {
+func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -176,11 +174,10 @@ func (m findMenuModel) newAnimeList(animeList []kitsu.Anime) list.Model {
 
 func (m findMenuModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
-		time.Sleep(2 * time.Second)
 		anime, err := kitsu.FindAnime(
 			query,
 			[]kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished},
-			10,
+			m.maxResults,
 		)
 		if err != nil {
 			return FetchErrorMsg(err)

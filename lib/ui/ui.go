@@ -44,6 +44,16 @@ const (
 	Add
 )
 
+type ViewModel interface {
+	tea.CursorModel
+	help.KeyMap
+	Update(msg tea.Msg) (ViewModel, tea.Cmd)
+}
+
+var MenuViewMap = map[UIView]ViewModel{
+	FindAnimeView: NewFindMenuModel(20),
+}
+
 var MenuItemMap = map[MenuItem]string{
 	Find:   "Find",
 	Add:    "Add",
@@ -107,12 +117,9 @@ type uiState struct {
 }
 
 type UIModel struct {
-	db         *database.Database
-	menuItems  []MenuItem
-	menuModels struct {
-		find findMenuModel
-	}
-	state struct {
+	db        *database.Database
+	menuItems []MenuItem
+	state     struct {
 		internal  uiState
 		userSetup userSetupState
 	}
@@ -155,7 +162,6 @@ func NewUI(dbPath string) (UIModel, error) {
 		Delete,
 		Clean,
 	)
-	model.menuModels.find = NewFindMenuModel()
 
 	if !utils.FileExists(dbPath) {
 		model.SetViewState(SetupUserView)
@@ -189,7 +195,10 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		state.width = msg.Width
 		state.height = msg.Height
-		m.menuModels.find, _ = m.menuModels.find.Update(msg)
+		// Send size to all menu view models
+		for key, model := range MenuViewMap {
+			MenuViewMap[key], _ = model.Update(msg)
+		}
 
 	case tea.KeyPressMsg:
 		if msg.String() == "esc" {
@@ -221,13 +230,14 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
+	if model, exists := MenuViewMap[state.view]; exists {
+		MenuViewMap[state.view], cmd = model.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
 	switch state.view {
 	case SetupUserView:
 		m, cmd = m.UpdateUserSetup(msg)
-		cmds = append(cmds, cmd)
-
-	case FindAnimeView:
-		m.menuModels.find, cmd = m.menuModels.find.Update(msg)
 		cmds = append(cmds, cmd)
 
 	case MenuView:
@@ -247,17 +257,20 @@ func (m *UIModel) SetViewState(view UIView) {
 }
 
 func (m UIModel) View() (string, *tea.Cursor) {
-	switch m.state.internal.view {
-	case SetupUserView:
-		return m.ViewUserSetup()
-	case FindAnimeView:
-		model := m.menuModels.find
+	state := m.state.internal
+
+	if model, exists := MenuViewMap[state.view]; exists {
 		view, c := model.View()
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			view,
 			helpStyle.Render(m.help.View(model)),
 		), c
+	}
+
+	switch state.view {
+	case SetupUserView:
+		return m.ViewUserSetup()
 
 	case AbortView:
 		return abortStyle.Render(
