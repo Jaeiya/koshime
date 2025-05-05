@@ -75,6 +75,16 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		switch {
+		case key.Matches(msg, keyMap.MainMenu):
+			// Exit to main menu only when filter is cancelled
+			if m.state.view == Find_ReviewView {
+				if m.list.FilterState() > list.Unfiltered {
+					break
+				}
+			}
+			m.Reset()
+			return m, func() tea.Msg { return AbortMsg{} }
+
 		case key.Matches(msg, keyMap.Submit):
 			switch m.state.view {
 			case Find_DefaultView:
@@ -153,6 +163,7 @@ func (m findMenuModel) FullHelp() [][]key.Binding {
 
 func (m *findMenuModel) Reset() {
 	m.state.view = Find_DefaultView
+	m.input.Reset()
 	m.state.results = nil
 	m.state.find.passed = false
 	m.state.find.failed = false

@@ -84,7 +84,7 @@ var keyMap = MainKeyMap{
 	HelpMore: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more help")),
 	HelpLess: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "less help")),
 	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
-	MainMenu: key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "menu")),
+	MainMenu: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "menu")),
 }
 
 type (
@@ -202,6 +202,12 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		if msg.String() == "esc" {
+			if state.view != FindAnimeView {
+				return m, func() tea.Msg { return AbortMsg{} }
+			}
+		}
+
+		if msg.String() == "ctrl+c" {
 			return m, func() tea.Msg { return AbortMsg{} }
 		}
 
