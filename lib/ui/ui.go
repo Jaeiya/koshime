@@ -432,10 +432,6 @@ func (m UIModel) viewLoading() string {
 	)
 }
 
-func (m UIModel) getWindowSize() (width int, height int) {
-	return m.state.internal.width, m.state.internal.height
-}
-
 func (m UIModel) abort() tea.Msg {
 	return AbortMsg{}
 }
