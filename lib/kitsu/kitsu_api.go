@@ -35,8 +35,13 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 	return data, nil
 }
 
-func FindAnime(q string, status AnimeStatus, maxItems int) ([]Anime, error) {
-	qurl, err := getAnimeInfoQURL(q, status, maxItems)
+func FindAnime(q string, status []AnimeStatus, maxItems int) ([]Anime, error) {
+	normalizedStatus := AnimeStatus{}
+	for _, s := range status {
+		normalizedStatus = append(normalizedStatus, s...)
+	}
+
+	qurl, err := getAnimeInfoQURL(q, normalizedStatus, maxItems)
 	if err != nil {
 		return []Anime{}, nil
 	}

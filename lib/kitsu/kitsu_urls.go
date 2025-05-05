@@ -65,25 +65,25 @@ const (
 	AgeRatingField         = AnimeField("ageRating")
 )
 
-type AnimeStatus string
+type AnimeStatus []string
 
-const (
+var (
 	// Currently airing or going to be airing in the future
 	//
 	//🟡 Kitsu does not always update "upcoming" to "current"
 	// on time, so use this if you want to catch anime
 	// that should be airing within the season.
-	AnimeNew = AnimeStatus(AnimeAiring + "," + AnimeUpcoming)
+	AnimeNew = AnimeStatus{"current", "upcoming"}
 	// Currently Airing
-	AnimeAiring = AnimeStatus("current")
+	AnimeAiring = AnimeStatus{"current"}
 	// Going to be airing at some point in the future
-	AnimeUpcoming = AnimeStatus("upcoming")
+	AnimeUpcoming = AnimeStatus{"upcoming"}
 	// To be announced
-	AnimeTBA = AnimeStatus("tba")
+	AnimeTBA = AnimeStatus{"tba"}
 	// Confirmed but not released
-	AnimeUnreleased = AnimeStatus("unreleased")
+	AnimeUnreleased = AnimeStatus{"unreleased"}
 	// Finished airing
-	AnimeFinished = AnimeStatus("finished")
+	AnimeFinished = AnimeStatus{"finished"}
 )
 
 type LibAnimeStatus string
@@ -243,15 +243,17 @@ func (k *KitsuURL) QueryAnimeType(aType AnimeType) *KitsuURL {
 }
 
 func (k *KitsuURL) QueryAnimeStatus(status AnimeStatus) *KitsuURL {
-	return k.queryStatus(string(status))
+	k.query.Add("filter[status]", strings.Join(status, ","))
+	return k
 }
 
 func (k *KitsuURL) QueryLibAnimeStatus(status LibAnimeStatus) *KitsuURL {
-	return k.queryStatus(string(status))
+	k.query.Add("filter[status]", string(status))
+	return k
 }
 
-func (k *KitsuURL) queryStatus(status string) *KitsuURL {
-	k.query.Add("filter[status]", string(status))
+func (k *KitsuURL) queryStatus(status []string) *KitsuURL {
+	k.query.Add("filter[status]", strings.Join(status, ","))
 	return k
 }
 
