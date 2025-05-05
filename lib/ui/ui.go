@@ -55,7 +55,17 @@ var MenuItemMap = map[MenuItem]string{
 	Clean:  "Clean",
 }
 
-var keyMap = userSetupKeyMap{
+type MainKeyMap struct {
+	Up       key.Binding
+	Down     key.Binding
+	Select   key.Binding
+	Submit   key.Binding
+	Abort    key.Binding
+	HelpMore key.Binding
+	HelpLess key.Binding
+}
+
+var keyMap = MainKeyMap{
 	Up:       key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
 	Down:     key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
 	Select:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),

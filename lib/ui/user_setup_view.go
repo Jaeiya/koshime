@@ -31,16 +31,6 @@ const (
 	SetupLibraryView
 )
 
-type userSetupKeyMap struct {
-	Up       key.Binding
-	Down     key.Binding
-	Select   key.Binding
-	Submit   key.Binding
-	Abort    key.Binding
-	HelpMore key.Binding
-	HelpLess key.Binding
-}
-
 type userSetupState struct {
 	data       database.Data
 	view       userSetupView
