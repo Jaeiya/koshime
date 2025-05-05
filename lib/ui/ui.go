@@ -61,6 +61,7 @@ type MainKeyMap struct {
 	Select   key.Binding
 	Submit   key.Binding
 	Abort    key.Binding
+	MainMenu key.Binding
 	HelpMore key.Binding
 	HelpLess key.Binding
 }
@@ -73,12 +74,17 @@ var keyMap = MainKeyMap{
 	HelpMore: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more help")),
 	HelpLess: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "less help")),
 	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
+	MainMenu: key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "menu")),
 }
 
 type (
 	AbortMsg             struct{}
 	SetupUserMsg         struct{}
 	SetupUserFinishedMsg struct{}
+	WindowSizeMsg        struct {
+		Width  int
+		Height int
+	}
 )
 
 type Consent int
@@ -92,6 +98,8 @@ type uiState struct {
 	view       UIView
 	consentPos Consent
 	menuPos    int
+	height     int
+	width      int
 	loading    struct {
 		active bool
 		text   string
@@ -99,9 +107,12 @@ type uiState struct {
 }
 
 type UIModel struct {
-	db        *database.Database
-	menuItems []MenuItem
-	state     struct {
+	db         *database.Database
+	menuItems  []MenuItem
+	menuModels struct {
+		find findMenuModel
+	}
+	state struct {
 		internal  uiState
 		userSetup userSetupState
 	}
@@ -144,6 +155,7 @@ func NewUI(dbPath string) (UIModel, error) {
 		Delete,
 		Clean,
 	)
+	model.menuModels.find = NewFindMenuModel()
 
 	if !utils.FileExists(dbPath) {
 		model.SetViewState(SetupUserView)
@@ -171,7 +183,14 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
+	state := &m.state.internal
+
 	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		state.width = msg.Width
+		state.height = msg.Height
+		m.menuModels.find, _ = m.menuModels.find.Update(msg)
+
 	case tea.KeyPressMsg:
 		if msg.String() == "esc" {
 			return m, func() tea.Msg { return AbortMsg{} }
@@ -187,7 +206,7 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case AbortMsg:
 		// Do not abort application when inside of sub-menu
-		switch m.state.internal.view {
+		switch state.view {
 		case FindAnimeView, AddAnimeView, DropAnimeView:
 			m.SetViewState(MenuView)
 			return m, nil
@@ -202,17 +221,18 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	switch m.state.internal.view {
+	switch state.view {
 	case SetupUserView:
 		m, cmd = m.UpdateUserSetup(msg)
 		cmds = append(cmds, cmd)
 
 	case FindAnimeView:
-		m, cmd = m.UpdateFindAnime(msg)
+		m.menuModels.find, cmd = m.menuModels.find.Update(msg)
 		cmds = append(cmds, cmd)
 
 	case MenuView:
-		m = m.UpdateMenu(msg)
+		m, cmd = m.UpdateMenu(msg)
+		cmds = append(cmds, cmd)
 
 	// Temporary
 	case None:
@@ -231,7 +251,13 @@ func (m UIModel) View() (string, *tea.Cursor) {
 	case SetupUserView:
 		return m.ViewUserSetup()
 	case FindAnimeView:
-		return m.ViewFindAnime()
+		model := m.menuModels.find
+		view, c := model.View()
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			view,
+			helpStyle.Render(m.help.View(model)),
+		), c
 
 	case AbortView:
 		return abortStyle.Render(
@@ -255,9 +281,11 @@ func (m UIModel) View() (string, *tea.Cursor) {
 	return "missing view", nil
 }
 
-func (m UIModel) UpdateMenu(msg tea.Msg) UIModel {
+func (m UIModel) UpdateMenu(msg tea.Msg) (UIModel, tea.Cmd) {
+	var cmd tea.Cmd
 	itemLen := len(m.menuItems)
 	state := &m.state.internal
+
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
@@ -265,6 +293,7 @@ func (m UIModel) UpdateMenu(msg tea.Msg) UIModel {
 			switch m.menuItems[state.menuPos] {
 			case Find:
 				m.SetViewState(FindAnimeView)
+				cmd = textinput.Blink
 			}
 
 		case key.Matches(msg, keyMap.Up):
@@ -274,7 +303,8 @@ func (m UIModel) UpdateMenu(msg tea.Msg) UIModel {
 			state.menuPos = (state.menuPos + 1) % itemLen
 		}
 	}
-	return m
+
+	return m, cmd
 }
 
 func (m UIModel) viewMenu() string {
@@ -387,6 +417,10 @@ func (m UIModel) viewLoading() string {
 			spinnerStr,
 		),
 	)
+}
+
+func (m UIModel) getWindowSize() (width int, height int) {
+	return m.state.internal.width, m.state.internal.height
 }
 
 func (m UIModel) abort() tea.Msg {
