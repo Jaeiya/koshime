@@ -1,0 +1,69 @@
+package ui
+
+import (
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/charmbracelet/bubbles/v2/spinner"
+	tea "github.com/charmbracelet/bubbletea/v2"
+)
+
+type LoaderModel struct {
+	spinner spinner.Model
+	text    string
+	active  bool
+}
+
+func NewLoader() LoaderModel {
+	s := spinner.New(spinner.WithSpinner(spinner.Spinner{
+		Frames: []string{"⠋", "⠙", "⠚", "⠞", "⠖", "⠦", "⠴", "⠲", "⠳", "⠓"},
+		FPS:    time.Second / 10,
+	}))
+
+	return LoaderModel{spinner: s}
+}
+
+func (m LoaderModel) Init() tea.Cmd {
+	return nil
+}
+
+func (m LoaderModel) Update(msg tea.Msg) (LoaderModel, tea.Cmd) {
+	var cmd tea.Cmd
+	if m.active {
+		m.spinner, cmd = m.spinner.Update(msg)
+	}
+	return m, cmd
+}
+
+func (m LoaderModel) View() string {
+	spinnerStr := spinnerStyle.Render(strings.Repeat(m.spinner.View(), 3))
+	return textStyle.Render(
+		fmt.Sprintf(
+			"%s %s %s",
+			spinnerStr,
+			loadingStyle.Render(m.text),
+			spinnerStr,
+		),
+	)
+}
+
+func (m LoaderModel) IsLoading() bool {
+	return m.active
+}
+
+func (m *LoaderModel) SetLoadingState(b bool) {
+	m.active = true
+}
+
+func (m *LoaderModel) SetText(s string) {
+	m.text = s
+}
+
+func (m LoaderModel) Start() tea.Msg {
+	return m.spinner.Tick()
+}
+
+func (m *LoaderModel) Stop() {
+	m.active = false
+}
