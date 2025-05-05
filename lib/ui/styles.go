@@ -12,6 +12,7 @@ var (
 	selectNoStyle    = textStyle.MarginTop(1).Foreground(ansi.BrightMagenta)
 	spinnerStyle     = style.Foreground(ansi.BrightGreen)
 	loadingStyle     = style.Foreground(ansi.BrightBlue)
+	helpStyle        = style.MarginLeft(3).MarginTop(1)
 	helpDescStyle    = style.Foreground(lipgloss.Color("#56566B"))
 	helpKeyStyle     = style.Foreground(lipgloss.Color("#787897"))
 	inputPromptStyle = style.Foreground(ansi.BrightGreen)
