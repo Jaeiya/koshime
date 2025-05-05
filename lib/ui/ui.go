@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/bubbles/v2/textinput"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type UIView int
@@ -29,6 +30,30 @@ const (
 	MaintenanceView
 	AbortView
 )
+
+type MenuItem int
+
+const (
+	Find = MenuItem(iota)
+	Watch
+	Update
+	Delete
+	Drop
+	Rss
+	Clean
+	Add
+)
+
+var MenuItemMap = map[MenuItem]string{
+	Find:   "Find",
+	Add:    "Add",
+	Watch:  "Watch",
+	Update: "Update",
+	Delete: "Delete",
+	Drop:   "Drop",
+	Rss:    "RSS",
+	Clean:  "Clean",
+}
 
 var keyMap = userSetupKeyMap{
 	Up:       key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
@@ -56,6 +81,7 @@ const (
 type uiState struct {
 	view       UIView
 	consentPos Consent
+	menuPos    int
 	loading    struct {
 		active bool
 		text   string
@@ -63,8 +89,9 @@ type uiState struct {
 }
 
 type UIModel struct {
-	db    *database.Database
-	state struct {
+	db        *database.Database
+	menuItems []MenuItem
+	state     struct {
 		internal  uiState
 		userSetup userSetupState
 	}
@@ -97,6 +124,17 @@ func NewUI(dbPath string) (UIModel, error) {
 
 	model := UIModel{help: h, input: input, spinner: s}
 
+	model.menuItems = append(
+		model.menuItems,
+		Find,
+		Watch,
+		Update,
+		Drop,
+		Rss,
+		Delete,
+		Clean,
+	)
+
 	if !utils.FileExists(dbPath) {
 		model.SetViewState(SetupUserView)
 		return model, nil
@@ -109,6 +147,7 @@ func NewUI(dbPath string) (UIModel, error) {
 	}
 
 	model.db = db
+	model.SetViewState(MenuView)
 
 	return model, nil
 }
@@ -137,6 +176,12 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 
 	case AbortMsg:
+		// Do not abort application when inside of sub-menu
+		switch m.state.internal.view {
+		case FindAnimeView, AddAnimeView, DropAnimeView:
+			m.SetViewState(MenuView)
+			return m, nil
+		}
 		m.SetViewState(AbortView)
 		return m, tea.Quit
 
@@ -151,6 +196,13 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case SetupUserView:
 		m, cmd = m.UpdateUserSetup(msg)
 		cmds = append(cmds, cmd)
+
+	case FindAnimeView:
+		m, cmd = m.UpdateFindAnime(msg)
+		cmds = append(cmds, cmd)
+
+	case MenuView:
+		m = m.UpdateMenu(msg)
 
 	// Temporary
 	case None:
@@ -168,10 +220,19 @@ func (m UIModel) View() (string, *tea.Cursor) {
 	switch m.state.internal.view {
 	case SetupUserView:
 		return m.ViewUserSetup()
+	case FindAnimeView:
+		return m.ViewFindAnime()
 
 	case AbortView:
 		return abortStyle.Render(
 			utils.ColorText(";g;>>> ;y;User Aborted Operation ;g;<<<"),
+		), nil
+
+	case MenuView:
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			m.viewMenu(),
+			textStyle.Render(m.help.View(m)),
 		), nil
 
 	case None:
@@ -184,10 +245,67 @@ func (m UIModel) View() (string, *tea.Cursor) {
 	return "missing view", nil
 }
 
+func (m UIModel) UpdateMenu(msg tea.Msg) UIModel {
+	itemLen := len(m.menuItems)
+	state := &m.state.internal
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, keyMap.Select):
+			switch m.menuItems[state.menuPos] {
+			case Find:
+				m.SetViewState(FindAnimeView)
+			}
+
+		case key.Matches(msg, keyMap.Up):
+			state.menuPos = (state.menuPos - 1 + itemLen) % itemLen
+
+		case key.Matches(msg, keyMap.Down):
+			state.menuPos = (state.menuPos + 1) % itemLen
+		}
+	}
+	return m
+}
+
+func (m UIModel) viewMenu() string {
+	items := make([]string, len(m.menuItems)+1)
+	s := textStyle.MarginLeft(5).Width(12).PaddingLeft(1).PaddingRight(3)
+
+	header := textStyle.MarginTop(1).
+		MarginBottom(1).
+		Render(utils.ColorText(";b;What would you like to do?"))
+	items[0] = header
+
+	for i, item := range m.menuItems {
+		if m.state.internal.menuPos == i {
+			items[i+1] = s.Foreground(ansi.BrightGreen).
+				Background(ansi.Black).
+				Render("> " + MenuItemMap[item])
+			continue
+		}
+		items[i+1] = s.Render("  " + MenuItemMap[item])
+	}
+
+	// Add empty line between help list
+	items = append(items, "")
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		items...,
+	)
+}
+
 func (m UIModel) ShortHelp() []key.Binding {
 	switch m.state.internal.view {
 	case SetupUserView:
 		return m.userSetupShortHelp()
+	case MenuView:
+		return []key.Binding{
+			keyMap.Up,
+			keyMap.Down,
+			keyMap.Select,
+		}
+
 	}
 	return []key.Binding{}
 }
