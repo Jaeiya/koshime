@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/v2/textinput"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type MenuFindView int
@@ -165,10 +166,18 @@ func (m findMenuModel) newAnimeList(animeList []kitsu.Anime) list.Model {
 			anime.Attributes.Titles.English,
 		}
 	}
-	l := list.New(items, list.NewDefaultDelegate(), m.windowSize.width, m.windowSize.height/2)
+	d := list.NewDefaultDelegate()
+	d.Styles.SelectedTitle = d.Styles.SelectedTitle.Foreground(ansi.BrightGreen).
+		BorderForeground(ansi.BrightGreen)
+	d.Styles.SelectedDesc = d.Styles.SelectedTitle.Foreground(ansi.Blue)
+	d.Styles.NormalTitle = d.Styles.NormalTitle.Foreground(lipgloss.Color("#A7A7B5"))
+	d.Styles.NormalDesc = d.Styles.NormalDesc.Foreground(lipgloss.Color("#696974"))
+	l := list.New(items, d, m.windowSize.width, int(float64(m.windowSize.height)*0.66))
 	l.Title = "Anime Results"
 	l.SetShowTitle(true)
 	l.DisableQuitKeybindings()
+	l.Styles.Title = style.Foreground(ansi.BrightBlue).Background(ansi.Black)
+
 	return l
 }
 
