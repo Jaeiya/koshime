@@ -16,9 +16,10 @@ import (
 )
 
 type (
-	FetchedAuthTokenMsg = kitsu.AuthToken
-	FetchProfileMsg     = database.Profile
-	FetchedLibAnimeMsg  = []database.LibraryEntry
+	FetchedAuthTokenMsg  = kitsu.AuthToken
+	FetchProfileMsg      = database.Profile
+	FetchedLibAnimeMsg   = []database.LibraryEntry
+	SetupUserFinishedMsg = database.Data
 )
 
 type userSetupView int
@@ -48,138 +49,141 @@ type userSetupState struct {
 	}
 }
 
-func (m UIModel) UpdateUserSetup(msg tea.Msg) (UIModel, tea.Cmd) {
+type userSetupModel struct {
+	consent consentModel
+	loader  loaderModel
+	input   textinput.Model
+	state   userSetupState
+}
+
+func NewUserSetupModel() userSetupModel {
+	return userSetupModel{
+		loader: NewLoader(),
+		input:  NewTextInput(),
+	}
+}
+
+func (m userSetupModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
-	state := m.state.userSetup
-
-	switch msg := msg.(type) {
-	case tea.WindowSizeMsg:
-		m.help.Width = msg.Width
-
-	case tea.KeyPressMsg:
-		if key.Matches(msg, keyMap.HelpMore) {
-			switch state.view {
-			// Full help not implemented for input fields
-			case SetupUsernameView, SetupPasswordView:
-			default:
-				m.help.ShowAll = !m.help.ShowAll
-			}
-		}
-
+	if m.loader.IsLoading() {
+		m.loader, cmd = m.loader.Update(msg)
+		cmds = append(cmds, cmd)
 	}
 
-	switch state.view {
+	switch m.state.view {
 	case SetupConsentView:
-		m, cmd = m.updateUserConsent(msg)
+		m, cmd = m.UpdateConsent(msg)
+		cmds = append(cmds, cmd)
 	case SetupUsernameView:
-		m, cmd = m.updateUserName(msg)
+		m, cmd = m.UpdateUsername(msg)
+		cmds = append(cmds, cmd)
 	case SetupPasswordView:
-		m, cmd = m.updatePassword(msg)
+		m, cmd = m.UpdatePassword(msg)
+		cmds = append(cmds, cmd)
 	case SetupLibraryView:
-		m, cmd = m.updateLibAnime(msg)
+		m, cmd = m.UpdateLibAnime(msg)
+		cmds = append(cmds, cmd)
 	}
-
-	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }
 
-func (m UIModel) ViewUserSetup() (string, *tea.Cursor) {
-	var c *tea.Cursor
+func (m userSetupModel) View() (string, *tea.Cursor) {
 	var view string
-	switch m.state.userSetup.view {
+	var c *tea.Cursor
+
+	switch m.state.view {
 	case SetupConsentView:
-		view = m.viewConsent(userWelcomeTxt)
+		view = m.consent.View(userWelcomeTxt)
 	case SetupUsernameView:
-		view, c = m.viewSetupUsername()
+		view, c = m.ViewUsername()
 	case SetupPasswordView:
-		view, c = m.viewSetupPassword()
+		view, c = m.ViewPassword()
 	case SetupLibraryView:
-		view = m.viewSetupLibrary()
+		view = m.ViewLibAnime()
 	}
 
-	// Always keep margin from prompt
 	view = style.MarginTop(1).Render(view)
-	helpView := textStyle.Height(3).PaddingTop(1).Render(m.help.View(m))
-
 	if c != nil {
-		// Adjust for margin and help text
-		c.Y += 1
+		// -1 for the text input
+		// (this obviously breaks for more than one input)
+		c.Y += lipgloss.Height(view) - 1
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, style.MarginTop(1).Render(view), helpView), c
+	return view, c
 }
 
-func (m UIModel) updateUserConsent(msg tea.Msg) (UIModel, tea.Cmd) {
-	m = m.updateConsent(msg)
+func (m userSetupModel) UpdateConsent(msg tea.Msg) (userSetupModel, tea.Cmd) {
+	m.consent = m.consent.Update(msg)
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.Select):
-			if !m.isConsenting() {
-				return m, m.abort
+			if No == m.consent.Get() {
+				return m, abort
 			}
-			m.state.userSetup.view = SetupUsernameView
+			m.state.view = SetupUsernameView
 			return m, textinput.Blink
 		}
 	}
+
 	return m, nil
 }
 
-func (m UIModel) updateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
+func (m userSetupModel) UpdateUsername(msg tea.Msg) (userSetupModel, tea.Cmd) {
 	var cmd tea.Cmd
-	state := &m.state.userSetup
+	usernameState := &m.state.username
 
-	if state.username.failed || state.username.passed {
-		m = m.updateConsent(msg)
+	if usernameState.failed || usernameState.passed {
+		m.consent = m.consent.Update(msg)
 	}
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch msg.Key().Code {
 		case tea.KeyEnter:
-			if !state.username.failed && !state.username.passed && !m.isLoading() {
-				m.setLoadingState(true)
-				m.setLoadingText("Loading Profile")
-				return m, tea.Batch(m.spinner.Tick, m.getProfile(m.input.Value()))
+			if !usernameState.failed && !usernameState.passed && !m.loader.IsLoading() {
+				m.loader.SetLoadingState(true)
+				m.loader.SetText("Loading Profile")
+				return m, tea.Batch(m.loader.Start, m.getProfile(m.input.Value()))
 			}
 
 			// User chooses to either abort or try again
-			if state.username.failed {
-				if !m.isConsenting() {
-					return m, m.abort
+			if usernameState.failed {
+				if No == m.consent.Get() {
+					return m, abort
 				}
 				m.input.Reset()
-				state.username.failed = false
+				usernameState.failed = false
 			}
 
 			// User chooses if profile is theirs or not
-			if state.username.passed {
-				if !m.isConsenting() {
-					state.username.passed = false
+			if usernameState.passed {
+				if No == m.consent.Get() {
+					usernameState.passed = false
 					m.input.Reset()
 					return m, nil
 				}
 				m.input.Reset()
 				m.input.EchoMode = textinput.EchoPassword
-				state.view = SetupPasswordView
+				m.state.view = SetupPasswordView
 				return m, nil
 			}
 		}
 
 	case FetchProfileMsg:
-		m.setLoadingState(false)
-		state.data.Profile = msg
-		state.username.passed = true
+		m.loader.Stop()
+		m.state.data.Profile = msg
+		usernameState.passed = true
 
 	// If getting the profile returns an error
 	case FetchErrorMsg:
-		m.setLoadingState(false)
+		m.loader.Stop()
 		if strings.Contains(msg.Error(), "profile not found") {
-			state.username.failed = true
-			m.setConsentStartPos(Yes)
+			usernameState.failed = true
+			m.consent.SetConsentPos(Yes)
 		} else {
 			// FIX  we should display a proper error, not panic
 			panic(msg)
@@ -191,154 +195,17 @@ func (m UIModel) updateUserName(msg tea.Msg) (UIModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m UIModel) userSetupShortHelp() []key.Binding {
-	state := m.state.userSetup
-
-	switch state.view {
-	case SetupConsentView:
-		return []key.Binding{
-			keyMap.Up,
-			keyMap.Down,
-			keyMap.Select,
-			keyMap.HelpMore,
-		}
-
-	case SetupUsernameView:
-		if state.username.failed || state.username.passed {
-			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
-		}
-		return []key.Binding{keyMap.Submit, keyMap.Abort}
-
-	case SetupPasswordView:
-		if state.password.failed {
-			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
-		}
-		return []key.Binding{keyMap.Submit, keyMap.Abort}
-
-	case SetupLibraryView:
-		if state.libAnime.passed {
-			return []key.Binding{keyMap.Submit, keyMap.Abort}
-		}
-		return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+func (m userSetupModel) ViewUsername() (string, *tea.Cursor) {
+	if m.loader.IsLoading() {
+		return m.loader.View(), nil
 	}
 
-	return []key.Binding{}
-}
-
-func (m UIModel) userSetupFullHelp() [][]key.Binding {
-	switch m.state.userSetup.view {
-	case SetupConsentView:
-		return [][]key.Binding{
-			{keyMap.Up, keyMap.Down, keyMap.Select},
-			{keyMap.Abort, keyMap.HelpLess},
-		}
-	}
-	return [][]key.Binding{}
-}
-
-func (m UIModel) updatePassword(msg tea.Msg) (UIModel, tea.Cmd) {
-	var cmd tea.Cmd
-	state := &m.state.userSetup
-
-	if state.password.failed {
-		m = m.updateConsent(msg)
+	if m.state.username.failed {
+		return m.consent.View(usernameFailedTxt), nil
 	}
 
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch msg.Key().Code {
-		case tea.KeyEnter:
-			if !state.password.failed && !state.password.passed && !m.isLoading() {
-				m.setLoadingState(true)
-				m.setLoadingText("Getting Access Token")
-				return m, tea.Batch(m.spinner.Tick, m.getAuthToken)
-			}
-
-			if state.password.failed {
-				if !m.isConsenting() {
-					return m, m.abort
-				}
-				state.password.failed = false
-				m.input.Reset()
-			}
-
-			if state.password.passed && !m.isLoading() {
-				m.setLoadingState(true)
-				m.setLoadingText("Getting Library Anime")
-				state.view = SetupLibraryView
-				return m, tea.Batch(m.spinner.Tick, m.getAnimeLibrary(state.data.Profile.ID))
-			}
-		}
-
-	case FetchedAuthTokenMsg:
-		m.setLoadingState(false)
-		state.password.passed = true
-
-		state.data.Profile.AccessToken = msg.Token
-		state.data.Profile.RefreshToken = msg.RefreshToken
-		state.data.Profile.TokenExpiration = msg.ExpiresIn
-		return m, nil
-
-	case FetchErrorMsg:
-		m.setLoadingState(false)
-		state.password.failed = true
-		state.fetchError = msg
-	}
-
-	m.input, cmd = m.input.Update(msg)
-	return m, cmd
-}
-
-func (m UIModel) updateLibAnime(msg tea.Msg) (UIModel, tea.Cmd) {
-	state := &m.state.userSetup
-
-	if state.libAnime.failed {
-		m = m.updateConsent(msg)
-	}
-
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		if key.Matches(msg, keyMap.Select) {
-			if state.libAnime.failed {
-				if !m.isConsenting() {
-					return m, m.abort
-				}
-				m.setLoadingState(true)
-				state.libAnime.failed = false
-				return m, tea.Batch(m.spinner.Tick, m.getAnimeLibrary(state.data.Profile.ID))
-			}
-
-			if state.libAnime.passed {
-				return m, func() tea.Msg { return SetupUserFinishedMsg{} }
-			}
-		}
-
-	case FetchedLibAnimeMsg:
-		state.data.Library = msg
-		state.libAnime.passed = true
-		m.setLoadingState(false)
-
-	case FetchErrorMsg:
-		m.setConsentStartPos(Yes)
-		m.setLoadingState(false)
-		state.libAnime.failed = true
-		state.fetchError = msg
-	}
-	return m, nil
-}
-
-func (m UIModel) viewSetupUsername() (string, *tea.Cursor) {
-	state := m.state.userSetup
-	if m.isLoading() {
-		return m.viewLoading(), nil
-	}
-
-	if state.username.failed {
-		return m.viewConsent(usernameFailedTxt), nil
-	}
-
-	if state.username.passed {
-		p := state.data.Profile
+	if m.state.username.passed {
+		p := m.state.data.Profile
 
 		createdDate, err := time.Parse(time.RFC3339, p.CreatedAt)
 		if err != nil {
@@ -353,7 +220,7 @@ func (m UIModel) viewSetupUsername() (string, *tea.Cursor) {
 			kitsu.GetProfileLink(p.ID),
 		})
 
-		return m.viewConsent(confirmUsernamePreTxt, profileStr, confirmUsernameConsentTxt), nil
+		return m.consent.View(confirmUsernamePreTxt, profileStr, confirmUsernameConsentTxt), nil
 	}
 
 	c := m.input.Cursor()
@@ -363,27 +230,76 @@ func (m UIModel) viewSetupUsername() (string, *tea.Cursor) {
 		userNameTxt,
 		style.MarginTop(1).Render(m.input.View()),
 	)
-	c.Y += lipgloss.Height(view)
 	return view, c
 }
 
-func (m UIModel) viewSetupPassword() (string, *tea.Cursor) {
-	state := m.state.userSetup
-	if m.isLoading() {
-		return m.viewLoading(), nil
+func (m userSetupModel) UpdatePassword(msg tea.Msg) (userSetupModel, tea.Cmd) {
+	var cmd tea.Cmd
+	passwordState := &m.state.password
+	if m.state.password.failed {
+		m.consent = m.consent.Update(msg)
 	}
 
-	if state.password.failed {
-		return m.viewConsent(passwordFailedTxt), nil
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch msg.Key().Code {
+		case tea.KeyEnter:
+			if !passwordState.failed && !passwordState.passed && !m.loader.IsLoading() {
+				m.loader.SetLoadingState(true)
+				m.loader.SetText("Getting Access Token")
+				return m, tea.Batch(m.loader.Start, m.getAuthToken)
+			}
+
+			if passwordState.failed {
+				if No == m.consent.Get() {
+					return m, abort
+				}
+				passwordState.failed = false
+				m.input.Reset()
+			}
+
+			if passwordState.passed && !m.loader.IsLoading() {
+				m.loader.SetLoadingState(true)
+				m.loader.SetText("Getting Library Anime")
+				m.state.view = SetupLibraryView
+				return m, tea.Batch(m.loader.Start, m.getAnimeLibrary(m.state.data.Profile.ID))
+			}
+		}
+
+	case FetchedAuthTokenMsg:
+		m.loader.Stop()
+		passwordState.passed = true
+		m.state.data.Profile.AccessToken = msg.Token
+		m.state.data.Profile.RefreshToken = msg.RefreshToken
+		m.state.data.Profile.TokenExpiration = msg.ExpiresIn
+		return m, nil
+
+	case FetchErrorMsg:
+		m.loader.Stop()
+		passwordState.failed = true
+		m.state.fetchError = msg
 	}
 
-	if state.password.passed {
+	m.input, cmd = m.input.Update(msg)
+	return m, cmd
+}
+
+func (m userSetupModel) ViewPassword() (string, *tea.Cursor) {
+	if m.loader.IsLoading() {
+		return m.loader.View(), nil
+	}
+
+	if m.state.password.failed {
+		return m.consent.View(passwordFailedTxt), nil
+	}
+
+	if m.state.password.passed {
 		tokensStr := newText([]string{
 			";c;Access Token",
-			";bk;" + state.data.Profile.AccessToken,
+			";bk;" + m.state.data.Profile.AccessToken,
 			"",
 			";c;Refresh Token",
-			";bk;" + state.data.Profile.RefreshToken,
+			";bk;" + m.state.data.Profile.RefreshToken,
 		}, false)
 		header := lipgloss.NewStyle().Align(lipgloss.Center).
 			Width(lipgloss.Width(tokensStr) - 3).
@@ -405,28 +321,64 @@ func (m UIModel) viewSetupPassword() (string, *tea.Cursor) {
 		passwordTxt,
 		style.MarginTop(1).Render(m.input.View()),
 	)
-	c.Y += lipgloss.Height(view)
 	return view, c
 }
 
-func (m UIModel) viewSetupLibrary() string {
-	state := m.state.userSetup
-	if m.isLoading() {
-		return m.viewLoading()
+func (m userSetupModel) UpdateLibAnime(msg tea.Msg) (userSetupModel, tea.Cmd) {
+	state := &m.state.libAnime
+
+	if state.failed {
+		m.consent = m.consent.Update(msg)
 	}
 
-	if state.libAnime.failed {
-		s := textStyle.MarginTop(1).Width(60).Render(state.fetchError.Error())
-		return m.viewConsent(s, libAnimeFetchFailedTxt)
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		if key.Matches(msg, keyMap.Select) {
+			if state.failed {
+				if No == m.consent.Get() {
+					return m, abort
+				}
+				m.loader.SetLoadingState(true)
+				state.failed = false
+				return m, tea.Batch(m.loader.Start, m.getAnimeLibrary(m.state.data.Profile.ID))
+			}
+
+			if state.passed {
+				return m, func() tea.Msg { return SetupUserFinishedMsg{} }
+			}
+		}
+
+	case FetchedLibAnimeMsg:
+		m.loader.Stop()
+		m.state.data.Library = msg
+		state.passed = true
+
+	case FetchErrorMsg:
+		m.loader.Stop()
+		m.consent.SetConsentPos(Yes)
+		state.failed = true
+		m.state.fetchError = msg
+	}
+	return m, nil
+}
+
+func (m userSetupModel) ViewLibAnime() string {
+	if m.loader.IsLoading() {
+		return m.loader.View()
 	}
 
-	if state.libAnime.passed {
+	if m.state.libAnime.failed {
+		s := textStyle.MarginTop(1).Width(60).Render(m.state.fetchError.Error())
+		return m.consent.View(s, libAnimeFetchFailedTxt)
+	}
+
+	if m.state.libAnime.passed {
 		loadedStr := textStyle.PaddingBottom(1).
 			Render(
 				utils.ColorText(
 					fmt.Sprintf(
 						";b;Loaded ;w;%d ;b;Anime from your watch list",
-						len(state.data.Library),
+						len(m.state.data.Library),
 					),
 				),
 			)
@@ -439,9 +391,56 @@ func (m UIModel) viewSetupLibrary() string {
 	return ""
 }
 
-func (m UIModel) getProfile(userName string) func() tea.Msg {
+func (m userSetupModel) ShortHelp() []key.Binding {
+	if m.loader.IsLoading() {
+		return []key.Binding{}
+	}
+
+	switch m.state.view {
+	case SetupConsentView:
+		return []key.Binding{
+			keyMap.Up,
+			keyMap.Down,
+			keyMap.Select,
+			keyMap.HelpMore,
+		}
+
+	case SetupUsernameView:
+		if m.state.username.failed || m.state.username.passed {
+			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+		}
+		return []key.Binding{keyMap.Submit, keyMap.Abort}
+
+	case SetupPasswordView:
+		if m.state.password.failed {
+			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+		}
+		return []key.Binding{keyMap.Submit, keyMap.Abort}
+
+	case SetupLibraryView:
+		if m.state.libAnime.passed {
+			return []key.Binding{keyMap.Submit, keyMap.Abort}
+		}
+		return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+	}
+
+	return []key.Binding{}
+}
+
+func (m userSetupModel) FullHelp() [][]key.Binding {
+	switch m.state.view {
+	case SetupConsentView:
+		return [][]key.Binding{
+			{keyMap.Up, keyMap.Down, keyMap.Select},
+			{keyMap.Abort, keyMap.HelpLess},
+		}
+	}
+	return [][]key.Binding{}
+}
+
+func (m userSetupModel) getProfile(username string) tea.Cmd {
 	return func() tea.Msg {
-		p, err := kitsu.GetProfile(userName)
+		p, err := kitsu.GetProfile(username)
 		if err != nil {
 			return FetchErrorMsg(err)
 		}
@@ -449,18 +448,7 @@ func (m UIModel) getProfile(userName string) func() tea.Msg {
 	}
 }
 
-func (m UIModel) getAuthToken() tea.Msg {
-	tokenData, err := kitsu.GetAuthToken(
-		m.state.userSetup.data.Profile.Username,
-		m.input.Value(),
-	)
-	if err != nil {
-		return FetchErrorMsg(err)
-	}
-	return tokenData
-}
-
-func (m UIModel) getAnimeLibrary(userID string) func() tea.Msg {
+func (m userSetupModel) getAnimeLibrary(userID string) func() tea.Msg {
 	return func() tea.Msg {
 		data, err := kitsu.GetLibraryAnime(userID, kitsu.LibAnimeWatching)
 		if err != nil {
@@ -468,4 +456,15 @@ func (m UIModel) getAnimeLibrary(userID string) func() tea.Msg {
 		}
 		return data
 	}
+}
+
+func (m userSetupModel) getAuthToken() tea.Msg {
+	tokenData, err := kitsu.GetAuthToken(
+		m.state.data.Profile.Username,
+		m.input.Value(),
+	)
+	if err != nil {
+		return FetchErrorMsg(err)
+	}
+	return tokenData
 }

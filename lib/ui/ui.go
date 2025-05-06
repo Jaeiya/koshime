@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/Jaeiya/koshime/lib/database"
@@ -53,6 +52,7 @@ type ViewModel interface {
 }
 
 var MenuViewMap = map[UIView]ViewModel{
+	SetupUserView: NewUserSetupModel(),
 	FindAnimeView: NewFindMenuModel(20),
 }
 
@@ -90,20 +90,11 @@ var keyMap = MainKeyMap{
 }
 
 type (
-	AbortMsg             struct{}
-	SetupUserMsg         struct{}
-	SetupUserFinishedMsg struct{}
-	WindowSizeMsg        struct {
+	AbortMsg      struct{}
+	WindowSizeMsg struct {
 		Width  int
 		Height int
 	}
-)
-
-type Consent int
-
-const (
-	No = Consent(iota)
-	Yes
 )
 
 type uiState struct {
@@ -203,7 +194,12 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case tea.KeyPressMsg:
-		if msg.String() == "esc" {
+		switch {
+		case key.Matches(msg, keyMap.HelpMore):
+			m.help.ShowAll = !m.help.ShowAll
+			return m, nil
+
+		case key.Matches(msg, keyMap.MainMenu):
 			if state.view != FindAnimeView {
 				return m, func() tea.Msg { return AbortMsg{} }
 			}
@@ -215,12 +211,11 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case SetupUserFinishedMsg:
-		m.SetViewState(None)
+		m.SetViewState(MenuView)
 		m.db, err = database.NewDatabase(&m.state.userSetup.data)
 		if err != nil {
 			panic(err)
 		}
-		return m, tea.Quit
 
 	case AbortMsg:
 		// Do not abort application when inside of sub-menu
@@ -234,21 +229,12 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 
-	if m.isLoading() {
-		m.spinner, cmd = m.spinner.Update(msg)
-		cmds = append(cmds, cmd)
-	}
-
 	if model, exists := MenuViewMap[state.view]; exists {
 		MenuViewMap[state.view], cmd = model.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
 	switch state.view {
-	case SetupUserView:
-		m, cmd = m.UpdateUserSetup(msg)
-		cmds = append(cmds, cmd)
-
 	case MenuView:
 		m, cmd = m.UpdateMenu(msg)
 		cmds = append(cmds, cmd)
@@ -278,9 +264,6 @@ func (m UIModel) View() (string, *tea.Cursor) {
 	}
 
 	switch state.view {
-	case SetupUserView:
-		return m.ViewUserSetup()
-
 	case AbortView:
 		return abortStyle.Render(
 			utils.ColorText(";g;>>> ;y;User Aborted Operation ;g;<<<"),
@@ -359,88 +342,22 @@ func (m UIModel) viewMenu() string {
 
 func (m UIModel) ShortHelp() []key.Binding {
 	switch m.state.internal.view {
-	case SetupUserView:
-		return m.userSetupShortHelp()
 	case MenuView:
 		return []key.Binding{
 			keyMap.Up,
 			keyMap.Down,
 			keyMap.Select,
 		}
-
 	}
 	return []key.Binding{}
 }
 
 func (m UIModel) FullHelp() [][]key.Binding {
 	switch m.state.internal.view {
-	case SetupUserView:
-		return m.userSetupFullHelp()
 	}
 	return [][]key.Binding{}
 }
 
-func (m UIModel) isConsenting() bool {
-	return m.state.internal.consentPos == Yes
-}
-
-func (m *UIModel) setConsentStartPos(c Consent) {
-	m.state.internal.consentPos = c
-}
-
-func (m UIModel) updateConsent(msg tea.Msg) UIModel {
-	state := &m.state.internal
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch {
-		case key.Matches(msg, keyMap.Down):
-			state.consentPos = Yes
-		case key.Matches(msg, keyMap.Up):
-			state.consentPos = No
-		}
-	}
-	return m
-}
-
-func (m UIModel) viewConsent(msg ...string) string {
-	state := m.state.internal
-	var yes, no string
-	if state.consentPos == No {
-		no = selectNoStyle.Render("> No")
-		yes = textStyle.Render("  Yes")
-	} else {
-		yes = selectYesStyle.Render("> Yes")
-		no = textStyle.MarginTop(1).Render("  No")
-	}
-
-	msg = append(msg, no, yes)
-	return lipgloss.JoinVertical(lipgloss.Left, msg...)
-}
-
-func (m UIModel) isLoading() bool {
-	return m.state.internal.loading.active
-}
-
-func (m *UIModel) setLoadingState(s bool) {
-	m.state.internal.loading.active = s
-}
-
-func (m *UIModel) setLoadingText(s string) {
-	m.state.internal.loading.text = s
-}
-
-func (m UIModel) viewLoading() string {
-	spinnerStr := spinnerStyle.Render(strings.Repeat(m.spinner.View(), 3))
-	return textStyle.Render(
-		fmt.Sprintf(
-			"%s %s %s",
-			spinnerStr,
-			loadingStyle.Render(m.state.internal.loading.text),
-			spinnerStr,
-		),
-	)
-}
-
-func (m UIModel) abort() tea.Msg {
+func abort() tea.Msg {
 	return AbortMsg{}
 }
