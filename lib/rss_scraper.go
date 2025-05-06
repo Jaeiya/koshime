@@ -70,7 +70,11 @@ func (RSS) Get(link string, query string) (RSSResult, error) {
 
 func (rss RSS) Parse(result RSSResult) []RSSEntry {
 	switch result.Host {
-	case "nyaa.si", "www.nyaa.si":
+	case "nyaa.si",
+		"https://nyaa.ink",
+		"https://nyaa.land",
+		"https://ny.iss.one",
+		"https://nyaa.eu":
 		return rss.parseNyaa(result)
 	}
 
