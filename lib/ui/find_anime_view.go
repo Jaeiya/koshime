@@ -28,7 +28,7 @@ func (i animeItem) FilterValue() string { return i.title }
 type findMenuModel struct {
 	list       list.Model
 	input      textinput.Model
-	loader     LoaderModel
+	loader     loaderModel
 	windowSize struct {
 		width  int
 		height int

@@ -9,26 +9,26 @@ import (
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
 
-type LoaderModel struct {
+type loaderModel struct {
 	spinner spinner.Model
 	text    string
 	active  bool
 }
 
-func NewLoader() LoaderModel {
+func NewLoader() loaderModel {
 	s := spinner.New(spinner.WithSpinner(spinner.Spinner{
 		Frames: []string{"⠋", "⠙", "⠚", "⠞", "⠖", "⠦", "⠴", "⠲", "⠳", "⠓"},
 		FPS:    time.Second / 10,
 	}))
 
-	return LoaderModel{spinner: s}
+	return loaderModel{spinner: s}
 }
 
-func (m LoaderModel) Init() tea.Cmd {
+func (m loaderModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m LoaderModel) Update(msg tea.Msg) (LoaderModel, tea.Cmd) {
+func (m loaderModel) Update(msg tea.Msg) (loaderModel, tea.Cmd) {
 	var cmd tea.Cmd
 	if m.active {
 		m.spinner, cmd = m.spinner.Update(msg)
@@ -36,7 +36,7 @@ func (m LoaderModel) Update(msg tea.Msg) (LoaderModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m LoaderModel) View() string {
+func (m loaderModel) View() string {
 	spinnerStr := spinnerStyle.Render(strings.Repeat(m.spinner.View(), 3))
 	return textStyle.Render(
 		fmt.Sprintf(
@@ -48,22 +48,22 @@ func (m LoaderModel) View() string {
 	)
 }
 
-func (m LoaderModel) IsLoading() bool {
+func (m loaderModel) IsLoading() bool {
 	return m.active
 }
 
-func (m *LoaderModel) SetLoadingState(b bool) {
+func (m *loaderModel) SetLoadingState(b bool) {
 	m.active = true
 }
 
-func (m *LoaderModel) SetText(s string) {
+func (m *loaderModel) SetText(s string) {
 	m.text = s
 }
 
-func (m LoaderModel) Start() tea.Msg {
+func (m loaderModel) Start() tea.Msg {
 	return m.spinner.Tick()
 }
 
-func (m *LoaderModel) Stop() {
+func (m *loaderModel) Stop() {
 	m.active = false
 }
