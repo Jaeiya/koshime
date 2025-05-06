@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/charmbracelet/bubbles/v2/textinput"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
@@ -19,3 +20,14 @@ var (
 	inputTextStyle   = style.Foreground(ansi.BrightWhite)
 	abortStyle       = style.MarginTop(1).MarginLeft(2)
 )
+
+func NewTextInput() textinput.Model {
+	input := textinput.New()
+	input.SetWidth(20)
+	input.Focus()
+	input.Prompt = "   > "
+	input.EchoCharacter = '•'
+	input.Styles.Focused.Prompt = inputPromptStyle
+	input.Styles.Focused.Text = inputTextStyle
+	return input
+}
