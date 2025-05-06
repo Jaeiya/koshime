@@ -19,7 +19,6 @@ type (
 	FetchedAuthTokenMsg = kitsu.AuthToken
 	FetchProfileMsg     = database.Profile
 	FetchedLibAnimeMsg  = []database.LibraryEntry
-	FetchErrorMsg       error
 )
 
 type userSetupView int

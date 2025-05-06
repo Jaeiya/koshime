@@ -44,6 +44,8 @@ const (
 	Add
 )
 
+type FetchErrorMsg error
+
 type ViewModel interface {
 	tea.CursorModel
 	help.KeyMap
