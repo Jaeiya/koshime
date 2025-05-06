@@ -1,10 +1,11 @@
-package ui
+package views
 
 import (
 	"fmt"
 	"time"
 
 	"github.com/Jaeiya/koshime/lib/database"
+	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/help"
 	"github.com/charmbracelet/bubbles/v2/key"
@@ -99,7 +100,7 @@ type (
 
 type uiState struct {
 	view       UIView
-	consentPos Consent
+	consentPos ui.Consent
 	menuPos    int
 	height     int
 	width      int
@@ -121,22 +122,17 @@ type UIModel struct {
 	spinner spinner.Model
 }
 
-func NewUI(dbPath string) (UIModel, error) {
+func New(dbPath string) (UIModel, error) {
 	h := help.New()
-	h.Styles.ShortKey = helpKeyStyle
+	h.Styles.ShortKey = ui.HelpKeyStyle
 	h.Styles.FullKey = h.Styles.ShortKey
 
-	h.Styles.ShortDesc = helpDescStyle
+	h.Styles.ShortDesc = ui.HelpDescStyle
 	h.Styles.FullDesc = h.Styles.ShortDesc
 
-	input := textinput.New()
+	input := ui.NewTextInput()
 	input.SetWidth(20)
 	input.Focus()
-	input.CharLimit = 30
-	input.Prompt = "   > "
-	input.EchoCharacter = '•'
-	input.Styles.Focused.Prompt = inputPromptStyle
-	input.Styles.Focused.Text = inputTextStyle
 
 	s := spinner.New(spinner.WithSpinner(spinner.Spinner{
 		Frames: []string{"⠋", "⠙", "⠚", "⠞", "⠖", "⠦", "⠴", "⠲", "⠳", "⠓"},
@@ -259,13 +255,13 @@ func (m UIModel) View() (string, *tea.Cursor) {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			view,
-			helpStyle.Render(m.help.View(model)),
+			ui.HelpStyle.Render(m.help.View(model)),
 		), c
 	}
 
 	switch state.view {
 	case AbortView:
-		return abortStyle.Render(
+		return ui.AbortStyle.Render(
 			utils.ColorText(";g;>>> ;y;User Aborted Operation ;g;<<<"),
 		), nil
 
@@ -273,12 +269,12 @@ func (m UIModel) View() (string, *tea.Cursor) {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			m.viewMenu(),
-			textStyle.Render(m.help.View(m)),
+			ui.TextStyle.Render(m.help.View(m)),
 		), nil
 
 	case None:
 		anime := m.db.GetAllAnime()
-		return style.PaddingTop(1).PaddingLeft(3).Render(
+		return ui.Style.PaddingTop(1).PaddingLeft(3).Render(
 			utils.ColorText(fmt.Sprintf(";g;%d ;w;Library Entries Loaded", len(anime))),
 		), nil
 	}
@@ -314,9 +310,9 @@ func (m UIModel) UpdateMenu(msg tea.Msg) (UIModel, tea.Cmd) {
 
 func (m UIModel) viewMenu() string {
 	items := make([]string, len(m.menuItems)+1)
-	s := textStyle.MarginLeft(5).Width(12).PaddingLeft(1).PaddingRight(3)
+	s := ui.TextStyle.MarginLeft(5).Width(12).PaddingLeft(1).PaddingRight(3)
 
-	header := textStyle.MarginTop(1).
+	header := ui.TextStyle.MarginTop(1).
 		MarginBottom(1).
 		Render(utils.ColorText(";b;What would you like to do?"))
 	items[0] = header

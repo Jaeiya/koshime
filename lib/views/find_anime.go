@@ -1,7 +1,8 @@
-package ui
+package views
 
 import (
 	"github.com/Jaeiya/koshime/lib/kitsu"
+	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/charmbracelet/bubbles/v2/key"
 	"github.com/charmbracelet/bubbles/v2/list"
 	"github.com/charmbracelet/bubbles/v2/textinput"
@@ -28,7 +29,7 @@ func (i animeItem) FilterValue() string { return i.title }
 type findMenuModel struct {
 	list       list.Model
 	input      textinput.Model
-	loader     loaderModel
+	loader     ui.LoaderModel
 	windowSize struct {
 		width  int
 		height int
@@ -48,16 +49,11 @@ func NewFindMenuModel(maxResults int) findMenuModel {
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	l.SetShowTitle(true)
 	l.DisableQuitKeybindings()
-	input := textinput.New()
+	input := ui.NewTextInput()
 	input.SetWidth(30)
 	input.Focus()
-	input.CharLimit = 40
-	input.Prompt = "   > "
-	input.EchoCharacter = '•'
-	input.Styles.Focused.Prompt = inputPromptStyle
-	input.Styles.Focused.Text = inputTextStyle
 
-	return findMenuModel{list: l, input: input, loader: NewLoader(), maxResults: maxResults}
+	return findMenuModel{list: l, input: input, loader: ui.NewLoader(), maxResults: maxResults}
 }
 
 func (m findMenuModel) Init() tea.Cmd {
@@ -126,7 +122,7 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 func (m findMenuModel) View() (string, *tea.Cursor) {
 	if m.loader.IsLoading() {
-		return style.MarginTop(1).Render(m.loader.View()), nil
+		return ui.Style.MarginTop(1).Render(m.loader.View()), nil
 	}
 
 	if m.state.find.failed {
@@ -140,8 +136,8 @@ func (m findMenuModel) View() (string, *tea.Cursor) {
 	c.Shape = tea.CursorBar
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		textStyle.MarginTop(1).Render("Enter partial or full anime title."),
-		style.MarginTop(1).Render(m.input.View()),
+		ui.TextStyle.MarginTop(1).Render("Enter partial or full anime title."),
+		ui.Style.MarginTop(1).Render(m.input.View()),
 	)
 	c.Y += lipgloss.Height(view) - 1
 	return lipgloss.JoinVertical(lipgloss.Left, view), c
@@ -187,7 +183,7 @@ func (m findMenuModel) newAnimeList(animeList []kitsu.Anime) list.Model {
 	l.Title = "Anime Results"
 	l.SetShowTitle(true)
 	l.DisableQuitKeybindings()
-	l.Styles.Title = style.Foreground(ansi.BrightBlue).Background(ansi.Black)
+	l.Styles.Title = ui.Style.Foreground(ansi.BrightBlue).Background(ansi.Black)
 
 	return l
 }

@@ -1,8 +1,9 @@
-package ui
+package views
 
 import (
 	"strings"
 
+	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/lipgloss/v2"
 )
@@ -50,7 +51,7 @@ func newText(text []string, includeMargin bool) string {
 			margin = 0
 		}
 		para = strings.ReplaceAll(para, "\n", " ")
-		text[i] = textStyle.MarginTop(margin).Render(utils.ColorText(para))
+		text[i] = ui.TextStyle.MarginTop(margin).Render(utils.ColorText(para))
 	}
 
 	return lipgloss.JoinVertical(lipgloss.Left, text...)
@@ -59,8 +60,8 @@ func newText(text []string, includeMargin bool) string {
 func createList(props []string, values []string) string {
 	var sb strings.Builder
 
-	propStyle := style.Width(9).Foreground(lipgloss.BrightWhite)
-	valStyle := style.Width(40)
+	propStyle := ui.Style.Width(9).Foreground(lipgloss.BrightWhite)
+	valStyle := ui.Style.Width(40)
 
 	for i, prop := range props {
 		sb.WriteString(
@@ -72,5 +73,5 @@ func createList(props []string, values []string) string {
 		)
 	}
 
-	return style.MarginTop(1).MarginLeft(5).Render(sb.String())
+	return ui.Style.MarginTop(1).MarginLeft(5).Render(sb.String())
 }

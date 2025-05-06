@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"github.com/charmbracelet/bubbles/v2/key"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 )
@@ -13,35 +12,35 @@ const (
 	Yes
 )
 
-type consentModel struct {
+type ConsentModel struct {
 	pos Consent
 }
 
-func (consentModel) Init() tea.Cmd {
+func (ConsentModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m consentModel) Update(msg tea.Msg) consentModel {
+func (m ConsentModel) Update(msg tea.Msg) ConsentModel {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
-		switch {
-		case key.Matches(msg, keyMap.Down):
+		switch msg.String() {
+		case "j", "down":
 			m.pos = Yes
-		case key.Matches(msg, keyMap.Up):
+		case "k", "up":
 			m.pos = No
 		}
 	}
 	return m
 }
 
-func (m consentModel) View(msg ...string) string {
+func (m ConsentModel) View(msg ...string) string {
 	var yes, no string
 	if m.pos == No {
-		no = selectNoStyle.Render("> No")
-		yes = textStyle.Render("  Yes")
+		no = SelectNoStyle.Render("> No")
+		yes = TextStyle.Render("  Yes")
 	} else {
-		yes = selectYesStyle.Render("> Yes")
-		no = textStyle.MarginTop(1).Render("  No")
+		yes = SelectYesStyle.Render("> Yes")
+		no = TextStyle.MarginTop(1).Render("  No")
 	}
 
 	msg = append(msg, no, yes)
@@ -50,17 +49,17 @@ func (m consentModel) View(msg ...string) string {
 
 // Get returns the current consent value
 // and resets the consent position for re-use.
-func (m *consentModel) Get() Consent {
+func (m *ConsentModel) Get() Consent {
 	lastPos := m.pos
 	// Reset for re-use
 	m.pos = No
 	return lastPos
 }
 
-func (m *consentModel) SetConsentPos(pos Consent) {
+func (m *ConsentModel) SetConsentPos(pos Consent) {
 	m.pos = pos
 }
 
-func (m *consentModel) Reset() {
+func (m *ConsentModel) Reset() {
 	m.pos = No
 }

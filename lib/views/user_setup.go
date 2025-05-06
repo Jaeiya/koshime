@@ -1,4 +1,4 @@
-package ui
+package views
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
+	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/key"
 	"github.com/charmbracelet/bubbles/v2/textinput"
@@ -50,16 +51,16 @@ type userSetupState struct {
 }
 
 type userSetupModel struct {
-	consent consentModel
-	loader  loaderModel
+	consent ui.ConsentModel
+	loader  ui.LoaderModel
 	input   textinput.Model
 	state   userSetupState
 }
 
 func NewUserSetupModel() userSetupModel {
 	return userSetupModel{
-		loader: NewLoader(),
-		input:  NewTextInput(),
+		loader: ui.NewLoader(),
+		input:  ui.NewTextInput(),
 	}
 }
 
@@ -105,7 +106,7 @@ func (m userSetupModel) View() (string, *tea.Cursor) {
 		view = m.ViewLibAnime()
 	}
 
-	view = style.MarginTop(1).Render(view)
+	view = ui.Style.MarginTop(1).Render(view)
 	if c != nil {
 		// -1 for the text input
 		// (this obviously breaks for more than one input)
@@ -121,7 +122,7 @@ func (m userSetupModel) UpdateConsent(msg tea.Msg) (userSetupModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.Select):
-			if No == m.consent.Get() {
+			if ui.No == m.consent.Get() {
 				return m, abort
 			}
 			m.state.view = SetupUsernameView
@@ -152,7 +153,7 @@ func (m userSetupModel) UpdateUsername(msg tea.Msg) (userSetupModel, tea.Cmd) {
 
 			// User chooses to either abort or try again
 			if usernameState.failed {
-				if No == m.consent.Get() {
+				if ui.No == m.consent.Get() {
 					return m, abort
 				}
 				m.input.Reset()
@@ -161,7 +162,7 @@ func (m userSetupModel) UpdateUsername(msg tea.Msg) (userSetupModel, tea.Cmd) {
 
 			// User chooses if profile is theirs or not
 			if usernameState.passed {
-				if No == m.consent.Get() {
+				if ui.No == m.consent.Get() {
 					usernameState.passed = false
 					m.input.Reset()
 					return m, nil
@@ -183,7 +184,7 @@ func (m userSetupModel) UpdateUsername(msg tea.Msg) (userSetupModel, tea.Cmd) {
 		m.loader.Stop()
 		if strings.Contains(msg.Error(), "profile not found") {
 			usernameState.failed = true
-			m.consent.SetConsentPos(Yes)
+			m.consent.SetConsentPos(ui.Yes)
 		} else {
 			// FIX  we should display a proper error, not panic
 			panic(msg)
@@ -228,7 +229,7 @@ func (m userSetupModel) ViewUsername() (string, *tea.Cursor) {
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		userNameTxt,
-		style.MarginTop(1).Render(m.input.View()),
+		ui.Style.MarginTop(1).Render(m.input.View()),
 	)
 	return view, c
 }
@@ -251,7 +252,7 @@ func (m userSetupModel) UpdatePassword(msg tea.Msg) (userSetupModel, tea.Cmd) {
 			}
 
 			if passwordState.failed {
-				if No == m.consent.Get() {
+				if ui.No == m.consent.Get() {
 					return m, abort
 				}
 				passwordState.failed = false
@@ -309,8 +310,8 @@ func (m userSetupModel) ViewPassword() (string, *tea.Cursor) {
 
 		return lipgloss.JoinVertical(lipgloss.Left,
 			header,
-			textStyle.PaddingBottom(1).Render(tokensStr),
-			textStyle.Foreground(ansi.BrightGreen).Render("> Continue"),
+			ui.TextStyle.PaddingBottom(1).Render(tokensStr),
+			ui.TextStyle.Foreground(ansi.BrightGreen).Render("> Continue"),
 		), nil
 	}
 
@@ -319,7 +320,7 @@ func (m userSetupModel) ViewPassword() (string, *tea.Cursor) {
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		passwordTxt,
-		style.MarginTop(1).Render(m.input.View()),
+		ui.Style.MarginTop(1).Render(m.input.View()),
 	)
 	return view, c
 }
@@ -335,7 +336,7 @@ func (m userSetupModel) UpdateLibAnime(msg tea.Msg) (userSetupModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		if key.Matches(msg, keyMap.Select) {
 			if state.failed {
-				if No == m.consent.Get() {
+				if ui.No == m.consent.Get() {
 					return m, abort
 				}
 				m.loader.SetLoadingState(true)
@@ -355,7 +356,7 @@ func (m userSetupModel) UpdateLibAnime(msg tea.Msg) (userSetupModel, tea.Cmd) {
 
 	case FetchErrorMsg:
 		m.loader.Stop()
-		m.consent.SetConsentPos(Yes)
+		m.consent.SetConsentPos(ui.Yes)
 		state.failed = true
 		m.state.fetchError = msg
 	}
@@ -368,12 +369,12 @@ func (m userSetupModel) ViewLibAnime() string {
 	}
 
 	if m.state.libAnime.failed {
-		s := textStyle.MarginTop(1).Width(60).Render(m.state.fetchError.Error())
+		s := ui.TextStyle.MarginTop(1).Width(60).Render(m.state.fetchError.Error())
 		return m.consent.View(s, libAnimeFetchFailedTxt)
 	}
 
 	if m.state.libAnime.passed {
-		loadedStr := textStyle.PaddingBottom(1).
+		loadedStr := ui.TextStyle.PaddingBottom(1).
 			Render(
 				utils.ColorText(
 					fmt.Sprintf(
@@ -382,7 +383,7 @@ func (m userSetupModel) ViewLibAnime() string {
 					),
 				),
 			)
-		continueStr := textStyle.
+		continueStr := ui.TextStyle.
 			Foreground(ansi.BrightGreen).
 			Render("> Continue")
 		return lipgloss.JoinVertical(lipgloss.Left, loadedStr, continueStr)
