@@ -97,7 +97,7 @@ func (m userSetupModel) View() (string, *tea.Cursor) {
 
 	switch m.state.view {
 	case SetupConsentView:
-		view = m.consent.View(userWelcomeTxt)
+		view = m.consent.View(userSetupMsgs.welcome)
 	case SetupUsernameView:
 		view, c = m.ViewUsername()
 	case SetupPasswordView:
@@ -202,7 +202,7 @@ func (m userSetupModel) ViewUsername() (string, *tea.Cursor) {
 	}
 
 	if m.state.username.failed {
-		return m.consent.View(usernameFailedTxt), nil
+		return m.consent.View(userSetupMsgs.username.failed), nil
 	}
 
 	if m.state.username.passed {
@@ -213,7 +213,7 @@ func (m userSetupModel) ViewUsername() (string, *tea.Cursor) {
 			panic(err)
 		}
 
-		profileStr := createList([]string{
+		profileStr := newList([]string{
 			"Name", "About", "Gender", "BirthDay", "Location", "Created", "Profile",
 		}, []string{
 			fmt.Sprintf(";g;%s", p.Username), p.About, p.Gender, p.Birthday, p.Location,
@@ -221,14 +221,18 @@ func (m userSetupModel) ViewUsername() (string, *tea.Cursor) {
 			kitsu.GetProfileLink(p.ID),
 		})
 
-		return m.consent.View(confirmUsernamePreTxt, profileStr, confirmUsernameConsentTxt), nil
+		return m.consent.View(
+			userSetupMsgs.username.confirmHeader,
+			profileStr,
+			userSetupMsgs.username.confirmConsent,
+		), nil
 	}
 
 	c := m.input.Cursor()
 	c.Shape = tea.CursorBar
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		userNameTxt,
+		userSetupMsgs.username.enter,
 		ui.Style.MarginTop(1).Render(m.input.View()),
 	)
 	return view, c
@@ -291,7 +295,7 @@ func (m userSetupModel) ViewPassword() (string, *tea.Cursor) {
 	}
 
 	if m.state.password.failed {
-		return m.consent.View(passwordFailedTxt), nil
+		return m.consent.View(userSetupMsgs.password.failed), nil
 	}
 
 	if m.state.password.passed {
@@ -319,7 +323,7 @@ func (m userSetupModel) ViewPassword() (string, *tea.Cursor) {
 	c.Shape = tea.CursorBar
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		passwordTxt,
+		userSetupMsgs.password.enter,
 		ui.Style.MarginTop(1).Render(m.input.View()),
 	)
 	return view, c
@@ -370,7 +374,7 @@ func (m userSetupModel) ViewLibAnime() string {
 
 	if m.state.libAnime.failed {
 		s := ui.TextStyle.MarginTop(1).Width(60).Render(m.state.fetchError.Error())
-		return m.consent.View(s, libAnimeFetchFailedTxt)
+		return m.consent.View(s, userSetupMsgs.libAnime.failed)
 	}
 
 	if m.state.libAnime.passed {
