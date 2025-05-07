@@ -44,6 +44,13 @@ const (
 	Add
 )
 
+type AnimeSource int
+
+const (
+	Kitsu = AnimeSource(iota)
+	Cache
+)
+
 type FetchErrorMsg error
 
 type ViewModel interface {
