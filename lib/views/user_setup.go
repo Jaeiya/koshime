@@ -305,7 +305,7 @@ func (m userSetupModel) ViewPassword() (string, *tea.Cursor) {
 			"",
 			";c;Refresh Token",
 			";bk;" + m.state.data.Profile.RefreshToken,
-		}, false)
+		})
 		header := lipgloss.NewStyle().Align(lipgloss.Center).
 			Width(lipgloss.Width(tokensStr) - 3).
 			Foreground(ansi.BrightBlue).
@@ -349,7 +349,7 @@ func (m userSetupModel) UpdateLibAnime(msg tea.Msg) (userSetupModel, tea.Cmd) {
 			}
 
 			if state.passed {
-				return m, func() tea.Msg { return SetupUserFinishedMsg{} }
+				return m, func() tea.Msg { return SetupUserFinishedMsg(m.state.data) }
 			}
 		}
 

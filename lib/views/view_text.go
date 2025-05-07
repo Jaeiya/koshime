@@ -33,31 +33,31 @@ var userSetupMsgs = func() userSetupText {
 		`;b;Before you continue, make sure you already have a Kitsu
 account. If not, sign-up here: ;y;https://kitsu.app`,
 		`;w;Would you like to setup ;g;Koshime ;w;in this directory?`,
-	}, true)
+	}, 1)
 
 	// Username Msgs
-	v.username.enter = newText([]string{`Enter your ;g;Kitsu;x; user name.`}, true)
+	v.username.enter = newText([]string{`Enter your ;g;Kitsu;x; user name.`}, 1)
 	v.username.confirmHeader = newText(
 		[]string{`;b;This is the first profile to pop up for that user name:;x;`},
-		true,
+		1,
 	)
 	v.username.confirmConsent = newText(
 		[]string{`;b;Does that look like your profile?;x;`},
-		true,
+		1,
 	)
-	v.username.failed = newText([]string{`;y;User name not found; ;g;try again?;x;`}, true)
+	v.username.failed = newText([]string{`;y;User name not found; ;g;try again?;x;`}, 1)
 
 	// Password Msgs
 	v.password.enter = newText(
 		[]string{`Enter your ;g;Kitsu;x; password. [;m;It will not be saved;x;]`},
-		true,
+		1,
 	)
 	v.password.failed = newText(
 		[]string{
 			`;r;Authorization Failed. ;b;You must have entered your password incorrectly.`,
 			`;w;Would you like to ;g;try again?;x;`,
 		},
-		true,
+		1,
 	)
 
 	// Library anime msgs
@@ -66,23 +66,40 @@ account. If not, sign-up here: ;y;https://kitsu.app`,
 			`;r;Failed to fetch library anime. ;b;This is probably a temporary failure.`,
 			`;w;Would you like to ;g;try again?;x;`,
 		},
-		true,
+		1,
 	)
 
 	return v
 }()
 
-func newText(text []string, includeMargin bool) string {
-	for i, para := range text {
-		margin := 1
-		if i == 0 || includeMargin == false {
-			margin = 0
+
+// newText creates a single string with multiple lines
+// separated by specific margins.
+//
+//	1st margin sets size of bottom margin
+//	2nd margin sets size of top margin
+//	3rd margin sets size of text-block bottom margin
+func newText(lines []string, margins ...int) string {
+	marginLen := len(margins)
+	for i, para := range lines {
+		s := ui.TextStyle
+		if marginLen > 0 && margins[0] > 0 {
+			s = s.Margin().MarginBottom(margins[0])
 		}
+
+		if marginLen > 1 && margins[1] > 0 {
+			s = s.MarginTop(margins[1])
+		}
+
 		para = strings.ReplaceAll(para, "\n", " ")
-		text[i] = ui.TextStyle.MarginTop(margin).Render(utils.ColorText(para))
+		lines[i] = s.Render(utils.ColorText(para))
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, text...)
+	text := lipgloss.JoinVertical(lipgloss.Left, lines...)
+	if marginLen > 2 && margins[2] > 0 {
+		text = ui.Style.MarginBottom(margins[2]).Render(text)
+	}
+	return text
 }
 
 func newList(props []string, values []string) string {
