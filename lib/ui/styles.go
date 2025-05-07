@@ -10,7 +10,7 @@ var (
 	Style          = lipgloss.NewStyle()
 	TextStyle      = Style.MarginLeft(3).Width(55)
 	SelectYesStyle = TextStyle.Foreground(ansi.BrightGreen)
-	SelectNoStyle  = TextStyle.MarginTop(1).Foreground(ansi.BrightMagenta)
+	SelectNoStyle  = TextStyle.Foreground(ansi.BrightMagenta)
 	SpinnerStyle   = Style.Foreground(ansi.BrightGreen)
 	LoadingStyle   = Style.Foreground(ansi.BrightBlue)
 	HelpStyle      = Style.MarginLeft(3).MarginTop(1)

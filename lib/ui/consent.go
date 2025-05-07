@@ -40,7 +40,7 @@ func (m ConsentModel) View(msg ...string) string {
 		yes = TextStyle.Render("  Yes")
 	} else {
 		yes = SelectYesStyle.Render("> Yes")
-		no = TextStyle.MarginTop(1).Render("  No")
+		no = TextStyle.Render("  No")
 	}
 
 	msg = append(msg, no, yes)

@@ -233,7 +233,7 @@ func (m userSetupModel) ViewUsername() (string, *tea.Cursor) {
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		userSetupMsgs.username.enter,
-		ui.Style.MarginTop(1).Render(m.input.View()),
+		m.input.View(),
 	)
 	return view, c
 }
@@ -324,7 +324,7 @@ func (m userSetupModel) ViewPassword() (string, *tea.Cursor) {
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		userSetupMsgs.password.enter,
-		ui.Style.MarginTop(1).Render(m.input.View()),
+		m.input.View(),
 	)
 	return view, c
 }

@@ -143,5 +143,5 @@ func newList(props []string, values []string) string {
 		)
 	}
 
-	return ui.Style.MarginTop(1).MarginLeft(5).Render(sb.String())
+	return ui.Style.MarginLeft(5).Render(sb.String())
 }
