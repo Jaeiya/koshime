@@ -103,9 +103,6 @@ func (db Database) FindLibAnimeIndex(query string) ([]LibraryIndex, error) {
 			indexes = append(indexes, LibraryIndex(i))
 		}
 	}
-	if len(indexes) == 0 {
-		return indexes, fmt.Errorf("entry not found")
-	}
 	return indexes, nil
 }
 
