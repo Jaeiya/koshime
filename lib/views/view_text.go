@@ -6,6 +6,7 @@ import (
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type userSetupText struct {
@@ -72,6 +73,30 @@ account. If not, sign-up here: ;y;https://kitsu.app`,
 	return v
 }()
 
+type findAnimeText struct {
+	title string
+	kitsu string
+	cache string
+}
+
+var findAnimeMsgs = func() findAnimeText {
+	txt := findAnimeText{}
+
+	txt.title = newText(
+		[]string{
+			";g;... ;w;Find Anime ;g;...",
+			`;b;You can search for either a full or partial anime title. If you're
+searching Kitsu, it will also search descriptions.`,
+		},
+		0, 1, 1,
+	)
+
+	activeStyle := ui.Style.Foreground(ansi.Green).Underline(true)
+	txt.kitsu = activeStyle.Render("Kitsu") + "🌐"
+	txt.cache = activeStyle.Render("Cache") + "📁"
+
+	return txt
+}()
 
 // newText creates a single string with multiple lines
 // separated by specific margins.

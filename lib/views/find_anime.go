@@ -1,6 +1,9 @@
 package views
 
 import (
+	"fmt"
+
+	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/charmbracelet/bubbles/v2/key"
@@ -18,42 +21,57 @@ const (
 	Find_ReviewView
 )
 
-type animeItem struct {
+type animeListItem struct {
 	title, desc string
 }
 
-func (i animeItem) Title() string       { return i.title }
-func (i animeItem) Description() string { return i.desc }
-func (i animeItem) FilterValue() string { return i.title }
+func (i animeListItem) Title() string       { return i.title }
+func (i animeListItem) Description() string { return i.desc }
+func (i animeListItem) FilterValue() string { return i.title }
+
+type fetchedItems []list.Item
 
 type findMenuModel struct {
 	list       list.Model
 	input      textinput.Model
 	loader     ui.LoaderModel
+	db         *database.Database
 	windowSize struct {
 		width  int
 		height int
 	}
 	maxResults int
+	sourceMap  map[AnimeSource]string
 	state      struct {
-		view    MenuFindView
-		results []kitsu.Anime
-		find    struct {
+		fetchErr FetchErrorMsg
+		source   AnimeSource
+		view     MenuFindView
+		results  []kitsu.Anime
+		find     struct {
 			passed bool
 			failed bool
 		}
 	}
+	keys struct {
+		tab key.Binding
+	}
 }
 
-func NewFindMenuModel(maxResults int) findMenuModel {
+func NewFindMenuModel(db *database.Database, maxResults int) findMenuModel {
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	l.SetShowTitle(true)
 	l.DisableQuitKeybindings()
 	input := ui.NewTextInput()
 	input.SetWidth(30)
 	input.Focus()
-
-	return findMenuModel{list: l, input: input, loader: ui.NewLoader(), maxResults: maxResults}
+	m := findMenuModel{list: l, input: input, loader: ui.NewLoader(), maxResults: maxResults}
+	m.db = db
+	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
+	m.sourceMap = map[AnimeSource]string{
+		Kitsu: findAnimeMsgs.kitsu,
+		Cache: findAnimeMsgs.cache,
+	}
+	return m
 }
 
 func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
@@ -80,20 +98,27 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		case key.Matches(msg, keyMap.Submit):
 			switch m.state.view {
 			case Find_DefaultView:
-				if !m.loader.IsLoading() {
-					m.loader.SetLoadingState(true)
-					m.loader.SetText("Finding Anime")
-					return m, tea.Batch(m.loader.Start, m.findAnime(m.input.Value()))
+				if m.loader.IsLoading() {
+					break
 				}
+				m.loader.SetLoadingState(true)
+				m.loader.SetText("Finding Anime")
+				return m, tea.Batch(m.loader.Start, m.findAnime(m.input.Value()))
+			}
+
+		case key.Matches(msg, m.keys.tab):
+			if m.state.view == Find_DefaultView {
+				m.state.source = (m.state.source + 1) % 2
 			}
 		}
 
 	case FetchErrorMsg:
 		m.loader.Stop()
 		m.input.Reset()
-		panic(msg)
+		m.state.find.failed = true
+		m.state.fetchErr = msg
 
-	case []kitsu.Anime:
+	case fetchedItems:
 		m.input.Reset()
 		m.loader.Stop()
 		m.list = m.newAnimeList(msg)
@@ -122,6 +147,7 @@ func (m findMenuModel) View() (string, *tea.Cursor) {
 	}
 
 	if m.state.find.failed {
+		return m.state.fetchErr.Error(), nil
 	}
 
 	if m.state.find.passed {
@@ -130,9 +156,14 @@ func (m findMenuModel) View() (string, *tea.Cursor) {
 
 	c := m.input.Cursor()
 	c.Shape = tea.CursorBar
+
+	search := ui.TextStyle.Foreground(ansi.BrightBlack).
+		Render("Source: " + m.sourceMap[m.state.source])
+
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.TextStyle.MarginTop(1).Render("Enter partial or full anime title."),
+		findAnimeMsgs.title,
+		search,
 		ui.Style.MarginTop(1).Render(m.input.View()),
 	)
 	c.Y += lipgloss.Height(view) - 1
@@ -143,7 +174,7 @@ func (m findMenuModel) ShortHelp() []key.Binding {
 	switch m.state.view {
 	case Find_DefaultView:
 		return []key.Binding{
-			keyMap.Submit, keyMap.MainMenu,
+			keyMap.Submit, keyMap.MainMenu, m.keys.tab,
 		}
 	}
 	return []key.Binding{}
@@ -161,21 +192,14 @@ func (m *findMenuModel) Reset() {
 	m.state.find.failed = false
 }
 
-func (m findMenuModel) newAnimeList(animeList []kitsu.Anime) list.Model {
-	items := make([]list.Item, len(animeList))
-	for i, anime := range animeList {
-		items[i] = animeItem{
-			anime.Attributes.CanonicalTitle,
-			anime.Attributes.Titles.English,
-		}
-	}
+func (m findMenuModel) newAnimeList(animeList []list.Item) list.Model {
 	d := list.NewDefaultDelegate()
 	d.Styles.SelectedTitle = d.Styles.SelectedTitle.Foreground(ansi.BrightGreen).
 		BorderForeground(ansi.BrightGreen)
 	d.Styles.SelectedDesc = d.Styles.SelectedTitle.Foreground(ansi.Blue)
 	d.Styles.NormalTitle = d.Styles.NormalTitle.Foreground(lipgloss.Color("#A7A7B5"))
 	d.Styles.NormalDesc = d.Styles.NormalDesc.Foreground(lipgloss.Color("#696974"))
-	l := list.New(items, d, m.windowSize.width, int(float64(m.windowSize.height)*0.66))
+	l := list.New(animeList, d, m.windowSize.width, int(float64(m.windowSize.height)*0.66))
 	l.Title = "Anime Results"
 	l.SetShowTitle(true)
 	l.DisableQuitKeybindings()
@@ -186,14 +210,48 @@ func (m findMenuModel) newAnimeList(animeList []kitsu.Anime) list.Model {
 
 func (m findMenuModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
-		anime, err := kitsu.FindAnime(
-			query,
-			[]kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished},
-			m.maxResults,
-		)
-		if err != nil {
-			return FetchErrorMsg(err)
+		var items []list.Item
+		switch m.state.source {
+		case Kitsu:
+			anime, err := kitsu.FindAnime(
+				query,
+				[]kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished},
+				m.maxResults,
+			)
+			if err != nil {
+				return FetchErrorMsg(err)
+			}
+			if len(anime) == 0 {
+				return FetchErrorMsg(fmt.Errorf("no anime found"))
+			}
+			items = make([]list.Item, len(anime))
+			for i, item := range anime {
+				items[i] = animeListItem{
+					item.Attributes.CanonicalTitle,
+					item.Attributes.Titles.English,
+				}
+			}
+
+		case Cache:
+			anime, err := m.db.FindAnime(query)
+			if err != nil {
+				return FetchErrorMsg(err)
+			}
+			if len(anime) == 0 {
+				return FetchErrorMsg(fmt.Errorf("no anime found"))
+			}
+			items = make([]list.Item, len(anime))
+			for i, item := range anime {
+				items[i] = animeListItem{
+					item.JPN_Title,
+					item.ENG_Title,
+				}
+			}
 		}
-		return anime
+
+		if len(items) == 0 {
+			return FetchErrorMsg(fmt.Errorf("unrecognized anime source: %d", m.state.source))
+		}
+		return fetchedItems(items)
 	}
 }

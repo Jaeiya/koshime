@@ -59,11 +59,6 @@ type ViewModel interface {
 	Update(msg tea.Msg) (ViewModel, tea.Cmd)
 }
 
-var MenuViewMap = map[UIView]ViewModel{
-	SetupUserView: NewUserSetupModel(),
-	FindAnimeView: NewFindMenuModel(20),
-}
-
 var MenuItemMap = map[MenuItem]string{
 	Find:   "Find",
 	Add:    "Add",
@@ -118,11 +113,14 @@ type uiState struct {
 }
 
 type UIModel struct {
-	db        *database.Database
-	menuItems []MenuItem
-	state     struct {
-		internal  uiState
+	db          *database.Database
+	menuItems   []MenuItem
+	menuViewMap map[UIView]ViewModel
+
+	state struct {
+		internal uiState
 	}
+
 	help    help.Model
 	input   textinput.Model
 	spinner spinner.Model
@@ -158,18 +156,25 @@ func New(dbPath string) (UIModel, error) {
 		Clean,
 	)
 
+	// Initialize empty database
+	db, _ := database.NewDatabase(nil)
+	model.db = db
+
+	model.menuViewMap = map[UIView]ViewModel{
+		SetupUserView: NewUserSetupModel(),
+		FindAnimeView: NewFindMenuModel(db, 20),
+	}
+
 	if !utils.FileExists(dbPath) {
 		model.SetViewState(SetupUserView)
 		return model, nil
 	}
 
-	db, _ := database.NewDatabase(nil)
 	err := db.Load()
 	if err != nil {
 		return model, err
 	}
 
-	model.db = db
 	model.SetViewState(MenuView)
 
 	return model, nil
@@ -191,8 +196,8 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		state.width = msg.Width
 		state.height = msg.Height
 		// Send size to all menu view models
-		for key, model := range MenuViewMap {
-			MenuViewMap[key], _ = model.Update(msg)
+		for key, model := range m.menuViewMap {
+			m.menuViewMap[key], _ = model.Update(msg)
 		}
 
 	case tea.KeyPressMsg:
@@ -231,8 +236,8 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 
-	if model, exists := MenuViewMap[state.view]; exists {
-		MenuViewMap[state.view], cmd = model.Update(msg)
+	if model, exists := m.menuViewMap[state.view]; exists {
+		m.menuViewMap[state.view], cmd = model.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -256,7 +261,7 @@ func (m *UIModel) SetViewState(view UIView) {
 func (m UIModel) View() (string, *tea.Cursor) {
 	state := m.state.internal
 
-	if model, exists := MenuViewMap[state.view]; exists {
+	if model, exists := m.menuViewMap[state.view]; exists {
 		view, c := model.View()
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
