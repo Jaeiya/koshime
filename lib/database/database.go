@@ -92,6 +92,16 @@ func (db *Database) Load() error {
 	return nil
 }
 
+// LoadData overwrites existing data and saves it to file.
+//
+// 🔴 This is destructive and should only be used
+// to initialize an empty database.
+func (db *Database) LoadData(d Data) error {
+	db.data = d
+	db.isLoaded = true
+	return db.Save()
+}
+
 // FindLibAnimeIndex uses the query to do a partial lookup against
 // all available anime titles, including alt titles, and returns
 // the library index of all matches found.
