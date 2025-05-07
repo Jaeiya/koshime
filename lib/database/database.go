@@ -102,6 +102,19 @@ func (db *Database) LoadData(d Data) error {
 	return db.Save()
 }
 
+func (db Database) FindAnime(query string) ([]LibraryEntry, error) {
+	indexes, err := db.FindLibAnimeIndex(query)
+	if err != nil {
+		return []LibraryEntry{}, err
+	}
+
+	if len(indexes) == 0 {
+		return []LibraryEntry{}, nil
+	}
+
+	return db.GetAnime(indexes...)
+}
+
 // FindLibAnimeIndex uses the query to do a partial lookup against
 // all available anime titles, including alt titles, and returns
 // the library index of all matches found.
