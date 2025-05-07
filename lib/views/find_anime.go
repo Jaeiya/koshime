@@ -56,10 +56,6 @@ func NewFindMenuModel(maxResults int) findMenuModel {
 	return findMenuModel{list: l, input: input, loader: ui.NewLoader(), maxResults: maxResults}
 }
 
-func (m findMenuModel) Init() tea.Cmd {
-	return nil
-}
-
 func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
