@@ -122,7 +122,6 @@ type UIModel struct {
 	menuItems []MenuItem
 	state     struct {
 		internal  uiState
-		userSetup userSetupState
 	}
 	help    help.Model
 	input   textinput.Model
@@ -215,7 +214,7 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case SetupUserFinishedMsg:
 		m.SetViewState(MenuView)
-		m.db, err = database.NewDatabase(&m.state.userSetup.data)
+		err = m.db.LoadData(msg)
 		if err != nil {
 			panic(err)
 		}
