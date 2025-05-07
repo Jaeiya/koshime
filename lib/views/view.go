@@ -100,7 +100,7 @@ type (
 	}
 )
 
-type uiState struct {
+type viewState struct {
 	view       UIView
 	consentPos ui.Consent
 	menuPos    int
@@ -112,21 +112,17 @@ type uiState struct {
 	}
 }
 
-type UIModel struct {
+type Model struct {
 	db          *database.Database
 	menuItems   []MenuItem
 	menuViewMap map[UIView]ViewModel
-
-	state struct {
-		internal uiState
-	}
-
-	help    help.Model
-	input   textinput.Model
-	spinner spinner.Model
+	state       viewState
+	help        help.Model
+	input       textinput.Model
+	spinner     spinner.Model
 }
 
-func New(dbPath string) (UIModel, error) {
+func New(dbPath string) (Model, error) {
 	h := help.New()
 	h.Styles.ShortKey = ui.HelpKeyStyle
 	h.Styles.FullKey = h.Styles.ShortKey
@@ -143,7 +139,7 @@ func New(dbPath string) (UIModel, error) {
 		FPS:    time.Second / 10,
 	}))
 
-	model := UIModel{help: h, input: input, spinner: s}
+	model := Model{help: h, input: input, spinner: s}
 
 	model.menuItems = append(
 		model.menuItems,
@@ -180,21 +176,19 @@ func New(dbPath string) (UIModel, error) {
 	return model, nil
 }
 
-func (ui UIModel) Init() tea.Cmd {
+func (ui Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var err error
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
-	state := &m.state.internal
-
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		state.width = msg.Width
-		state.height = msg.Height
+		m.state.width = msg.Width
+		m.state.height = msg.Height
 		// Send size to all menu view models
 		for key, model := range m.menuViewMap {
 			m.menuViewMap[key], _ = model.Update(msg)
@@ -207,13 +201,13 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 
 		case key.Matches(msg, keyMap.MainMenu):
-			if state.view != FindAnimeView {
+			if m.state.view != FindAnimeView {
 				return m, func() tea.Msg { return AbortMsg{} }
 			}
 		}
 
 		if msg.String() == "ctrl+c" {
-			state.view = AbortView
+			m.state.view = AbortView
 			return m, tea.Quit
 		}
 
@@ -226,7 +220,7 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case AbortMsg:
 		// Do not abort application when inside of sub-menu
-		switch state.view {
+		switch m.state.view {
 		case FindAnimeView, AddAnimeView, DropAnimeView:
 			m.SetViewState(MenuView)
 			return m, nil
@@ -236,12 +230,12 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 
-	if model, exists := m.menuViewMap[state.view]; exists {
-		m.menuViewMap[state.view], cmd = model.Update(msg)
+	if model, exists := m.menuViewMap[m.state.view]; exists {
+		m.menuViewMap[m.state.view], cmd = model.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
-	switch state.view {
+	switch m.state.view {
 	case MenuView:
 		m, cmd = m.UpdateMenu(msg)
 		cmds = append(cmds, cmd)
@@ -254,14 +248,12 @@ func (m UIModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m *UIModel) SetViewState(view UIView) {
-	m.state.internal.view = view
+func (m *Model) SetViewState(view UIView) {
+	m.state.view = view
 }
 
-func (m UIModel) View() (string, *tea.Cursor) {
-	state := m.state.internal
-
-	if model, exists := m.menuViewMap[state.view]; exists {
+func (m Model) View() (string, *tea.Cursor) {
+	if model, exists := m.menuViewMap[m.state.view]; exists {
 		view, c := model.View()
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -270,7 +262,7 @@ func (m UIModel) View() (string, *tea.Cursor) {
 		), c
 	}
 
-	switch state.view {
+	switch m.state.view {
 	case AbortView:
 		return ui.AbortStyle.Render(
 			utils.ColorText(";g;>>> ;y;User Aborted Operation ;g;<<<"),
@@ -293,33 +285,32 @@ func (m UIModel) View() (string, *tea.Cursor) {
 	return "missing view", nil
 }
 
-func (m UIModel) UpdateMenu(msg tea.Msg) (UIModel, tea.Cmd) {
+func (m Model) UpdateMenu(msg tea.Msg) (Model, tea.Cmd) {
 	var cmd tea.Cmd
 	itemLen := len(m.menuItems)
-	state := &m.state.internal
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.Select):
-			switch m.menuItems[state.menuPos] {
+			switch m.menuItems[m.state.menuPos] {
 			case Find:
 				m.SetViewState(FindAnimeView)
 				cmd = textinput.Blink
 			}
 
 		case key.Matches(msg, keyMap.Up):
-			state.menuPos = (state.menuPos - 1 + itemLen) % itemLen
+			m.state.menuPos = (m.state.menuPos - 1 + itemLen) % itemLen
 
 		case key.Matches(msg, keyMap.Down):
-			state.menuPos = (state.menuPos + 1) % itemLen
+			m.state.menuPos = (m.state.menuPos + 1) % itemLen
 		}
 	}
 
 	return m, cmd
 }
 
-func (m UIModel) viewMenu() string {
+func (m Model) viewMenu() string {
 	items := make([]string, len(m.menuItems)+1)
 	s := ui.TextStyle.MarginLeft(5).Width(12).PaddingLeft(1).PaddingRight(3)
 
@@ -329,7 +320,7 @@ func (m UIModel) viewMenu() string {
 	items[0] = header
 
 	for i, item := range m.menuItems {
-		if m.state.internal.menuPos == i {
+		if m.state.menuPos == i {
 			items[i+1] = s.Foreground(ansi.BrightGreen).
 				Background(ansi.Black).
 				Render("> " + MenuItemMap[item])
@@ -347,8 +338,8 @@ func (m UIModel) viewMenu() string {
 	)
 }
 
-func (m UIModel) ShortHelp() []key.Binding {
-	switch m.state.internal.view {
+func (m Model) ShortHelp() []key.Binding {
+	switch m.state.view {
 	case MenuView:
 		return []key.Binding{
 			keyMap.Up,
@@ -359,8 +350,8 @@ func (m UIModel) ShortHelp() []key.Binding {
 	return []key.Binding{}
 }
 
-func (m UIModel) FullHelp() [][]key.Binding {
-	switch m.state.internal.view {
+func (m Model) FullHelp() [][]key.Binding {
+	switch m.state.view {
 	}
 	return [][]key.Binding{}
 }
