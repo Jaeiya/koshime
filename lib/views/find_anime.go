@@ -207,8 +207,8 @@ func (m findMenuModel) newAnimeList(animeList []list.Item) list.Model {
 	d.Styles.SelectedTitle = d.Styles.SelectedTitle.Foreground(ansi.BrightGreen).
 		BorderForeground(ansi.BrightGreen)
 	d.Styles.SelectedDesc = d.Styles.SelectedTitle.Foreground(ansi.Blue)
-	d.Styles.NormalTitle = d.Styles.NormalTitle.Foreground(lipgloss.Color("#A7A7B5"))
-	d.Styles.NormalDesc = d.Styles.NormalDesc.Foreground(lipgloss.Color("#696974"))
+	d.Styles.NormalTitle = d.Styles.NormalTitle.Foreground(ansi.White)
+	d.Styles.NormalDesc = d.Styles.NormalDesc.Foreground(ansi.BrightBlack)
 	l := list.New(animeList, d, m.windowSize.width, int(float64(m.windowSize.height)*0.66))
 	l.Title = "Anime Results"
 	l.Help.Styles.ShortDesc = ui.HelpDescStyle
