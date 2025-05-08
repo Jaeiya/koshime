@@ -53,9 +53,12 @@ const (
 )
 
 type (
-	FetchErrorMsg       error
-	FetchedNoResultsMsg struct{}
-	FetchedListItemsMsg []list.Item
+	FetchErrorMsg              error
+	FetchedNoResultsMsg        struct{}
+	FetchedListItemsMsg[T any] struct {
+		items   []list.Item
+		results []T
+	}
 )
 
 type ViewModel interface {

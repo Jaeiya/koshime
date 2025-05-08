@@ -2,10 +2,13 @@ package views
 
 import (
 	"fmt"
+	"net/url"
+	"strconv"
 
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
+	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/key"
 	"github.com/charmbracelet/bubbles/v2/list"
 	"github.com/charmbracelet/bubbles/v2/textinput"
@@ -19,11 +22,13 @@ type MenuFindView int
 const (
 	Find_DefaultView = MenuFindView(iota)
 	Find_ResultsView
+	Find_AnimeView
 	Find_LoadingView
 )
 
 type animeListItem struct {
 	title, desc string
+	index       int
 }
 
 func (i animeListItem) Title() string       { return i.title }
@@ -42,11 +47,13 @@ type findMenuModel struct {
 	maxResults int
 	sourceMap  map[AnimeSource]string
 	state      struct {
-		fetchErr FetchErrorMsg
-		source   AnimeSource
-		view     MenuFindView
-		results  []kitsu.Anime
-		find     struct {
+		fetchErr      FetchErrorMsg
+		source        AnimeSource
+		view          MenuFindView
+		kitsuResults  []kitsu.Anime
+		localResults  []database.LibraryEntry
+		selectedIndex int
+		find          struct {
 			passed   bool
 			failed   bool
 			notFound bool
@@ -124,6 +131,11 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 				m.loader.SetText("Find Anime")
 				m.state.view = Find_LoadingView
 				return m, tea.Batch(m.loader.Start, m.findAnime(m.input.Value()))
+
+			case Find_ResultsView:
+				item := m.list.SelectedItem().(animeListItem)
+				m.state.selectedIndex = item.index
+				m.state.view = Find_AnimeView
 			}
 
 		case key.Matches(msg, m.keys.tab):
@@ -132,7 +144,7 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			}
 		}
 
-	case FetchErrorMsg, FetchedNoResultsMsg, FetchedListItemsMsg:
+	case FetchErrorMsg, FetchedNoResultsMsg, FetchedListItemsMsg[kitsu.Anime], FetchedListItemsMsg[database.LibraryEntry]:
 		m.loader.Stop()
 		m.state.view = Find_ResultsView
 		switch msg := msg.(type) {
@@ -143,11 +155,12 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		case FetchedNoResultsMsg:
 			m.state.find.notFound = true
 
-		case FetchedListItemsMsg:
+		case FetchedListItemsMsg[database.LibraryEntry]:
 			m.state.find.passed = true
+			m.state.localResults = msg.results
 			m.list = ui.NewList(
 				ui.ListOptions{
-					Items:         msg,
+					Items:         msg.items,
 					ShortHelpKeys: []key.Binding{m.keys.backspace},
 					Width:         m.windowSize.width,
 					MaxHeight:     int(float64(m.windowSize.height) * 0.66),
@@ -178,31 +191,37 @@ func (m findMenuModel) View() (string, *tea.Cursor) {
 		return ui.Style.MarginTop(1).Render(m.loader.View()), nil
 	}
 
-	if m.state.find.failed {
-		return m.state.fetchErr.Error(), nil
-	}
-
-	if m.state.find.notFound {
-		return lipgloss.JoinVertical(
-			lipgloss.Left,
-			findAnimeMsgs.header,
-			findAnimeMsgs.notFound(m.input.Value()),
-		), nil
-	}
-
-	if m.state.find.passed {
-		h := findAnimeMsgs.header
-		var c *tea.Cursor
-		// The filter has no margin, so we enforce
-		if m.list.FilterState() == list.Filtering {
-			h = ui.Style.MarginBottom(1).Render(h)
-			c = m.list.FilterInput.Cursor()
-			c.Shape = tea.CursorBlock
-			c.Color = ansi.Yellow
-			c.Y += lipgloss.Height(h)
-			c.X += 2
+	if m.state.view == Find_ResultsView {
+		if m.state.find.failed {
+			return m.state.fetchErr.Error(), nil
 		}
-		return lipgloss.JoinVertical(lipgloss.Left, h, m.list.View()), c
+
+		if m.state.find.notFound {
+			return lipgloss.JoinVertical(
+				lipgloss.Left,
+				findAnimeMsgs.header,
+				findAnimeMsgs.notFound(m.input.Value()),
+			), nil
+		}
+
+		if m.state.find.passed {
+			h := findAnimeMsgs.header
+			var c *tea.Cursor
+			// The filter has no margin, so we enforce
+			if m.list.FilterState() == list.Filtering {
+				h = ui.Style.MarginBottom(1).Render(h)
+				c = m.list.FilterInput.Cursor()
+				c.Shape = tea.CursorBlock
+				c.Color = ansi.Yellow
+				c.Y += lipgloss.Height(h)
+				c.X += 2
+			}
+			return lipgloss.JoinVertical(lipgloss.Left, h, m.list.View()), c
+		}
+	}
+
+	if m.state.view == Find_AnimeView {
+		return displayAnimeInfo(m.state.localResults[m.state.selectedIndex]), nil
 	}
 
 	c := m.input.Cursor()
@@ -250,13 +269,13 @@ func (m findMenuModel) FullHelp() [][]key.Binding {
 func (m *findMenuModel) Reset() {
 	m.state.view = Find_DefaultView
 	m.input.Reset()
-	m.state.results = nil
+	m.state.kitsuResults = nil
 	m.state.find.passed = false
 	m.state.find.failed = false
 	m.state.find.notFound = false
 }
 
-func (m findMenuModel) findAnime(query string) tea.Cmd {
+func (m *findMenuModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
 		var items []list.Item
 		switch m.state.source {
@@ -272,12 +291,18 @@ func (m findMenuModel) findAnime(query string) tea.Cmd {
 			if len(anime) == 0 {
 				return FetchedNoResultsMsg{}
 			}
+			m.state.kitsuResults = anime
 			items = make([]list.Item, len(anime))
 			for i, item := range anime {
 				items[i] = animeListItem{
 					item.Attributes.CanonicalTitle,
 					item.Attributes.Titles.English,
+					i,
 				}
+			}
+			return FetchedListItemsMsg[kitsu.Anime]{
+				items:   items,
+				results: anime,
 			}
 
 		case Local:
@@ -288,18 +313,56 @@ func (m findMenuModel) findAnime(query string) tea.Cmd {
 			if len(anime) == 0 {
 				return FetchedNoResultsMsg{}
 			}
+			m.state.localResults = anime
 			items = make([]list.Item, len(anime))
 			for i, item := range anime {
 				items[i] = animeListItem{
 					item.JPN_Title,
 					item.ENG_Title,
+					i,
 				}
+			}
+			return FetchedListItemsMsg[database.LibraryEntry]{
+				items:   items,
+				results: anime,
 			}
 		}
 
-		if len(items) == 0 {
-			return FetchErrorMsg(fmt.Errorf("unrecognized anime source: %d", m.state.source))
-		}
-		return FetchedListItemsMsg(items)
+		return FetchErrorMsg(fmt.Errorf("unrecognized anime source: %d", m.state.source))
 	}
+}
+
+func displayAnimeInfo(animeData any) string {
+	switch d := animeData.(type) {
+	case database.LibraryEntry:
+		items := make([]string, 4+len(d.AltTitles))
+		headers := make([]string, len(items))
+
+		headers[0], headers[1] = utils.ColorText(";b;Title"), utils.ColorText(";dc;English")
+		items[0], items[1] = d.JPN_Title, d.ENG_Title
+
+		for i, altTitle := range d.AltTitles {
+			headers[i+2] = utils.ColorText(";db;AltTitle")
+			items[i+2] = altTitle
+		}
+		itemPos := 2 + len(d.AltTitles)
+
+		totalEpsStr := strconv.Itoa(d.Episodes)
+		if d.Episodes == 0 {
+			totalEpsStr = "Unknown"
+		}
+		link, _ := url.JoinPath(kitsu.KitsuDomain, d.Slug)
+		link = utils.ColorText(";bk;" + link)
+
+		headers[itemPos] = utils.ColorText(";y;Progress")
+		items[itemPos] = utils.ColorText(fmt.Sprintf(";dg;%d ;y;/ ;m;%s", d.Progress, totalEpsStr))
+		headers[itemPos+1] = utils.ColorText(";x;link")
+		items[itemPos+1] = link
+
+		return newList(
+			headers,
+			items,
+		)
+	}
+	return ""
 }
