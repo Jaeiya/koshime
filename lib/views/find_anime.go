@@ -93,7 +93,7 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 				}
 			}
 			m.Reset()
-			return m, func() tea.Msg { return AbortMsg{} }
+			return m, abort
 
 		case key.Matches(msg, keyMap.Submit):
 			switch m.state.view {
