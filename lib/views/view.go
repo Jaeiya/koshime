@@ -184,6 +184,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var err error
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
+	var currentModel ViewModel
+
+	if model, exists := m.menuViewMap[m.state.view]; exists {
+		currentModel = model
+	}
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -197,6 +202,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.HelpMore):
+			if currentModel != nil && len(currentModel.FullHelp()) == 0 {
+				break
+			}
 			m.help.ShowAll = !m.help.ShowAll
 
 		case key.Matches(msg, keyMap.MainMenu):
@@ -229,8 +237,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 
-	if model, exists := m.menuViewMap[m.state.view]; exists {
-		m.menuViewMap[m.state.view], cmd = model.Update(msg)
+	if currentModel != nil {
+		m.menuViewMap[m.state.view], cmd = currentModel.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
