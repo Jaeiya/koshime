@@ -120,7 +120,7 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 					break
 				}
 				m.loader.SetLoadingState(true)
-				m.loader.SetText("Finding Anime")
+				m.loader.SetText("Find Anime")
 				return m, tea.Batch(m.loader.Start, m.findAnime(m.input.Value()))
 			}
 
