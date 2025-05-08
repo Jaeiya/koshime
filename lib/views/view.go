@@ -198,7 +198,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, keyMap.HelpMore):
 			m.help.ShowAll = !m.help.ShowAll
-			return m, nil
 
 		case key.Matches(msg, keyMap.MainMenu):
 			if m.state.view != FindAnimeView {
