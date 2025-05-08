@@ -72,7 +72,7 @@ func NewFindMenuModel(db *database.Database, maxResults int) findMenuModel {
 
 	m.sourceMap = map[AnimeSource]string{
 		Kitsu: findAnimeMsgs.kitsu,
-		Cache: findAnimeMsgs.cache,
+		Local: findAnimeMsgs.local,
 	}
 	return m
 }
@@ -253,7 +253,7 @@ func (m findMenuModel) findAnime(query string) tea.Cmd {
 				}
 			}
 
-		case Cache:
+		case Local:
 			anime, err := m.db.FindAnime(query)
 			if err != nil {
 				return FetchErrorMsg(err)

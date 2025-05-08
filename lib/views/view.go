@@ -48,7 +48,7 @@ type AnimeSource int
 
 const (
 	Kitsu = AnimeSource(iota)
-	Cache
+	Local
 )
 
 type FetchErrorMsg error

@@ -76,7 +76,7 @@ account. If not, sign-up here: ;y;https://kitsu.app`,
 type findAnimeText struct {
 	title string
 	kitsu string
-	cache string
+	local string
 }
 
 var findAnimeMsgs = func() findAnimeText {
@@ -93,7 +93,7 @@ searching Kitsu, it will also search descriptions.`,
 
 	activeStyle := ui.Style.Foreground(ansi.Green).Underline(true)
 	txt.kitsu = activeStyle.Render("Kitsu") + "🌐"
-	txt.cache = activeStyle.Render("Cache") + "📁"
+	txt.local = activeStyle.Render("Local") + "📁"
 
 	return txt
 }()
