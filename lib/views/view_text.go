@@ -86,7 +86,7 @@ var findAnimeMsgs = func() findAnimeText {
 	txt := findAnimeText{}
 
 	txt.header = newText([]string{
-		";g;... ;w;Find Anime ;g;...",
+		";g;... ;b;Find Anime ;g;...",
 	}, 0, 1)
 
 	txt.title = newText(
