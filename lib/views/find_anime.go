@@ -211,6 +211,10 @@ func (m findMenuModel) newAnimeList(animeList []list.Item) list.Model {
 	d.Styles.NormalDesc = d.Styles.NormalDesc.Foreground(lipgloss.Color("#696974"))
 	l := list.New(animeList, d, m.windowSize.width, int(float64(m.windowSize.height)*0.66))
 	l.Title = "Anime Results"
+	l.Help.Styles.ShortDesc = ui.HelpDescStyle
+	l.Help.Styles.FullDesc = ui.HelpDescStyle
+	l.Help.Styles.ShortKey = ui.HelpKeyStyle
+	l.Help.Styles.FullKey = ui.HelpKeyStyle
 	l.SetShowTitle(true)
 	l.DisableQuitKeybindings()
 	l.AdditionalShortHelpKeys = func() []key.Binding {
