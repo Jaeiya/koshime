@@ -90,9 +90,12 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, keyMap.MainMenu):
 			// Go back to find-view from results-view
-			if m.state.view == Find_ResultsView && m.list.FilterState() != list.Filtering {
+			if m.state.view == Find_ResultsView {
+				if m.list.FilterState() > list.Unfiltered {
+					break
+				}
 				m.Reset()
-				break
+				return m, nil
 			}
 			m.Reset()
 			// Back to main menu
