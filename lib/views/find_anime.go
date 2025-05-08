@@ -95,9 +95,11 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 				break
 			}
 			m.Reset()
+			// Back to main menu
 			return m, abort
 
 		case key.Matches(msg, m.keys.backspace):
+			// Go back to find-view from results-view
 			if m.state.view == Find_ResultsView && m.list.FilterState() != list.Filtering {
 				m.Reset()
 				return m, nil
