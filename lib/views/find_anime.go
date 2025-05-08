@@ -18,7 +18,7 @@ type MenuFindView int
 
 const (
 	Find_DefaultView = MenuFindView(iota)
-	Find_ReviewView
+	Find_ResultsView
 )
 
 type animeListItem struct {
@@ -53,20 +53,23 @@ type findMenuModel struct {
 		}
 	}
 	keys struct {
-		tab key.Binding
+		tab       key.Binding
+		backspace key.Binding
 	}
 }
 
 func NewFindMenuModel(db *database.Database, maxResults int) findMenuModel {
-	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	l.SetShowTitle(true)
-	l.DisableQuitKeybindings()
 	input := ui.NewTextInput()
 	input.SetWidth(30)
 	input.Focus()
-	m := findMenuModel{list: l, input: input, loader: ui.NewLoader(), maxResults: maxResults}
+	m := findMenuModel{input: input, loader: ui.NewLoader(), maxResults: maxResults}
 	m.db = db
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
+	m.keys.backspace = key.NewBinding(
+		key.WithKeys("backspace"),
+		key.WithHelp("backspace", "back"),
+	)
+
 	m.sourceMap = map[AnimeSource]string{
 		Kitsu: findAnimeMsgs.kitsu,
 		Cache: findAnimeMsgs.cache,
@@ -86,14 +89,19 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.MainMenu):
-			// Exit to main menu only when filter is cancelled
-			if m.state.view == Find_ReviewView {
-				if m.list.FilterState() > list.Unfiltered {
-					break
-				}
+			// Go back to find-view from results-view
+			if m.state.view == Find_ResultsView && m.list.FilterState() != list.Filtering {
+				m.Reset()
+				break
 			}
 			m.Reset()
 			return m, abort
+
+		case key.Matches(msg, m.keys.backspace):
+			if m.state.view == Find_ResultsView && m.list.FilterState() != list.Filtering {
+				m.Reset()
+				return m, nil
+			}
 
 		case key.Matches(msg, keyMap.Submit):
 			switch m.state.view {
@@ -123,7 +131,7 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m.loader.Stop()
 		m.list = m.newAnimeList(msg)
 		m.state.find.passed = true
-		m.state.view = Find_ReviewView
+		m.state.view = Find_ResultsView
 	}
 
 	m.loader, cmd = m.loader.Update(msg)
@@ -133,7 +141,7 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	case Find_DefaultView:
 		m.input, cmd = m.input.Update(msg)
 		cmds = append(cmds, cmd)
-	case Find_ReviewView:
+	case Find_ResultsView:
 		m.list, cmd = m.list.Update(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -203,6 +211,10 @@ func (m findMenuModel) newAnimeList(animeList []list.Item) list.Model {
 	l.Title = "Anime Results"
 	l.SetShowTitle(true)
 	l.DisableQuitKeybindings()
+	l.AdditionalShortHelpKeys = func() []key.Binding {
+		return []key.Binding{m.keys.backspace}
+	}
+	l.AdditionalFullHelpKeys = l.AdditionalShortHelpKeys
 	l.Styles.Title = ui.Style.Foreground(ansi.BrightBlue).Background(ansi.Black)
 
 	return l
