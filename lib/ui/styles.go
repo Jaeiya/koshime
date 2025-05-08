@@ -52,8 +52,12 @@ func NewList(o ListOptions) list.Model {
 	d.Styles.NormalDesc = d.Styles.NormalDesc.Foreground(ansi.BrightBlack)
 	d.Styles.FilterMatch = Style
 
-	itemHeight := o.ItemsPerPage * 3 // items plus padding
-	offset := 6                      // size of non-items
+	itemsPerPage := min(len(o.Items), o.ItemsPerPage)
+	itemHeight := itemsPerPage * 3 // items plus padding
+	offset := 6                    // size of non-items
+	if len(o.Items) < itemsPerPage {
+		offset = 0
+	}
 	height := min(o.MaxHeight, itemHeight+offset)
 
 	l := list.New(o.Items, d, o.Width, height)
