@@ -9,6 +9,7 @@ import (
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/help"
 	"github.com/charmbracelet/bubbles/v2/key"
+	"github.com/charmbracelet/bubbles/v2/list"
 	"github.com/charmbracelet/bubbles/v2/spinner"
 	"github.com/charmbracelet/bubbles/v2/textinput"
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -51,7 +52,11 @@ const (
 	Local
 )
 
-type FetchErrorMsg error
+type (
+	FetchErrorMsg       error
+	FetchedNoResultsMsg struct{}
+	FetchedListItemsMsg []list.Item
+)
 
 type ViewModel interface {
 	tea.CursorModel

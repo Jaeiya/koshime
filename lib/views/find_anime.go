@@ -29,8 +29,6 @@ func (i animeListItem) Title() string       { return i.title }
 func (i animeListItem) Description() string { return i.desc }
 func (i animeListItem) FilterValue() string { return i.title }
 
-type fetchedItems []list.Item
-
 type findMenuModel struct {
 	list       list.Model
 	input      textinput.Model
@@ -48,26 +46,33 @@ type findMenuModel struct {
 		view     MenuFindView
 		results  []kitsu.Anime
 		find     struct {
-			passed bool
-			failed bool
+			passed   bool
+			failed   bool
+			notFound bool
 		}
 	}
 	keys struct {
 		tab       key.Binding
 		backspace key.Binding
+		escBack   key.Binding
 	}
 }
 
 func NewFindMenuModel(db *database.Database, maxResults int) findMenuModel {
+	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	input := ui.NewTextInput()
 	input.SetWidth(30)
 	input.Focus()
-	m := findMenuModel{input: input, loader: ui.NewLoader(), maxResults: maxResults}
+	m := findMenuModel{input: input, loader: ui.NewLoader(), maxResults: maxResults, list: l}
 	m.db = db
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
 	m.keys.backspace = key.NewBinding(
-		key.WithKeys("backspace"),
-		key.WithHelp("backspace", "back"),
+		key.WithKeys("left", "backspace"),
+		key.WithHelp("←", "back"),
+	)
+	m.keys.escBack = key.NewBinding(
+		key.WithKeys("esc"),
+		key.WithHelp("esc/←", "back"),
 	)
 
 	m.sourceMap = map[AnimeSource]string{
@@ -125,17 +130,20 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			}
 		}
 
-	case FetchErrorMsg:
+	case FetchErrorMsg, FetchedNoResultsMsg, FetchedListItemsMsg:
 		m.loader.Stop()
-		m.input.Reset()
-		m.state.find.failed = true
-		m.state.fetchErr = msg
+		switch msg := msg.(type) {
+		case FetchErrorMsg:
+			m.state.find.failed = true
+			m.state.fetchErr = msg
 
-	case fetchedItems:
-		m.input.Reset()
-		m.loader.Stop()
-		m.list = m.newAnimeList(msg)
-		m.state.find.passed = true
+		case FetchedNoResultsMsg:
+			m.state.find.notFound = true
+
+		case FetchedListItemsMsg:
+			m.list = m.newAnimeList(msg)
+			m.state.find.passed = true
+		}
 		m.state.view = Find_ResultsView
 	}
 
@@ -163,6 +171,14 @@ func (m findMenuModel) View() (string, *tea.Cursor) {
 		return m.state.fetchErr.Error(), nil
 	}
 
+	if m.state.find.notFound {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			findAnimeMsgs.header,
+			findAnimeMsgs.notFound(m.input.Value()),
+		), nil
+	}
+
 	if m.state.find.passed {
 		return m.list.View(), nil
 	}
@@ -175,6 +191,7 @@ func (m findMenuModel) View() (string, *tea.Cursor) {
 
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
+		findAnimeMsgs.header,
 		findAnimeMsgs.title,
 		search,
 		ui.Style.MarginTop(1).Render(m.input.View()),
@@ -188,6 +205,13 @@ func (m findMenuModel) ShortHelp() []key.Binding {
 	case Find_DefaultView:
 		return []key.Binding{
 			keyMap.Submit, keyMap.MainMenu, m.keys.tab,
+		}
+
+	case Find_ResultsView:
+		if m.state.find.notFound {
+			return []key.Binding{
+				m.keys.escBack,
+			}
 		}
 	}
 	return []key.Binding{}
@@ -203,6 +227,7 @@ func (m *findMenuModel) Reset() {
 	m.state.results = nil
 	m.state.find.passed = false
 	m.state.find.failed = false
+	m.state.find.notFound = false
 }
 
 func (m findMenuModel) newAnimeList(animeList []list.Item) list.Model {
@@ -243,7 +268,7 @@ func (m findMenuModel) findAnime(query string) tea.Cmd {
 				return FetchErrorMsg(err)
 			}
 			if len(anime) == 0 {
-				return FetchErrorMsg(fmt.Errorf("no anime found"))
+				return FetchedNoResultsMsg{}
 			}
 			items = make([]list.Item, len(anime))
 			for i, item := range anime {
@@ -259,7 +284,7 @@ func (m findMenuModel) findAnime(query string) tea.Cmd {
 				return FetchErrorMsg(err)
 			}
 			if len(anime) == 0 {
-				return FetchErrorMsg(fmt.Errorf("no anime found"))
+				return FetchedNoResultsMsg{}
 			}
 			items = make([]list.Item, len(anime))
 			for i, item := range anime {
@@ -273,6 +298,6 @@ func (m findMenuModel) findAnime(query string) tea.Cmd {
 		if len(items) == 0 {
 			return FetchErrorMsg(fmt.Errorf("unrecognized anime source: %d", m.state.source))
 		}
-		return fetchedItems(items)
+		return FetchedListItemsMsg(items)
 	}
 }

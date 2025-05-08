@@ -1,6 +1,7 @@
 package views
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/Jaeiya/koshime/lib/ui"
@@ -74,17 +75,22 @@ account. If not, sign-up here: ;y;https://kitsu.app`,
 }()
 
 type findAnimeText struct {
-	title string
-	kitsu string
-	local string
+	header   string
+	title    string
+	kitsu    string
+	local    string
+	notFound func(query string) string
 }
 
 var findAnimeMsgs = func() findAnimeText {
 	txt := findAnimeText{}
 
+	txt.header = newText([]string{
+		";g;... ;w;Find Anime ;g;...",
+	}, 0, 1)
+
 	txt.title = newText(
 		[]string{
-			";g;... ;w;Find Anime ;g;...",
 			`;x;You can search for either a ;b;full ;x;or ;b;partial ;x;anime title. If you're
 searching ;dgu;Kitsu;x;, it will also search descriptions.`,
 			`The ;dgu;Local;x; source searches your ;b;Koshime ;x;database, which stores all the
@@ -96,6 +102,12 @@ anime you're currently watching.`,
 	activeStyle := ui.Style.Foreground(ansi.Green).Underline(true)
 	txt.kitsu = activeStyle.Render("Kitsu") + "🌐"
 	txt.local = activeStyle.Render("Local") + "📁"
+
+	txt.notFound = func(query string) string {
+		return newText([]string{
+			fmt.Sprintf(";b;No results found for: ;y;%s", query),
+		}, 0, 1)
+	}
 
 	return txt
 }()
