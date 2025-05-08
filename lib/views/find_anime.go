@@ -19,6 +19,7 @@ type MenuFindView int
 const (
 	Find_DefaultView = MenuFindView(iota)
 	Find_ResultsView
+	Find_LoadingView
 )
 
 type animeListItem struct {
@@ -121,6 +122,7 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 				}
 				m.loader.SetLoadingState(true)
 				m.loader.SetText("Find Anime")
+				m.state.view = Find_LoadingView
 				return m, tea.Batch(m.loader.Start, m.findAnime(m.input.Value()))
 			}
 
@@ -213,7 +215,11 @@ func (m findMenuModel) ShortHelp() []key.Binding {
 				m.keys.escBack,
 			}
 		}
+
+	case Find_LoadingView:
+		return []key.Binding{}
 	}
+
 	return []key.Binding{}
 }
 
