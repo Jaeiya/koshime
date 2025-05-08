@@ -28,7 +28,7 @@ type animeListItem struct {
 
 func (i animeListItem) Title() string       { return i.title }
 func (i animeListItem) Description() string { return i.desc }
-func (i animeListItem) FilterValue() string { return i.title }
+func (i animeListItem) FilterValue() string { return i.title + " " + i.desc }
 
 type findMenuModel struct {
 	list       list.Model
@@ -134,6 +134,7 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 	case FetchErrorMsg, FetchedNoResultsMsg, FetchedListItemsMsg:
 		m.loader.Stop()
+		m.state.view = Find_ResultsView
 		switch msg := msg.(type) {
 		case FetchErrorMsg:
 			m.state.find.failed = true
@@ -143,10 +144,18 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			m.state.find.notFound = true
 
 		case FetchedListItemsMsg:
-			m.list = m.newAnimeList(msg)
 			m.state.find.passed = true
+			m.list = ui.NewList(
+				ui.ListOptions{
+					Items:         msg,
+					ShortHelpKeys: []key.Binding{m.keys.backspace},
+					Width:         m.windowSize.width,
+					MaxHeight:     int(float64(m.windowSize.height) * 0.66),
+					ItemsPerPage:  5,
+				},
+			)
+
 		}
-		m.state.view = Find_ResultsView
 	}
 
 	m.loader, cmd = m.loader.Update(msg)
@@ -182,7 +191,18 @@ func (m findMenuModel) View() (string, *tea.Cursor) {
 	}
 
 	if m.state.find.passed {
-		return m.list.View(), nil
+		h := findAnimeMsgs.header
+		var c *tea.Cursor
+		// The filter has no margin, so we enforce
+		if m.list.FilterState() == list.Filtering {
+			h = ui.Style.MarginBottom(1).Render(h)
+			c = m.list.FilterInput.Cursor()
+			c.Shape = tea.CursorBlock
+			c.Color = ansi.Yellow
+			c.Y += lipgloss.Height(h)
+			c.X += 2
+		}
+		return lipgloss.JoinVertical(lipgloss.Left, h, m.list.View()), c
 	}
 
 	c := m.input.Cursor()
@@ -234,30 +254,6 @@ func (m *findMenuModel) Reset() {
 	m.state.find.passed = false
 	m.state.find.failed = false
 	m.state.find.notFound = false
-}
-
-func (m findMenuModel) newAnimeList(animeList []list.Item) list.Model {
-	d := list.NewDefaultDelegate()
-	d.Styles.SelectedTitle = d.Styles.SelectedTitle.Foreground(ansi.BrightGreen).
-		BorderForeground(ansi.BrightGreen)
-	d.Styles.SelectedDesc = d.Styles.SelectedTitle.Foreground(ansi.Blue)
-	d.Styles.NormalTitle = d.Styles.NormalTitle.Foreground(ansi.White)
-	d.Styles.NormalDesc = d.Styles.NormalDesc.Foreground(ansi.BrightBlack)
-	l := list.New(animeList, d, m.windowSize.width, int(float64(m.windowSize.height)*0.66))
-	l.Title = "Anime Results"
-	l.Help.Styles.ShortDesc = ui.HelpDescStyle
-	l.Help.Styles.FullDesc = ui.HelpDescStyle
-	l.Help.Styles.ShortKey = ui.HelpKeyStyle
-	l.Help.Styles.FullKey = ui.HelpKeyStyle
-	l.SetShowTitle(true)
-	l.DisableQuitKeybindings()
-	l.AdditionalShortHelpKeys = func() []key.Binding {
-		return []key.Binding{m.keys.backspace}
-	}
-	l.AdditionalFullHelpKeys = l.AdditionalShortHelpKeys
-	l.Styles.Title = ui.Style.Foreground(ansi.BrightBlue).Background(ansi.Black)
-
-	return l
 }
 
 func (m findMenuModel) findAnime(query string) tea.Cmd {
