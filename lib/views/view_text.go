@@ -85,8 +85,10 @@ var findAnimeMsgs = func() findAnimeText {
 	txt.title = newText(
 		[]string{
 			";g;... ;w;Find Anime ;g;...",
-			`;b;You can search for either a full or partial anime title. If you're
-searching Kitsu, it will also search descriptions.`,
+			`;x;You can search for either a ;b;full ;x;or ;b;partial ;x;anime title. If you're
+searching ;dgu;Kitsu;x;, it will also search descriptions.`,
+			`The ;dgu;Local;x; source searches your ;b;Koshime ;x;database, which stores all the
+anime you're currently watching.`,
 		},
 		0, 1, 1,
 	)

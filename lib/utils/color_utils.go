@@ -10,18 +10,20 @@ import (
 var style = lipgloss.NewStyle()
 
 var foregroundStyleMap = map[string]lipgloss.Style{
-	";bk;": style.Foreground(ansi.BrightBlack),
-	";r;":  style.Foreground(ansi.BrightRed),
-	";g;":  style.Foreground(ansi.BrightGreen),
-	";dg;": style.Foreground(ansi.Green),
-	";y;":  style.Foreground(ansi.BrightYellow),
-	";b;":  style.Foreground(ansi.BrightBlue),
-	";db;": style.Foreground(ansi.Blue),
-	";m;":  style.Foreground(ansi.BrightMagenta),
-	";dm;": style.Foreground(ansi.Magenta),
-	";c;":  style.Foreground(ansi.BrightCyan),
-	";w;":  style.Foreground(ansi.BrightWhite),
-	";x;":  style.Foreground(ansi.White), // Reset to default color
+	";bk;":  style.Foreground(ansi.BrightBlack),
+	";r;":   style.Foreground(ansi.BrightRed),
+	";g;":   style.Foreground(ansi.BrightGreen),
+	";gu;":  style.Underline(true).Foreground(ansi.BrightGreen),
+	";dg;":  style.Foreground(ansi.Green),
+	";dgu;": style.Underline(true).Foreground(ansi.Green),
+	";y;":   style.Foreground(ansi.BrightYellow),
+	";b;":   style.Foreground(ansi.BrightBlue),
+	";db;":  style.Foreground(ansi.Blue),
+	";m;":   style.Foreground(ansi.BrightMagenta),
+	";dm;":  style.Foreground(ansi.Magenta),
+	";c;":   style.Foreground(ansi.BrightCyan),
+	";w;":   style.Foreground(ansi.BrightWhite),
+	";x;":   style.Foreground(ansi.White), // Reset to default color
 }
 
 // ColorText replaces special strings (e.g., ";r;" for Bright Red) with
