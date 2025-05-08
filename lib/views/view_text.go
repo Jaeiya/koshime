@@ -144,14 +144,14 @@ func newText(lines []string, margins ...int) string {
 func newList(props []string, values []string) string {
 	var sb strings.Builder
 
-	propStyle := ui.Style.Width(9).Foreground(lipgloss.BrightWhite)
-	valStyle := ui.Style.Width(40)
+	propStyle := ui.Style.Width(9).Align(lipgloss.Right).Foreground(lipgloss.BrightWhite)
+	valStyle := ui.Style.Width(60)
 
 	for i, prop := range props {
 		sb.WriteString(
 			lipgloss.JoinHorizontal(
 				lipgloss.Left,
-				propStyle.Align(lipgloss.Right).Render(prop)+": ",
+				propStyle.Render(prop+":")+" ",
 				valStyle.Render(utils.ColorText(values[i])),
 			) + "\n",
 		)
