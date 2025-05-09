@@ -157,5 +157,5 @@ func newList(props []string, values []string) string {
 		)
 	}
 
-	return ui.Style.MarginLeft(5).Render(sb.String())
+	return ui.Style.MarginLeft(5).Render(strings.TrimRight(sb.String(), "\n"))
 }
