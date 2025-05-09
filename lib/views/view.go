@@ -257,10 +257,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case MenuView:
 		m, cmd = m.UpdateMenu(msg)
 		cmds = append(cmds, cmd)
-
-	// Temporary
-	case None:
-		return m, tea.Quit
 	}
 
 	return m, tea.Batch(cmds...)
