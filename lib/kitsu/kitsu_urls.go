@@ -29,10 +29,10 @@ const (
 type AnimeType string
 
 const (
-	TV      = AnimeType("tv")
+	TV      = AnimeType("TV")
 	Movie   = AnimeType("movie")
-	OVA     = AnimeType("ova")
-	ONA     = AnimeType("ona")
+	OVA     = AnimeType("OVA")
+	ONA     = AnimeType("ONA")
 	Music   = AnimeType("music")
 	Special = AnimeType("special")
 )
