@@ -200,7 +200,7 @@ func (m findMenuModel) UpdateResults(msg tea.Msg) (findMenuModel, tea.Cmd) {
 		switch {
 		// Go back to query-entry-view from results-view
 		case key.Matches(msg, keyMap.MainMenu):
-			// The list has control of Esc via its filter mechanism
+			// List needs 'Esc' control to cancel filter
 			if m.list.FilterState() > list.Unfiltered {
 				break
 			}
@@ -213,7 +213,7 @@ func (m findMenuModel) UpdateResults(msg tea.Msg) (findMenuModel, tea.Cmd) {
 			}
 
 		case key.Matches(msg, keyMap.Submit):
-			// Do not intercept application of filter
+			// List needs 'Enter' control for applying filter
 			if m.list.FilterState() == list.Filtering {
 				break
 			}
