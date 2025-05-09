@@ -54,7 +54,6 @@ type findMenuModel struct {
 		localResults  []database.LibraryEntry
 		selectedIndex int
 		find          struct {
-			passed   bool
 			failed   bool
 			notFound bool
 		}
@@ -110,6 +109,12 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 				m.Reset()
 				return m, nil
 			}
+
+			if m.state.view == Find_AnimeView {
+				m.state.view = Find_ResultsView
+				return m, nil
+			}
+
 			m.Reset()
 			// Back to main menu
 			return m, abort
@@ -118,6 +123,11 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			// Go back to find-view from results-view
 			if m.state.view == Find_ResultsView && m.list.FilterState() != list.Filtering {
 				m.Reset()
+				return m, nil
+			}
+
+			if m.state.view == Find_AnimeView {
+				m.state.view = Find_ResultsView
 				return m, nil
 			}
 
@@ -156,7 +166,6 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			m.state.find.notFound = true
 
 		case FetchedListItemsMsg[database.LibraryEntry]:
-			m.state.find.passed = true
 			m.state.localResults = msg.results
 			m.list = ui.NewList(
 				ui.ListOptions{
@@ -168,6 +177,17 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 				},
 			)
 
+		case FetchedListItemsMsg[kitsu.Anime]:
+			m.state.kitsuResults = msg.results
+			m.list = ui.NewList(
+				ui.ListOptions{
+					Items:         msg.items,
+					ShortHelpKeys: []key.Binding{m.keys.backspace},
+					Width:         m.windowSize.width,
+					MaxHeight:     int(float64(m.windowSize.height) * 0.66),
+					ItemsPerPage:  5,
+				},
+			)
 		}
 	}
 
@@ -187,41 +207,17 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 }
 
 func (m findMenuModel) View() (string, *tea.Cursor) {
-	if m.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.loader.View()), nil
-	}
-
-	if m.state.view == Find_ResultsView {
-		if m.state.find.failed {
-			return m.state.fetchErr.Error(), nil
+	switch m.state.view {
+	case Find_LoadingView:
+		if m.loader.IsLoading() {
+			return ui.Style.MarginTop(1).Render(m.loader.View()), nil
 		}
+	case Find_ResultsView:
+		return m.ViewResults()
 
-		if m.state.find.notFound {
-			return lipgloss.JoinVertical(
-				lipgloss.Left,
-				findAnimeMsgs.header,
-				findAnimeMsgs.notFound(m.input.Value()),
-			), nil
-		}
+	case Find_AnimeView:
+		return m.ViewAnime(), nil
 
-		if m.state.find.passed {
-			h := findAnimeMsgs.header
-			var c *tea.Cursor
-			// The filter has no margin, so we enforce
-			if m.list.FilterState() == list.Filtering {
-				h = ui.Style.MarginBottom(1).Render(h)
-				c = m.list.FilterInput.Cursor()
-				c.Shape = tea.CursorBlock
-				c.Color = ansi.Yellow
-				c.Y += lipgloss.Height(h)
-				c.X += 2
-			}
-			return lipgloss.JoinVertical(lipgloss.Left, h, m.list.View()), c
-		}
-	}
-
-	if m.state.view == Find_AnimeView {
-		return displayAnimeInfo(m.state.localResults[m.state.selectedIndex]), nil
 	}
 
 	c := m.input.Cursor()
@@ -241,6 +237,55 @@ func (m findMenuModel) View() (string, *tea.Cursor) {
 	return lipgloss.JoinVertical(lipgloss.Left, view), c
 }
 
+func (m findMenuModel) ViewResults() (string, *tea.Cursor) {
+	if m.state.find.failed {
+		return m.state.fetchErr.Error(), nil
+	}
+
+	if m.state.find.notFound {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			findAnimeMsgs.header,
+			findAnimeMsgs.notFound(m.input.Value()),
+		), nil
+	}
+
+	h := findAnimeMsgs.header
+	var c *tea.Cursor
+	// The filter has no margin, so we enforce
+	if m.list.FilterState() == list.Filtering {
+		h = ui.Style.MarginBottom(1).Render(h)
+		c = m.list.FilterInput.Cursor()
+		c.Shape = tea.CursorBlock
+		c.Color = ansi.Yellow
+		c.Y += lipgloss.Height(h)
+		c.X += 2
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, h, m.list.View()), c
+}
+
+func (m findMenuModel) ViewAnime() string {
+	if m.state.localResults != nil {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			findAnimeMsgs.header,
+			"",
+			m.displayAnimeInfo(m.state.localResults[m.state.selectedIndex]),
+		)
+	}
+
+	if m.state.kitsuResults != nil {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			findAnimeMsgs.header,
+			"",
+			m.displayAnimeInfo(m.state.kitsuResults[m.state.selectedIndex]),
+		)
+	}
+
+	return "missing local or kitsu results to display"
+}
+
 func (m findMenuModel) ShortHelp() []key.Binding {
 	switch m.state.view {
 	case Find_DefaultView:
@@ -248,8 +293,8 @@ func (m findMenuModel) ShortHelp() []key.Binding {
 			keyMap.Submit, keyMap.MainMenu, m.keys.tab,
 		}
 
-	case Find_ResultsView:
-		if m.state.find.notFound {
+	case Find_ResultsView, Find_AnimeView:
+		if m.state.find.notFound || m.state.view == Find_AnimeView {
 			return []key.Binding{
 				m.keys.escBack,
 			}
@@ -257,6 +302,7 @@ func (m findMenuModel) ShortHelp() []key.Binding {
 
 	case Find_LoadingView:
 		return []key.Binding{}
+
 	}
 
 	return []key.Binding{}
@@ -270,7 +316,7 @@ func (m *findMenuModel) Reset() {
 	m.state.view = Find_DefaultView
 	m.input.Reset()
 	m.state.kitsuResults = nil
-	m.state.find.passed = false
+	m.state.localResults = nil
 	m.state.find.failed = false
 	m.state.find.notFound = false
 }
@@ -332,37 +378,81 @@ func (m *findMenuModel) findAnime(query string) tea.Cmd {
 	}
 }
 
-func displayAnimeInfo(animeData any) string {
+func (m findMenuModel) displayAnimeInfo(animeData any) string {
 	switch d := animeData.(type) {
 	case database.LibraryEntry:
-		items := make([]string, 4+len(d.AltTitles))
-		headers := make([]string, len(items))
+		return m.toAnimeInfoDisplay(
+			d.JPN_Title,
+			d.ENG_Title,
+			d.Slug,
+			"",
+			d.AltTitles,
+			d.Progress,
+			d.Episodes,
+		)
 
-		headers[0], headers[1] = utils.ColorText(";b;Title"), utils.ColorText(";dc;English")
-		items[0], items[1] = d.JPN_Title, d.ENG_Title
-
-		for i, altTitle := range d.AltTitles {
-			headers[i+2] = utils.ColorText(";db;AltTitle")
-			items[i+2] = altTitle
-		}
-		itemPos := 2 + len(d.AltTitles)
-
-		totalEpsStr := strconv.Itoa(d.Episodes)
-		if d.Episodes == 0 {
-			totalEpsStr = "Unknown"
-		}
-		link, _ := url.JoinPath(kitsu.KitsuDomain, d.Slug)
-		link = utils.ColorText(";bk;" + link)
-
-		headers[itemPos] = utils.ColorText(";y;Progress")
-		items[itemPos] = utils.ColorText(fmt.Sprintf(";dg;%d ;y;/ ;m;%s", d.Progress, totalEpsStr))
-		headers[itemPos+1] = utils.ColorText(";x;link")
-		items[itemPos+1] = link
-
-		return newList(
-			headers,
-			items,
+	case kitsu.Anime:
+		return m.toAnimeInfoDisplay(
+			d.Attributes.CanonicalTitle,
+			d.Attributes.Titles.English,
+			d.Attributes.Slug,
+			d.Attributes.Synopsis,
+			d.Attributes.AltTitles,
+			-1,
+			d.Attributes.EpCount,
 		)
 	}
-	return ""
+	return "unsupported anime data type"
+}
+
+func (findMenuModel) toAnimeInfoDisplay(
+	title, engTitle, slug, synopsis string,
+	altTitles []string,
+	progress, episodes int,
+) string {
+	itemCount := 4
+	if synopsis != "" {
+		itemCount += 1
+	}
+	items := make([]string, itemCount+len(altTitles))
+	headers := make([]string, len(items))
+
+	headers[0], headers[1] = utils.ColorText(";b;Title"), utils.ColorText(";dc;English")
+	items[0], items[1] = title, engTitle
+
+	for i, altTitle := range altTitles {
+		headers[i+2] = utils.ColorText(";db;AltTitle")
+		items[i+2] = altTitle
+	}
+	itemPos := 2 + len(altTitles)
+
+	totalEpsStr := strconv.Itoa(episodes)
+	if episodes == 0 {
+		totalEpsStr = "Unknown"
+	}
+	link, _ := url.JoinPath(kitsu.KitsuDomain, slug)
+	link = utils.ColorText(";bk;" + link)
+
+	if progress > -1 {
+		headers[itemPos] = utils.ColorText(";y;Progress")
+		items[itemPos] = utils.ColorText(
+			fmt.Sprintf(";dg;%d ;y;/ ;m;%s", progress, totalEpsStr),
+		)
+	} else {
+		headers[itemPos] = utils.ColorText(";dc;Episodes")
+		items[itemPos] = utils.ColorText(fmt.Sprintf(";m;%s", totalEpsStr))
+	}
+	if synopsis != "" {
+		itemPos++
+		headers[itemPos] = utils.ColorText(";dc;Synopsis")
+		items[itemPos] = synopsis
+	}
+	itemPos++
+	headers[itemPos] = utils.ColorText(";x;link")
+	items[itemPos] = link
+
+	return newList(
+		headers,
+		items,
+	)
 }
