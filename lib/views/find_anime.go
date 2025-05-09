@@ -25,6 +25,11 @@ const (
 	Find_AnimeView
 )
 
+type (
+	FetchedLibEntriesMsg   FetchedListItemsMsg[database.LibraryEntry]
+	FetchedKitsuEntriesMsg FetchedListItemsMsg[kitsu.Anime]
+)
+
 type animeListItem struct {
 	title, desc string
 	index       int
@@ -223,27 +228,23 @@ func (m findMenuModel) UpdateResults(msg tea.Msg) (findMenuModel, tea.Cmd) {
 		m.loader.Stop()
 		m.state.find.notFound = true
 
-	case FetchedListItemsMsg[database.LibraryEntry]:
+	case FetchedLibEntriesMsg, FetchedKitsuEntriesMsg:
 		m.loader.Stop()
 		m.state.view = Find_ResultsView
-		m.state.localResults = msg.results
-		m.list = ui.NewList(
-			ui.ListOptions{
-				Items:         msg.items,
-				ShortHelpKeys: []key.Binding{m.keys.backspace},
-				Width:         m.windowSize.width,
-				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
-				ItemsPerPage:  5,
-			},
-		)
 
-	case FetchedListItemsMsg[kitsu.Anime]:
-		m.loader.Stop()
-		m.state.view = Find_ResultsView
-		m.state.kitsuResults = msg.results
+		var items []list.Item
+		switch msg := msg.(type) {
+		case FetchedLibEntriesMsg:
+			m.state.localResults = msg.results
+			items = msg.items
+		case FetchedKitsuEntriesMsg:
+			m.state.kitsuResults = msg.results
+			items = msg.items
+		}
+
 		m.list = ui.NewList(
 			ui.ListOptions{
-				Items:         msg.items,
+				Items:         items,
 				ShortHelpKeys: []key.Binding{m.keys.backspace},
 				Width:         m.windowSize.width,
 				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
@@ -381,7 +382,7 @@ func (m *findMenuModel) findAnime(query string) tea.Cmd {
 					i,
 				}
 			}
-			return FetchedListItemsMsg[kitsu.Anime]{
+			return FetchedKitsuEntriesMsg{
 				items:   items,
 				results: anime,
 			}
@@ -403,7 +404,7 @@ func (m *findMenuModel) findAnime(query string) tea.Cmd {
 					i,
 				}
 			}
-			return FetchedListItemsMsg[database.LibraryEntry]{
+			return FetchedLibEntriesMsg{
 				items:   items,
 				results: anime,
 			}
