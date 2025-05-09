@@ -209,11 +209,13 @@ func (m findMenuModel) UpdateResults(msg tea.Msg) (findMenuModel, tea.Cmd) {
 			}
 
 		case key.Matches(msg, keyMap.Submit):
-			if m.list.FilterState() != list.Filtering {
-				item := m.list.SelectedItem().(animeListItem)
-				m.state.selectedIndex = item.index
-				m.state.view = Find_AnimeView
+			// Do not intercept application of filter
+			if m.list.FilterState() == list.Filtering {
+				break
 			}
+			item := m.list.SelectedItem().(animeListItem)
+			m.state.selectedIndex = item.index
+			m.state.view = Find_AnimeView
 
 		}
 
