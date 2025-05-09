@@ -191,8 +191,10 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		}
 	}
 
-	m.loader, cmd = m.loader.Update(msg)
-	cmds = append(cmds, cmd)
+	if m.loader.IsLoading() {
+		m.loader, cmd = m.loader.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	switch m.state.view {
 	case Find_DefaultView:
