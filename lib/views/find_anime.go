@@ -421,7 +421,8 @@ func (m findMenuModel) displayAnimeInfo(animeData any) string {
 			d.JPN_Title,
 			d.ENG_Title,
 			d.Slug,
-			"",
+			d.Synopsis,
+			string(d.Type),
 			d.AltTitles,
 			d.Progress,
 			d.Episodes,
@@ -433,6 +434,7 @@ func (m findMenuModel) displayAnimeInfo(animeData any) string {
 			d.Attributes.Titles.English,
 			d.Attributes.Slug,
 			d.Attributes.Synopsis,
+			d.Attributes.Type,
 			d.Attributes.AltTitles,
 			-1,
 			d.Attributes.EpCount,
@@ -442,18 +444,18 @@ func (m findMenuModel) displayAnimeInfo(animeData any) string {
 }
 
 func (findMenuModel) stringifyAnimeInfo(
-	title, engTitle, slug, synopsis string,
+	title, engTitle, slug, synopsis, showType string,
 	altTitles []string,
 	progress, episodes int,
 ) string {
-	itemCount := 4
+	itemCount := 5
 	if synopsis != "" {
 		itemCount += 1
 	}
 	items := make([]string, itemCount+len(altTitles))
 	headers := make([]string, len(items))
 
-	headers[0], headers[1] = utils.ColorText(";b;Title"), utils.ColorText(";dc;English")
+	headers[0], headers[1] = utils.ColorText(";g;Title"), utils.ColorText(";dc;English")
 	items[0], items[1] = title, engTitle
 
 	for i, altTitle := range altTitles {
@@ -466,8 +468,10 @@ func (findMenuModel) stringifyAnimeInfo(
 	if episodes == 0 {
 		totalEpsStr = "Unknown"
 	}
-	link, _ := url.JoinPath(kitsu.KitsuDomain, slug)
-	link = utils.ColorText(";bk;" + link)
+
+	headers[itemPos] = utils.ColorText(";y;Type")
+	items[itemPos] = utils.ColorText(";c;" + showType)
+	itemPos++
 
 	if progress > -1 {
 		headers[itemPos] = utils.ColorText(";y;Progress")
@@ -478,13 +482,17 @@ func (findMenuModel) stringifyAnimeInfo(
 		headers[itemPos] = utils.ColorText(";dc;Episodes")
 		items[itemPos] = utils.ColorText(fmt.Sprintf(";m;%s", totalEpsStr))
 	}
+
 	if synopsis != "" {
 		itemPos++
 		headers[itemPos] = utils.ColorText(";dc;Synopsis")
 		items[itemPos] = synopsis
 	}
+
 	itemPos++
 	headers[itemPos] = utils.ColorText(";x;link")
+	link, _ := url.JoinPath(kitsu.KitsuDomain, slug)
+	link = utils.ColorText(";bk;" + link)
 	items[itemPos] = link
 
 	return newList(
