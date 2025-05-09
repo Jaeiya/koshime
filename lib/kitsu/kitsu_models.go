@@ -2,7 +2,39 @@ package kitsu
 
 import "encoding/json"
 
-type AuthToken struct {
+type LibraryEntry struct {
+	// Anime ID
+	ID string
+	// Anime User-library ID - Allows looking up User-specific Anime data
+	LibID     string
+	JPN_Title string
+	ENG_Title string
+	AltTitles []string
+	Episodes  int
+	Type      AnimeType
+	Progress  int
+	Synopsis  string
+	Slug      string
+}
+
+type Profile struct {
+	ID              string
+	SecondsWatched  int
+	CompletedSeries int
+	Username        string
+	About           string
+	Location        string
+	Birthday        string
+	Gender          string
+	CreatedAt       string
+	AccessToken     string
+	RefreshToken    string
+	TokenExpiration int
+	// Last time the profile was retrieved
+	LastUpdateSec int64
+}
+
+type AuthTokenData struct {
 	Token     string `json:"access_token"`
 	TokenType string `json:"token_type"`
 	// Seconds until token expires
@@ -38,7 +70,7 @@ type ProfileData struct {
 	} `json:"included"`
 }
 
-type Anime struct {
+type AnimeData struct {
 	ID         string `json:"id"`
 	Attributes struct {
 		CanonicalTitle string `json:"canonicalTitle"`
@@ -52,12 +84,13 @@ type Anime struct {
 		EpCount   int      `json:"episodeCount"`
 		StartDate string   `json:"startDate"`
 		EndDate   string   `json:"endDate"`
+		Type      string   `json:"subtype"`
 		Slug      string   `json:"slug"`
 		Synopsis  string   `json:"synopsis"`
 	} `json:"attributes"`
 }
 
-type LibraryAnime struct {
+type LibraryAnimeData struct {
 	Data []struct {
 		LibID      string `json:"id"`
 		Attributes struct {
@@ -67,7 +100,7 @@ type LibraryAnime struct {
 		} `json:"attributes"`
 	} `json:"data"`
 
-	Included []Anime `json:"included"`
+	Included []AnimeData `json:"included"`
 }
 
 func newAddAnimePayload(animeID, userID string, status LibAnimeStatus) ([]byte, error) {

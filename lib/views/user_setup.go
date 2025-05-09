@@ -17,9 +17,9 @@ import (
 )
 
 type (
-	FetchedAuthTokenMsg  = kitsu.AuthToken
-	FetchProfileMsg      = database.Profile
-	FetchedLibAnimeMsg   = []database.LibraryEntry
+	FetchedAuthTokenMsg  = kitsu.AuthTokenData
+	FetchProfileMsg      = kitsu.Profile
+	FetchedLibAnimeMsg   = []kitsu.LibraryEntry
 	SetupUserFinishedMsg = database.Data
 )
 

@@ -26,8 +26,8 @@ const (
 )
 
 type (
-	FetchedLibEntriesMsg   FetchedListItemsMsg[database.LibraryEntry]
-	FetchedKitsuEntriesMsg FetchedListItemsMsg[kitsu.Anime]
+	FetchedLibEntriesMsg   FetchedListItemsMsg[kitsu.LibraryEntry]
+	FetchedKitsuEntriesMsg FetchedListItemsMsg[kitsu.AnimeData]
 )
 
 type animeListItem struct {
@@ -53,8 +53,8 @@ type findMenuModel struct {
 	state      struct {
 		fetchErr      FetchErrorMsg
 		view          MenuFindView
-		kitsuResults  []kitsu.Anime
-		localResults  []database.LibraryEntry
+		kitsuResults  []kitsu.AnimeData
+		localResults  []kitsu.LibraryEntry
 		selectedIndex int
 		find          struct {
 			source   AnimeSource
@@ -416,7 +416,7 @@ func (m *findMenuModel) findAnime(query string) tea.Cmd {
 
 func (m findMenuModel) displayAnimeInfo(animeData any) string {
 	switch d := animeData.(type) {
-	case database.LibraryEntry:
+	case kitsu.LibraryEntry:
 		return m.stringifyAnimeInfo(
 			d.JPN_Title,
 			d.ENG_Title,
@@ -427,7 +427,7 @@ func (m findMenuModel) displayAnimeInfo(animeData any) string {
 			d.Episodes,
 		)
 
-	case kitsu.Anime:
+	case kitsu.AnimeData:
 		return m.stringifyAnimeInfo(
 			d.Attributes.CanonicalTitle,
 			d.Attributes.Titles.English,

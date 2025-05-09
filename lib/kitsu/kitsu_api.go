@@ -5,11 +5,9 @@ import (
 	"fmt"
 	"net/url"
 	"time"
-
-	"github.com/Jaeiya/koshime/lib/database"
 )
 
-func GetAuthToken(userName, password string) (AuthToken, error) {
+func GetAuthToken(userName, password string) (AuthTokenData, error) {
 	credentials := map[string]string{
 		"grant_type": "password",
 		"username":   userName,
@@ -18,10 +16,10 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 
 	payload, err := json.Marshal(credentials)
 	if err != nil {
-		return AuthToken{}, err
+		return AuthTokenData{}, err
 	}
 
-	var data AuthToken
+	var data AuthTokenData
 	opts := APIReqOptions{
 		method:      apiPost,
 		url:         apiAuthTokenURL,
@@ -29,13 +27,13 @@ func GetAuthToken(userName, password string) (AuthToken, error) {
 		contentType: jsonContent,
 	}
 	if _, err = newAPIRequest(opts, &data); err != nil {
-		return AuthToken{}, err
+		return AuthTokenData{}, err
 	}
 
 	return data, nil
 }
 
-func FindAnime(q string, status []AnimeStatus, maxItems int) ([]Anime, error) {
+func FindAnime(q string, status []AnimeStatus, maxItems int) ([]AnimeData, error) {
 	normalizedStatus := AnimeStatus{}
 	for _, s := range status {
 		normalizedStatus = append(normalizedStatus, s...)
@@ -43,11 +41,11 @@ func FindAnime(q string, status []AnimeStatus, maxItems int) ([]Anime, error) {
 
 	qurl, err := getAnimeInfoQURL(q, normalizedStatus, maxItems)
 	if err != nil {
-		return []Anime{}, nil
+		return []AnimeData{}, nil
 	}
 
 	var respData struct {
-		Data []Anime `json:"data"`
+		Data []AnimeData `json:"data"`
 	}
 
 	opt := APIReqOptions{
@@ -57,19 +55,19 @@ func FindAnime(q string, status []AnimeStatus, maxItems int) ([]Anime, error) {
 	}
 
 	if _, err = newAPIRequest(opt, &respData); err != nil {
-		return []Anime{}, err
+		return []AnimeData{}, err
 	}
 
 	return respData.Data, nil
 }
 
-func GetLibraryAnime(userID string, status LibAnimeStatus) ([]database.LibraryEntry, error) {
+func GetLibraryAnime(userID string, status LibAnimeStatus) ([]LibraryEntry, error) {
 	qurl, err := getUserLibAnimeQURL(userID, status)
 	if err != nil {
 		return nil, err
 	}
 
-	var respData LibraryAnime
+	var respData LibraryAnimeData
 	opt := APIReqOptions{
 		method:      apiGet,
 		url:         qurl,
@@ -79,10 +77,10 @@ func GetLibraryAnime(userID string, status LibAnimeStatus) ([]database.LibraryEn
 		return nil, err
 	}
 
-	entries := make([]database.LibraryEntry, len(respData.Data))
+	entries := make([]LibraryEntry, len(respData.Data))
 	for i, item := range respData.Data {
 		anime := respData.Included[i]
-		entries[i] = database.LibraryEntry{
+		entries[i] = LibraryEntry{
 			ID:        respData.Included[i].ID,
 			LibID:     item.LibID,
 			JPN_Title: anime.Attributes.Titles.Romaji,
@@ -90,6 +88,8 @@ func GetLibraryAnime(userID string, status LibAnimeStatus) ([]database.LibraryEn
 			AltTitles: anime.Attributes.AltTitles,
 			Episodes:  anime.Attributes.EpCount,
 			Progress:  item.Attributes.Progress,
+			Synopsis:  anime.Attributes.Synopsis,
+			Type:      AnimeType(anime.Attributes.Type),
 			Slug:      anime.Attributes.Slug,
 		}
 	}
@@ -174,10 +174,10 @@ func DeleteLibAnime(libID, token string) (int, error) {
 	return status, nil
 }
 
-func GetProfile(userName string) (database.Profile, error) {
+func GetProfile(userName string) (Profile, error) {
 	qurl, err := getProfileQURL(userName)
 	if err != nil {
-		return database.Profile{}, err
+		return Profile{}, err
 	}
 
 	var respData ProfileData
@@ -187,17 +187,17 @@ func GetProfile(userName string) (database.Profile, error) {
 		contentType: vndAPIContent,
 	}, &respData)
 	if err != nil {
-		return database.Profile{}, err
+		return Profile{}, err
 	}
 
 	if len(respData.Data) == 0 {
-		return database.Profile{}, fmt.Errorf("profile not found")
+		return Profile{}, fmt.Errorf("profile not found")
 	}
 
 	profileData := respData.Data[0]
 	profileStats := respData.Included[0]
 
-	profile := database.Profile{
+	profile := Profile{
 		ID:              profileData.ID,
 		Username:        profileData.Attributes.Name,
 		About:           profileData.Attributes.About,
