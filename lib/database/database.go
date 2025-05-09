@@ -2,7 +2,7 @@ package database
 
 import (
 	"bytes"
-	"compress/gzip"
+	"compress/flate"
 	"fmt"
 	"io"
 	"os"
@@ -198,7 +198,7 @@ func hasTitleMatches(e kitsu.LibraryEntry, q string) bool {
 
 func compressData(data []byte) ([]byte, error) {
 	var b bytes.Buffer
-	writer, err := gzip.NewWriterLevel(&b, 7)
+	writer, err := flate.NewWriter(&b, flate.BestCompression)
 	if err != nil {
 		return nil, err
 	}
@@ -216,10 +216,7 @@ func compressData(data []byte) ([]byte, error) {
 }
 
 func decompressData(data []byte) ([]byte, error) {
-	reader, err := gzip.NewReader(bytes.NewReader(data))
-	if err != nil {
-		return nil, err
-	}
+	reader := flate.NewReader(bytes.NewReader(data))
 	defer reader.Close()
 
 	var out bytes.Buffer
