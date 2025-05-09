@@ -20,10 +20,9 @@ import (
 type MenuFindView int
 
 const (
-	Find_DefaultView = MenuFindView(iota)
+	Find_QueryEntryView = MenuFindView(iota)
 	Find_ResultsView
 	Find_AnimeView
-	Find_LoadingView
 )
 
 type animeListItem struct {
@@ -48,12 +47,12 @@ type findMenuModel struct {
 	sourceMap  map[AnimeSource]string
 	state      struct {
 		fetchErr      FetchErrorMsg
-		source        AnimeSource
 		view          MenuFindView
 		kitsuResults  []kitsu.Anime
 		localResults  []database.LibraryEntry
 		selectedIndex int
 		find          struct {
+			source   AnimeSource
 			failed   bool
 			notFound bool
 		}
@@ -98,97 +97,11 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m.windowSize.width = msg.Width
 		m.windowSize.height = msg.Height
 
-	case tea.KeyPressMsg:
-		switch {
-		case key.Matches(msg, keyMap.MainMenu):
-			// Go back to find-view from results-view
-			if m.state.view == Find_ResultsView {
-				if m.list.FilterState() > list.Unfiltered {
-					break
-				}
-				m.Reset()
-				return m, nil
-			}
-
-			if m.state.view == Find_AnimeView {
-				m.state.view = Find_ResultsView
-				return m, nil
-			}
-
-			m.Reset()
-			// Back to main menu
-			return m, abort
-
-		case key.Matches(msg, m.keys.backspace):
-			// Go back to find-view from results-view
-			if m.state.view == Find_ResultsView && m.list.FilterState() != list.Filtering {
-				m.Reset()
-				return m, nil
-			}
-
-			if m.state.view == Find_AnimeView {
-				m.state.view = Find_ResultsView
-				return m, nil
-			}
-
-		case key.Matches(msg, keyMap.Submit):
-			switch m.state.view {
-			case Find_DefaultView:
-				if m.loader.IsLoading() {
-					break
-				}
-				m.loader.SetLoadingState(true)
-				m.loader.SetText("Find Anime")
-				m.state.view = Find_LoadingView
-				return m, tea.Batch(m.loader.Start, m.findAnime(m.input.Value()))
-
-			case Find_ResultsView:
-				item := m.list.SelectedItem().(animeListItem)
-				m.state.selectedIndex = item.index
-				m.state.view = Find_AnimeView
-			}
-
-		case key.Matches(msg, m.keys.tab):
-			if m.state.view == Find_DefaultView {
-				m.state.source = (m.state.source + 1) % 2
-			}
-		}
-
-	case FetchErrorMsg, FetchedNoResultsMsg, FetchedListItemsMsg[kitsu.Anime], FetchedListItemsMsg[database.LibraryEntry]:
+	case FetchErrorMsg:
 		m.loader.Stop()
 		m.state.view = Find_ResultsView
-		switch msg := msg.(type) {
-		case FetchErrorMsg:
-			m.state.find.failed = true
-			m.state.fetchErr = msg
-
-		case FetchedNoResultsMsg:
-			m.state.find.notFound = true
-
-		case FetchedListItemsMsg[database.LibraryEntry]:
-			m.state.localResults = msg.results
-			m.list = ui.NewList(
-				ui.ListOptions{
-					Items:         msg.items,
-					ShortHelpKeys: []key.Binding{m.keys.backspace},
-					Width:         m.windowSize.width,
-					MaxHeight:     int(float64(m.windowSize.height) * 0.66),
-					ItemsPerPage:  5,
-				},
-			)
-
-		case FetchedListItemsMsg[kitsu.Anime]:
-			m.state.kitsuResults = msg.results
-			m.list = ui.NewList(
-				ui.ListOptions{
-					Items:         msg.items,
-					ShortHelpKeys: []key.Binding{m.keys.backspace},
-					Width:         m.windowSize.width,
-					MaxHeight:     int(float64(m.windowSize.height) * 0.66),
-					ItemsPerPage:  5,
-				},
-			)
-		}
+		m.state.find.failed = true
+		m.state.fetchErr = msg
 	}
 
 	if m.loader.IsLoading() {
@@ -197,11 +110,14 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	}
 
 	switch m.state.view {
-	case Find_DefaultView:
-		m.input, cmd = m.input.Update(msg)
+	case Find_QueryEntryView:
+		m, cmd = m.UpdateQueryEntry(msg)
 		cmds = append(cmds, cmd)
 	case Find_ResultsView:
-		m.list, cmd = m.list.Update(msg)
+		m, cmd = m.UpdateResults(msg)
+		cmds = append(cmds, cmd)
+	case Find_AnimeView:
+		m, cmd = m.UpdateAnime(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -210,23 +126,55 @@ func (m findMenuModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 func (m findMenuModel) View() (string, *tea.Cursor) {
 	switch m.state.view {
-	case Find_LoadingView:
-		if m.loader.IsLoading() {
-			return ui.Style.MarginTop(1).Render(m.loader.View()), nil
-		}
+	case Find_QueryEntryView:
+		return m.ViewQueryEntry()
+
 	case Find_ResultsView:
 		return m.ViewResults()
 
 	case Find_AnimeView:
 		return m.ViewAnime(), nil
-
 	}
 
+	return "missing view", nil
+}
+
+func (m findMenuModel) UpdateQueryEntry(msg tea.Msg) (findMenuModel, tea.Cmd) {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, keyMap.MainMenu):
+			m.Reset()
+			return m, abort
+
+		case key.Matches(msg, keyMap.Submit):
+			if m.loader.IsLoading() {
+				break
+			}
+			m.loader.SetLoadingState(true)
+			m.loader.SetText("Find Anime")
+			m.state.view = Find_ResultsView
+			return m, tea.Batch(m.loader.Start, m.findAnime(m.input.Value()))
+
+		case key.Matches(msg, m.keys.tab):
+			m.state.find.source = (m.state.find.source + 1) % 2
+		}
+	}
+
+	m.input, cmd = m.input.Update(msg)
+	cmds = append(cmds, cmd)
+	return m, tea.Batch(cmds...)
+}
+
+func (m findMenuModel) ViewQueryEntry() (string, *tea.Cursor) {
 	c := m.input.Cursor()
 	c.Shape = tea.CursorBar
 
 	search := ui.TextStyle.Foreground(ansi.BrightBlack).
-		Render("Source: " + m.sourceMap[m.state.source])
+		Render("Source: " + m.sourceMap[m.state.find.source])
 
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -239,7 +187,79 @@ func (m findMenuModel) View() (string, *tea.Cursor) {
 	return lipgloss.JoinVertical(lipgloss.Left, view), c
 }
 
+func (m findMenuModel) UpdateResults(msg tea.Msg) (findMenuModel, tea.Cmd) {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		// Go back to query-entry-view from results-view
+		case key.Matches(msg, keyMap.MainMenu):
+			// The list has control of Esc via its filter mechanism
+			if m.list.FilterState() > list.Unfiltered {
+				break
+			}
+			m.Reset()
+
+		// Go back to query-entry-view from results-view
+		case key.Matches(msg, m.keys.backspace):
+			if m.list.FilterState() != list.Filtering {
+				m.Reset()
+			}
+
+		case key.Matches(msg, keyMap.Submit):
+			if m.list.FilterState() != list.Filtering {
+				item := m.list.SelectedItem().(animeListItem)
+				m.state.selectedIndex = item.index
+				m.state.view = Find_AnimeView
+			}
+
+		}
+
+	case FetchedNoResultsMsg:
+		m.loader.Stop()
+		m.state.find.notFound = true
+
+	case FetchedListItemsMsg[database.LibraryEntry]:
+		m.loader.Stop()
+		m.state.view = Find_ResultsView
+		m.state.localResults = msg.results
+		m.list = ui.NewList(
+			ui.ListOptions{
+				Items:         msg.items,
+				ShortHelpKeys: []key.Binding{m.keys.backspace},
+				Width:         m.windowSize.width,
+				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
+				ItemsPerPage:  5,
+			},
+		)
+
+	case FetchedListItemsMsg[kitsu.Anime]:
+		m.loader.Stop()
+		m.state.view = Find_ResultsView
+		m.state.kitsuResults = msg.results
+		m.list = ui.NewList(
+			ui.ListOptions{
+				Items:         msg.items,
+				ShortHelpKeys: []key.Binding{m.keys.backspace},
+				Width:         m.windowSize.width,
+				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
+				ItemsPerPage:  5,
+			},
+		)
+	}
+
+	m.list, cmd = m.list.Update(msg)
+	cmds = append(cmds, cmd)
+	return m, tea.Batch(cmds...)
+}
+
 func (m findMenuModel) ViewResults() (string, *tea.Cursor) {
+	if m.loader.IsLoading() {
+		return ui.Style.MarginTop(1).Render(m.loader.View()), nil
+	}
+
 	if m.state.find.failed {
 		return m.state.fetchErr.Error(), nil
 	}
@@ -266,6 +286,17 @@ func (m findMenuModel) ViewResults() (string, *tea.Cursor) {
 	return lipgloss.JoinVertical(lipgloss.Left, h, m.list.View()), c
 }
 
+func (m findMenuModel) UpdateAnime(msg tea.Msg) (findMenuModel, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, m.keys.escBack, m.keys.backspace):
+			m.state.view = Find_ResultsView
+		}
+	}
+	return m, nil
+}
+
 func (m findMenuModel) ViewAnime() string {
 	if m.state.localResults != nil {
 		return lipgloss.JoinVertical(
@@ -289,8 +320,12 @@ func (m findMenuModel) ViewAnime() string {
 }
 
 func (m findMenuModel) ShortHelp() []key.Binding {
+	if m.loader.IsLoading() {
+		return []key.Binding{}
+	}
+
 	switch m.state.view {
-	case Find_DefaultView:
+	case Find_QueryEntryView:
 		return []key.Binding{
 			keyMap.Submit, keyMap.MainMenu, m.keys.tab,
 		}
@@ -301,10 +336,6 @@ func (m findMenuModel) ShortHelp() []key.Binding {
 				m.keys.escBack,
 			}
 		}
-
-	case Find_LoadingView:
-		return []key.Binding{}
-
 	}
 
 	return []key.Binding{}
@@ -315,7 +346,7 @@ func (m findMenuModel) FullHelp() [][]key.Binding {
 }
 
 func (m *findMenuModel) Reset() {
-	m.state.view = Find_DefaultView
+	m.state.view = Find_QueryEntryView
 	m.input.Reset()
 	m.state.kitsuResults = nil
 	m.state.localResults = nil
@@ -326,7 +357,7 @@ func (m *findMenuModel) Reset() {
 func (m *findMenuModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
 		var items []list.Item
-		switch m.state.source {
+		switch m.state.find.source {
 		case Kitsu:
 			anime, err := kitsu.FindAnime(
 				query,
@@ -376,7 +407,7 @@ func (m *findMenuModel) findAnime(query string) tea.Cmd {
 			}
 		}
 
-		return FetchErrorMsg(fmt.Errorf("unrecognized anime source: %d", m.state.source))
+		return FetchErrorMsg(fmt.Errorf("unrecognized anime source: %d", m.state.find.source))
 	}
 }
 
