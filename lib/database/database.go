@@ -1,7 +1,10 @@
 package database
 
 import (
+	"bytes"
+	"compress/gzip"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"slices"
@@ -80,11 +83,15 @@ func (db *Database) Load() error {
 	if db.isLoaded {
 		return nil
 	}
-	file, err := os.ReadFile(filepath.Join(utils.GetWorkingDir(), dbFileName))
+	fileBytes, err := os.ReadFile(filepath.Join(utils.GetWorkingDir(), dbFileName))
 	if err != nil {
 		return err
 	}
-	err = msgpack.Unmarshal(file, &db.data)
+	uncompressed, err := decompressData(fileBytes)
+	if err != nil {
+		return err
+	}
+	err = msgpack.Unmarshal([]byte(uncompressed), &db.data)
 	if err != nil {
 		return err
 	}
@@ -198,7 +205,13 @@ func (db Database) Save() error {
 	if err != nil {
 		return err
 	}
-	os.WriteFile(dbFileName, bytes, 0o644)
+
+	compressed, err := compressData(bytes)
+	if err != nil {
+		return err
+	}
+
+	os.WriteFile(dbFileName, compressed, 0o644)
 	return nil
 }
 
@@ -210,4 +223,38 @@ func hasTitleMatches(e LibraryEntry, q string) bool {
 	return slices.ContainsFunc(e.AltTitles, func(s string) bool {
 		return strings.Contains(strings.ToLower(s), q)
 	})
+}
+
+func compressData(data []byte) ([]byte, error) {
+	var b bytes.Buffer
+	writer, err := gzip.NewWriterLevel(&b, 7)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = writer.Write(data)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := writer.Close(); err != nil {
+		return nil, err
+	}
+
+	return b.Bytes(), nil
+}
+
+func decompressData(data []byte) ([]byte, error) {
+	reader, err := gzip.NewReader(bytes.NewReader(data))
+	if err != nil {
+		return nil, err
+	}
+	defer reader.Close()
+
+	var out bytes.Buffer
+	if _, err := io.Copy(&out, reader); err != nil {
+		return nil, err
+	}
+
+	return out.Bytes(), nil
 }
