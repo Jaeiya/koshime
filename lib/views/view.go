@@ -189,7 +189,6 @@ func (ui Model) Init() tea.Cmd {
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	var err error
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	var currentModel ViewModel
@@ -228,8 +227,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case SetupUserFinishedMsg:
 		m.SetViewState(MenuView)
-		err = m.db.LoadData(msg)
+		err := m.db.LoadData(msg)
 		if err != nil {
+			// FIX  Do not panic, we should display a message
 			panic(err)
 		}
 
@@ -246,8 +246,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	if currentModel != nil {
-		m.menuViewMap[m.state.view], cmd = currentModel.Update(msg)
-		cmds = append(cmds, cmd)
+		// We do not want to add new models to the map
+		if _, exists := m.menuViewMap[m.state.view]; exists {
+			m.menuViewMap[m.state.view], cmd = currentModel.Update(msg)
+			cmds = append(cmds, cmd)
+		}
 	}
 
 	switch m.state.view {
