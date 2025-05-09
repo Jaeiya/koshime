@@ -212,6 +212,7 @@ func (m findMenuModel) UpdateResults(msg tea.Msg) (findMenuModel, tea.Cmd) {
 				m.Reset()
 			}
 
+		// Select Anime
 		case key.Matches(msg, keyMap.Submit):
 			// List needs 'Enter' control for applying filter
 			if m.list.FilterState() == list.Filtering {
