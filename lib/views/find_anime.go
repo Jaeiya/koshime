@@ -381,7 +381,7 @@ func (m *findMenuModel) findAnime(query string) tea.Cmd {
 func (m findMenuModel) displayAnimeInfo(animeData any) string {
 	switch d := animeData.(type) {
 	case database.LibraryEntry:
-		return m.toAnimeInfoDisplay(
+		return m.stringifyAnimeInfo(
 			d.JPN_Title,
 			d.ENG_Title,
 			d.Slug,
@@ -392,7 +392,7 @@ func (m findMenuModel) displayAnimeInfo(animeData any) string {
 		)
 
 	case kitsu.Anime:
-		return m.toAnimeInfoDisplay(
+		return m.stringifyAnimeInfo(
 			d.Attributes.CanonicalTitle,
 			d.Attributes.Titles.English,
 			d.Attributes.Slug,
@@ -405,7 +405,7 @@ func (m findMenuModel) displayAnimeInfo(animeData any) string {
 	return "unsupported anime data type"
 }
 
-func (findMenuModel) toAnimeInfoDisplay(
+func (findMenuModel) stringifyAnimeInfo(
 	title, engTitle, slug, synopsis string,
 	altTitles []string,
 	progress, episodes int,
