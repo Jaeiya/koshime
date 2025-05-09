@@ -159,10 +159,9 @@ func (m findMenuModel) UpdateQueryEntry(msg tea.Msg) (findMenuModel, tea.Cmd) {
 			if m.loader.IsLoading() {
 				break
 			}
-			m.loader.SetLoadingState(true)
-			m.loader.SetText("Find Anime")
 			m.state.view = Find_ResultsView
-			return m, tea.Batch(m.loader.Start, m.findAnime(m.input.Value()))
+			m.loader, cmd = m.loader.Start("Find Anime")
+			return m, tea.Batch(cmd, m.findAnime(m.input.Value()))
 
 		case key.Matches(msg, m.keys.tab):
 			m.state.find.source = (m.state.find.source + 1) % 2

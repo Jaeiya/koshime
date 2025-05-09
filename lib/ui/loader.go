@@ -52,16 +52,12 @@ func (m LoaderModel) IsLoading() bool {
 	return m.active
 }
 
-func (m *LoaderModel) SetLoadingState(b bool) {
+func (m LoaderModel) Start(text string) (LoaderModel, tea.Cmd) {
 	m.active = true
-}
-
-func (m *LoaderModel) SetText(s string) {
-	m.text = s
-}
-
-func (m LoaderModel) Start() tea.Msg {
-	return m.spinner.Tick()
+	if text != "" {
+		m.text = text
+	}
+	return m, m.spinner.Tick
 }
 
 func (m *LoaderModel) Stop() {

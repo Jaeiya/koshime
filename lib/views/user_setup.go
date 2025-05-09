@@ -146,9 +146,8 @@ func (m userSetupModel) UpdateUsername(msg tea.Msg) (userSetupModel, tea.Cmd) {
 		switch msg.Key().Code {
 		case tea.KeyEnter:
 			if !usernameState.failed && !usernameState.passed && !m.loader.IsLoading() {
-				m.loader.SetLoadingState(true)
-				m.loader.SetText("Loading Profile")
-				return m, tea.Batch(m.loader.Start, m.getProfile(m.input.Value()))
+				m.loader, cmd = m.loader.Start("Loading Profile")
+				return m, tea.Batch(cmd, m.getProfile(m.input.Value()))
 			}
 
 			// User chooses to either abort or try again
@@ -250,9 +249,8 @@ func (m userSetupModel) UpdatePassword(msg tea.Msg) (userSetupModel, tea.Cmd) {
 		switch msg.Key().Code {
 		case tea.KeyEnter:
 			if !passwordState.failed && !passwordState.passed && !m.loader.IsLoading() {
-				m.loader.SetLoadingState(true)
-				m.loader.SetText("Getting Access Token")
-				return m, tea.Batch(m.loader.Start, m.getAuthToken)
+				m.loader, cmd = m.loader.Start("Getting Access Token")
+				return m, tea.Batch(cmd, m.getAuthToken)
 			}
 
 			if passwordState.failed {
@@ -264,10 +262,9 @@ func (m userSetupModel) UpdatePassword(msg tea.Msg) (userSetupModel, tea.Cmd) {
 			}
 
 			if passwordState.passed && !m.loader.IsLoading() {
-				m.loader.SetLoadingState(true)
-				m.loader.SetText("Getting Library Anime")
+				m.loader, cmd = m.loader.Start("Getting Library Anime")
 				m.state.view = SetupLibraryView
-				return m, tea.Batch(m.loader.Start, m.getAnimeLibrary(m.state.data.Profile.ID))
+				return m, tea.Batch(cmd, m.getAnimeLibrary(m.state.data.Profile.ID))
 			}
 		}
 
@@ -343,9 +340,11 @@ func (m userSetupModel) UpdateLibAnime(msg tea.Msg) (userSetupModel, tea.Cmd) {
 				if ui.No == m.consent.Get() {
 					return m, abort
 				}
-				m.loader.SetLoadingState(true)
+				// Retry getting library anime
+				var cmd tea.Cmd
+				m.loader, cmd = m.loader.Start("")
 				state.failed = false
-				return m, tea.Batch(m.loader.Start, m.getAnimeLibrary(m.state.data.Profile.ID))
+				return m, tea.Batch(cmd, m.getAnimeLibrary(m.state.data.Profile.ID))
 			}
 
 			if state.passed {
