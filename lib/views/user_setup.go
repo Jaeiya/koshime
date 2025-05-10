@@ -212,7 +212,7 @@ func (m userSetupModel) ViewUsername() (string, *tea.Cursor) {
 			panic(err)
 		}
 
-		profileStr := newList([]string{
+		profileStr := newPropValDisplay([]string{
 			"Name", "About", "Gender", "BirthDay", "Location", "Created", "Profile",
 		}, []string{
 			fmt.Sprintf(";g;%s", p.Username), p.About, p.Gender, p.Birthday, p.Location,

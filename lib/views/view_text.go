@@ -141,10 +141,21 @@ func newText(lines []string, margins ...int) string {
 	return text
 }
 
-func newList(props []string, values []string) string {
+// newPropValDisplay displays properties and values in a fixed
+// width arrangement.
+func newPropValDisplay(props []string, values []string) string {
 	var sb strings.Builder
 
-	propStyle := ui.Style.Width(9).Align(lipgloss.Right).Foreground(lipgloss.BrightWhite)
+	var propWidth int
+	for _, p := range props {
+		if propWidth < lipgloss.Width(p) {
+			propWidth = lipgloss.Width(p)
+		}
+	}
+
+	propStyle := ui.Style.Width(propWidth + 1).
+		Align(lipgloss.Right).
+		Foreground(lipgloss.BrightWhite)
 	valStyle := ui.Style.Width(60)
 
 	for i, prop := range props {

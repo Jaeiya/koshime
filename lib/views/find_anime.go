@@ -479,5 +479,5 @@ func (findMenuModel) stringifyAnimeInfo(info AnimeInfo) string {
 	headers = append(headers, utils.ColorText(";dc;Synopsis"), utils.ColorText(";x;Link"))
 	items = append(items, info.synopsis, utils.ColorText(";bk;"+link))
 
-	return newList(headers, items)
+	return newPropValDisplay(headers, items)
 }
