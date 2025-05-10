@@ -18,6 +18,24 @@ func NewTextInput() textinput.Model {
 	return input
 }
 
+type ListItem struct {
+	index int
+	title string
+	desc  string
+}
+
+// Index should get an index of an external slice, which
+// should correlate to the list item. The index can be
+// set to 0 if not needed.
+func (l ListItem) Index() int          { return l.index }
+func (l ListItem) Title() string       { return l.title }
+func (l ListItem) Description() string { return l.desc }
+func (l ListItem) FilterValue() string { return l.title + " " + l.desc }
+
+func NewListItem(title, desc string, index int) ListItem {
+	return ListItem{index, title, desc}
+}
+
 type ListOptions struct {
 	Items         []list.Item
 	ShortHelpKeys []key.Binding

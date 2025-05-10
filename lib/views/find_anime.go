@@ -30,15 +30,6 @@ type (
 	FetchedKitsuEntriesMsg FetchedListItemsMsg[kitsu.AnimeData]
 )
 
-type animeListItem struct {
-	title, desc string
-	index       int
-}
-
-func (i animeListItem) Title() string       { return i.title }
-func (i animeListItem) Description() string { return i.desc }
-func (i animeListItem) FilterValue() string { return i.title + " " + i.desc }
-
 type findMenuModel struct {
 	list       list.Model
 	input      textinput.Model
@@ -218,8 +209,8 @@ func (m findMenuModel) UpdateResults(msg tea.Msg) (findMenuModel, tea.Cmd) {
 			if m.list.FilterState() == list.Filtering {
 				break
 			}
-			item := m.list.SelectedItem().(animeListItem)
-			m.state.selectedIndex = item.index
+			item := m.list.SelectedItem().(ui.ListItem)
+			m.state.selectedIndex = item.Index()
 			m.state.view = Find_AnimeView
 
 		}
@@ -376,11 +367,11 @@ func (m *findMenuModel) findAnime(query string) tea.Cmd {
 			m.state.kitsuResults = anime
 			items = make([]list.Item, len(anime))
 			for i, item := range anime {
-				items[i] = animeListItem{
+				items[i] = ui.NewListItem(
 					item.Attributes.CanonicalTitle,
 					item.Attributes.Titles.English,
 					i,
-				}
+				)
 			}
 			return FetchedKitsuEntriesMsg{
 				items:   items,
@@ -398,11 +389,7 @@ func (m *findMenuModel) findAnime(query string) tea.Cmd {
 			m.state.localResults = anime
 			items = make([]list.Item, len(anime))
 			for i, item := range anime {
-				items[i] = animeListItem{
-					item.JPN_Title,
-					item.ENG_Title,
-					i,
-				}
+				items[i] = ui.NewListItem(item.JPN_Title, item.ENG_Title, i)
 			}
 			return FetchedLibEntriesMsg{
 				items:   items,
