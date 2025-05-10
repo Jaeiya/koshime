@@ -30,6 +30,17 @@ type (
 	FetchedKitsuEntriesMsg FetchedListItemsMsg[kitsu.AnimeData]
 )
 
+type AnimeInfo struct {
+	jpn_title string
+	eng_title string
+	altTitles []string
+	showType  string
+	synopsis  string
+	progress  int
+	episodes  int
+	slug      string
+}
+
 type findMenuModel struct {
 	list       list.Model
 	input      textinput.Model
@@ -404,86 +415,69 @@ func (m *findMenuModel) findAnime(query string) tea.Cmd {
 func (m findMenuModel) displayAnimeInfo(animeData any) string {
 	switch d := animeData.(type) {
 	case kitsu.LibraryEntry:
-		return m.stringifyAnimeInfo(
-			d.JPN_Title,
-			d.ENG_Title,
-			d.Slug,
-			d.Synopsis,
-			string(d.Type),
-			d.AltTitles,
-			d.Progress,
-			d.Episodes,
-		)
+		info := AnimeInfo{
+			jpn_title: d.JPN_Title,
+			eng_title: d.ENG_Title,
+			altTitles: d.AltTitles,
+			showType:  string(d.Type),
+			synopsis:  d.Synopsis,
+			progress:  d.Progress,
+			episodes:  d.Episodes,
+			slug:      d.Slug,
+		}
+		return m.stringifyAnimeInfo(info)
 
 	case kitsu.AnimeData:
-		return m.stringifyAnimeInfo(
-			d.Attributes.CanonicalTitle,
-			d.Attributes.Titles.English,
-			d.Attributes.Slug,
-			d.Attributes.Synopsis,
-			d.Attributes.Type,
-			d.Attributes.AltTitles,
-			-1,
-			d.Attributes.EpCount,
-		)
+		return m.stringifyAnimeInfo(AnimeInfo{
+			jpn_title: d.Attributes.CanonicalTitle,
+			eng_title: d.Attributes.Titles.English,
+			altTitles: d.Attributes.AltTitles,
+			showType:  d.Attributes.Type,
+			synopsis:  d.Attributes.Synopsis,
+			progress:  -1,
+			episodes:  d.Attributes.EpCount,
+			slug:      d.Attributes.Slug,
+		})
 	}
 	return "unsupported anime data type"
 }
 
-func (findMenuModel) stringifyAnimeInfo(
-	title, engTitle, slug, synopsis, showType string,
-	altTitles []string,
-	progress, episodes int,
-) string {
-	itemCount := 5
-	if synopsis != "" {
-		itemCount += 1
+func (findMenuModel) stringifyAnimeInfo(info AnimeInfo) string {
+	headers := []string{
+		utils.ColorText(";g;Title"),
+		utils.ColorText(";dc;English"),
 	}
-	items := make([]string, itemCount+len(altTitles))
-	headers := make([]string, len(items))
-
-	headers[0], headers[1] = utils.ColorText(";g;Title"), utils.ColorText(";dc;English")
-	items[0], items[1] = title, engTitle
-
-	for i, altTitle := range altTitles {
-		headers[i+2] = utils.ColorText(";db;AltTitle")
-		items[i+2] = altTitle
-	}
-	itemPos := 2 + len(altTitles)
-
-	totalEpsStr := strconv.Itoa(episodes)
-	if episodes == 0 {
-		totalEpsStr = "Unknown"
+	items := []string{
+		info.jpn_title,
+		info.eng_title,
 	}
 
-	headers[itemPos] = utils.ColorText(";y;Type")
-	items[itemPos] = utils.ColorText(";c;" + showType)
-	itemPos++
+	for range len(info.altTitles) {
+		headers = append(headers, utils.ColorText(";db;AltTitle"))
+	}
+	items = append(items, info.altTitles...)
 
-	if progress > -1 {
-		headers[itemPos] = utils.ColorText(";y;Progress")
-		items[itemPos] = utils.ColorText(
-			fmt.Sprintf(";dg;%d ;y;/ ;m;%s", progress, totalEpsStr),
-		)
+	headers = append(headers, utils.ColorText(";y;Type"))
+	items = append(items, utils.ColorText(";c;"+info.showType))
+
+	totalEpsStr := "Unknown"
+	if info.episodes > 0 {
+		totalEpsStr = strconv.Itoa(info.episodes)
+	}
+
+	if info.progress > -1 {
+		headers = append(headers, utils.ColorText(";y;Progress"))
+		items = append(items, utils.ColorText(
+			fmt.Sprintf(";dg;%d ;y;/ ;m;%s", info.progress, totalEpsStr),
+		))
 	} else {
-		headers[itemPos] = utils.ColorText(";dc;Episodes")
-		items[itemPos] = utils.ColorText(fmt.Sprintf(";m;%s", totalEpsStr))
+		headers = append(headers, utils.ColorText(";dc;Episodes"))
+		items = append(items, utils.ColorText(fmt.Sprintf(";m;%s", totalEpsStr)))
 	}
 
-	if synopsis != "" {
-		itemPos++
-		headers[itemPos] = utils.ColorText(";dc;Synopsis")
-		items[itemPos] = synopsis
-	}
+	link, _ := url.JoinPath(kitsu.KitsuDomain, info.slug)
+	headers = append(headers, utils.ColorText(";dc;Synopsis"), utils.ColorText(";x;Link"))
+	items = append(items, info.synopsis, utils.ColorText(";bk;"+link))
 
-	itemPos++
-	headers[itemPos] = utils.ColorText(";x;link")
-	link, _ := url.JoinPath(kitsu.KitsuDomain, slug)
-	link = utils.ColorText(";bk;" + link)
-	items[itemPos] = link
-
-	return newList(
-		headers,
-		items,
-	)
+	return newList(headers, items)
 }
