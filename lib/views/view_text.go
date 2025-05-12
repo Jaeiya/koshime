@@ -75,11 +75,12 @@ account. If not, sign-up here: ;y;https://kitsu.app`,
 }()
 
 type findAnimeText struct {
-	header   string
-	title    string
-	kitsu    string
-	local    string
-	notFound func(query, source string) string
+	header       string
+	customHeader func(subMenu string) string
+	title        string
+	kitsu        string
+	local        string
+	notFound     func(query, source string) string
 }
 
 var findAnimeMsgs = func() findAnimeText {
@@ -88,6 +89,12 @@ var findAnimeMsgs = func() findAnimeText {
 	txt.header = newText([]string{
 		";g;... ;b;Find Anime ;g;...",
 	}, 0, 1)
+
+	txt.customHeader = func(subMenu string) string {
+		return newText([]string{
+			fmt.Sprintf(";g;... ;b;Find Anime;g; ⟶ ;w;%s ;g;...", subMenu),
+		}, 0, 1)
+	}
 
 	txt.title = newText(
 		[]string{
