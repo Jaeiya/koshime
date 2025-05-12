@@ -132,7 +132,7 @@ func (RSS) parseAnimeTosho(xml string) ([]RSSEntry, error) {
 		date := d.SelectElement("pubDate").InnerText()
 		parsedTime, err := time.Parse(time.RFC1123Z, date)
 		if err != nil {
-			return []RSSEntry{}, err
+			return nil, err
 		}
 		results[i] = RSSEntry{
 			Title:   d.SelectElement("title").InnerText(),
@@ -146,7 +146,7 @@ func (RSS) parseAnimeTosho(xml string) ([]RSSEntry, error) {
 func (RSS) parseNyaa(xml string) ([]RSSEntry, error) {
 	doc, err := xmlquery.Parse(strings.NewReader(xml))
 	if err != nil {
-		return []RSSEntry{}, err
+		return nil, err
 	}
 
 	expr, err := xpath.Compile("count(//item)")
@@ -158,7 +158,7 @@ func (RSS) parseNyaa(xml string) ([]RSSEntry, error) {
 		date := d.SelectElement("pubDate").InnerText()
 		parsedTime, err := time.Parse(time.RFC1123Z, date)
 		if err != nil {
-			return []RSSEntry{}, err
+			return nil, err
 		}
 		results[i] = RSSEntry{
 			Title:   d.SelectElement("title").InnerText(),
