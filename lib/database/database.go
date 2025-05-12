@@ -100,7 +100,7 @@ func (db Database) FindLibAnimeIndex(query string) ([]LibraryIndex, error) {
 	query = strings.ToLower(query)
 	var indexes []LibraryIndex
 	for i, entry := range db.data.Library {
-		if hasTitleMatches(entry, query) {
+		if hasMatchingEntry(entry, query) {
 			indexes = append(indexes, LibraryIndex(i))
 		}
 	}
@@ -186,11 +186,13 @@ func (db Database) Save() error {
 	return nil
 }
 
-func hasTitleMatches(e kitsu.LibraryEntry, q string) bool {
+func hasMatchingEntry(e kitsu.LibraryEntry, q string) bool {
 	if strings.Contains(strings.ToLower(e.ENG_Title), q) ||
-		strings.Contains(strings.ToLower(e.JPN_Title), q) {
+		strings.Contains(strings.ToLower(e.JPN_Title), q) ||
+		strings.Contains(strings.ToLower(e.Synopsis), q) {
 		return true
 	}
+
 	return slices.ContainsFunc(e.AltTitles, func(s string) bool {
 		return strings.Contains(strings.ToLower(s), q)
 	})
