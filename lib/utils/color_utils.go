@@ -18,6 +18,7 @@ var foregroundStyleMap = map[string]lipgloss.Style{
 	";dg;":  style.Foreground(ansi.Green),
 	";dgu;": style.Underline(true).Foreground(ansi.Green),
 	";y;":   style.Foreground(ansi.BrightYellow),
+	";dy;":  style.Foreground(ansi.Yellow),
 	";b;":   style.Foreground(ansi.BrightBlue),
 	";db;":  style.Foreground(ansi.Blue),
 	";m;":   style.Foreground(ansi.BrightMagenta),
