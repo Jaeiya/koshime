@@ -87,7 +87,7 @@ func NewFindMenuModel(db *database.Database) findMenuModel {
 	input := ui.NewTextInput()
 	input.SetWidth(inputWidth)
 	input.Focus()
-	input.Placeholder = "Enter title"
+	input.Placeholder = "Enter your query"
 	m := findMenuModel{input: input, loader: ui.NewLoader(), maxResults: maxResults, list: l}
 	m.db = db
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
