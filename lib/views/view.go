@@ -180,7 +180,7 @@ func New(dbPath string) (Model, error) {
 
 	model.menuViewMap = map[UIView]ViewModel{
 		SetupUserView: NewUserSetupModel(),
-		FindAnimeView: NewFindMenuModel(db, 20),
+		FindAnimeView: NewFindMenuModel(db),
 	}
 
 	if !utils.FileExists(dbPath) {

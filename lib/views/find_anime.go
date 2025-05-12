@@ -22,6 +22,7 @@ const (
 	inputWidth   = 20
 	itemsPerPage = 5
 	minInputLen  = 4 // Minimum characters to submit search
+	maxResults   = 10 // Max results to find per search
 )
 
 type MenuFindView int
@@ -78,7 +79,7 @@ type findMenuModel struct {
 	}
 }
 
-func NewFindMenuModel(db *database.Database, maxResults int) findMenuModel {
+func NewFindMenuModel(db *database.Database) findMenuModel {
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	// Prevent esc/q key from sending tea.Quit from inside list
 	l.DisableQuitKeybindings()
