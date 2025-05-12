@@ -79,7 +79,7 @@ type findAnimeText struct {
 	title    string
 	kitsu    string
 	local    string
-	notFound func(query string) string
+	notFound func(query, source string) string
 }
 
 var findAnimeMsgs = func() findAnimeText {
@@ -103,9 +103,9 @@ anime you're currently watching.`,
 	txt.kitsu = activeStyle.Render("Kitsu") + "🌐"
 	txt.local = activeStyle.Render("Local") + "📁"
 
-	txt.notFound = func(query string) string {
+	txt.notFound = func(query, source string) string {
 		return newText([]string{
-			fmt.Sprintf(";b;No results found for: ;y;%s", query),
+			fmt.Sprintf(";x;No ;dgu;%s;x; results found for: ;y;%s", source, query),
 		}, 0, 1)
 	}
 

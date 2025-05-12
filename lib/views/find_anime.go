@@ -276,7 +276,10 @@ func (m findMenuModel) ViewResults() (string, *tea.Cursor) {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			findAnimeMsgs.header,
-			findAnimeMsgs.notFound(m.input.Value()),
+			findAnimeMsgs.notFound(
+				m.input.Value(),
+				m.state.find.source.String(),
+			),
 		), nil
 	}
 

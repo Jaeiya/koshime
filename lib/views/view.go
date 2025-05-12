@@ -52,6 +52,17 @@ const (
 	Local
 )
 
+func (s AnimeSource) String() string {
+	switch s {
+	case Kitsu:
+		return "Kitsu"
+	case Local:
+		return "Local"
+	default:
+		return "Unknown"
+	}
+}
+
 type (
 	FetchErrorMsg              error
 	FetchedNoResultsMsg        struct{}
