@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
+	"unicode/utf8"
 
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
@@ -23,6 +24,11 @@ const (
 	Find_QueryEntryView = MenuFindView(iota)
 	Find_ResultsView
 	Find_AnimeView
+)
+
+const (
+	inputWidth  = 20
+	minInputLen = 4 // Minimum characters to submit search
 )
 
 type (
@@ -77,8 +83,9 @@ func NewFindMenuModel(db *database.Database, maxResults int) findMenuModel {
 	l.DisableQuitKeybindings()
 
 	input := ui.NewTextInput()
-	input.SetWidth(30)
+	input.SetWidth(inputWidth)
 	input.Focus()
+	input.Placeholder = "Enter title"
 	m := findMenuModel{input: input, loader: ui.NewLoader(), maxResults: maxResults, list: l}
 	m.db = db
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
@@ -161,9 +168,11 @@ func (m findMenuModel) UpdateQueryEntry(msg tea.Msg) (findMenuModel, tea.Cmd) {
 			return m, abort
 
 		case key.Matches(msg, keyMap.Submit):
-			if m.loader.IsLoading() {
+			inputLen := utf8.RuneCountInString(m.input.Value())
+			if m.loader.IsLoading() || inputLen < minInputLen {
 				break
 			}
+
 			m.state.view = Find_ResultsView
 			m.loader, cmd = m.loader.Start("Find Anime")
 			return m, tea.Batch(cmd, m.findAnime(m.input.Value()))
@@ -185,12 +194,27 @@ func (m findMenuModel) ViewQueryEntry() (string, *tea.Cursor) {
 	search := ui.TextStyle.Foreground(ansi.BrightBlack).
 		Render("Source: " + m.sourceMap[m.state.find.source])
 
+	inputLen := utf8.RuneCountInString(m.input.Value())
+
+	charLimit := ""
+	switch {
+	case inputLen < minInputLen && inputLen > 0:
+		charLimit = utils.ColorText(fmt.Sprintf(";r;%d;x;/;g;%d", inputLen, minInputLen))
+
+	case inputLen >= minInputLen:
+		charLimit = utils.ColorText(";g;✓")
+	}
+
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		findAnimeMsgs.header,
 		findAnimeMsgs.title,
 		search,
-		ui.Style.MarginTop(1).Render(m.input.View()),
+		ui.Style.MarginTop(1).Render(lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			m.input.View(),
+			charLimit,
+		)),
 	)
 	c.Y += lipgloss.Height(view) - 1
 	return lipgloss.JoinVertical(lipgloss.Left, view), c
