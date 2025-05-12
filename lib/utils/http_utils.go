@@ -4,11 +4,14 @@ import (
 	"compress/gzip"
 	"io"
 	"net/http"
+	"time"
 )
 
 const userAgent = "Koshime/0.1"
 
-var client http.Client
+var client = http.Client{
+	Timeout: 5 * time.Second,
+}
 
 type HttpResponse struct {
 	StatusCode int
