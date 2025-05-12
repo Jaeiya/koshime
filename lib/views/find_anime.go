@@ -18,17 +18,18 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+const (
+	inputWidth   = 20
+	itemsPerPage = 5
+	minInputLen  = 4 // Minimum characters to submit search
+)
+
 type MenuFindView int
 
 const (
 	Find_QueryEntryView = MenuFindView(iota)
 	Find_ResultsView
 	Find_AnimeView
-)
-
-const (
-	inputWidth  = 20
-	minInputLen = 4 // Minimum characters to submit search
 )
 
 type (
@@ -279,7 +280,7 @@ func (m findMenuModel) UpdateResults(msg tea.Msg) (findMenuModel, tea.Cmd) {
 				ShortHelpKeys: []key.Binding{m.keys.backspace},
 				Width:         m.windowSize.width,
 				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
-				ItemsPerPage:  5,
+				ItemsPerPage:  itemsPerPage,
 			},
 		)
 	}
