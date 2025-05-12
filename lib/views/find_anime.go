@@ -318,7 +318,7 @@ func (m findMenuModel) ViewResults() (string, *tea.Cursor) {
 		c.Shape = tea.CursorBlock
 		c.Color = ansi.Yellow
 		c.Y += lipgloss.Height(h)
-		c.X += 2
+		c.X += 2 // Adjust for custom margin
 	}
 	return lipgloss.JoinVertical(lipgloss.Left, h, m.list.View()), c
 }
