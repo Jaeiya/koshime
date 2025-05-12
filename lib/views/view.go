@@ -98,6 +98,7 @@ type MainKeyMap struct {
 	MainMenu key.Binding
 	HelpMore key.Binding
 	HelpLess key.Binding
+	Exit     key.Binding
 }
 
 var keyMap = MainKeyMap{
@@ -109,6 +110,7 @@ var keyMap = MainKeyMap{
 	HelpLess: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "less help")),
 	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
 	MainMenu: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "menu")),
+	Exit:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "exit")),
 }
 
 type (
@@ -220,13 +222,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.HelpMore):
-			if currentModel != nil && len(currentModel.FullHelp()) == 0 {
+			if (currentModel != nil && len(currentModel.FullHelp()) == 0) || m.state.view == MenuView {
 				break
 			}
 			m.help.ShowAll = !m.help.ShowAll
 
 		case key.Matches(msg, keyMap.MainMenu):
-			if m.state.view != FindAnimeView {
+			if m.state.view == MenuView {
+				return m, tea.Quit
+			}
+			if m.state.view != MenuView {
 				return m, func() tea.Msg { return AbortMsg{} }
 			}
 		}
@@ -329,6 +334,7 @@ func (m Model) UpdateMenu(msg tea.Msg) (Model, tea.Cmd) {
 
 		case key.Matches(msg, keyMap.Down):
 			m.state.menuPos = (m.state.menuPos + 1) % itemLen
+
 		}
 	}
 
@@ -370,14 +376,13 @@ func (m Model) ShortHelp() []key.Binding {
 			keyMap.Up,
 			keyMap.Down,
 			keyMap.Select,
+			keyMap.Exit,
 		}
 	}
 	return []key.Binding{}
 }
 
 func (m Model) FullHelp() [][]key.Binding {
-	switch m.state.view {
-	}
 	return [][]key.Binding{}
 }
 
