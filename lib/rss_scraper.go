@@ -55,21 +55,9 @@ type RSSEntry struct {
 
 type RSS struct{}
 
-// Get returns an RSSResult, which is intended to be passed to
-// the Parse func. The content will contain the raw XML returned
-// from the RSS link.
-//
-// 🟠 The link must contain the query replacement sequence '$q'
-// or an error will be returned. If the service does not have
-// the ability to be queried, then it cannot be used in this
-// context.
-//
-//	:: Example Link ::
-//	page.com/rss.php?q=$q
-//
-// Where `$q` will be replaced by the specified query
-// parameter.
-func (RSS) Get(d RSSDomain, query string) (RSSResult, error) {
+// FindFansubTorrent uses predefined anime RSS domains to look up the
+// specified query and return any results found.
+func (rss RSS) FindFansubTorrent(d RSSDomain, query string) ([]RSSEntry, error) {
 	var domain RSSDomainData
 	if d, ok := domainMap[d]; ok {
 		domain = d
@@ -88,12 +76,12 @@ func (RSS) Get(d RSSDomain, query string) (RSSResult, error) {
 			),
 		)
 		if err != nil {
-			return RSSResult{}, err
+			return nil, err
 		}
 
 		req, err := http.NewRequest("GET", parsedURL.String(), nil)
 		if err != nil {
-			return RSSResult{}, err
+			return nil, err
 		}
 
 		resp, err := httpUtil.Do(req, "application/xml", "")
@@ -101,7 +89,7 @@ func (RSS) Get(d RSSDomain, query string) (RSSResult, error) {
 			if ne, ok := err.(net.Error); ok && ne.Timeout() {
 				continue
 			} else {
-				return RSSResult{}, err
+				return nil, err
 			}
 		}
 
@@ -110,32 +98,29 @@ func (RSS) Get(d RSSDomain, query string) (RSSResult, error) {
 			continue
 		}
 
-		return RSSResult{
-			Host:    parsedURL.Host,
-			Content: string(resp.Body),
-		}, nil
+		return rss.parseByHost(string(resp.Body), parsedURL.Host)
 	}
 
-	return RSSResult{}, fmt.Errorf("all domain mirrors are down")
+	return nil, fmt.Errorf("all domain mirrors are down")
 }
 
-func (rss RSS) Parse(result RSSResult) ([]RSSEntry, error) {
+func (rss RSS) parseByHost(host string, xml string) ([]RSSEntry, error) {
 	switch {
-	case slices.Contains(domainMap[Nyaa].mirrors, result.Host):
-		return rss.parseNyaa(result), nil
+	case slices.Contains(domainMap[Nyaa].mirrors, host):
+		return rss.parseNyaa(xml)
 
-	case slices.Contains(domainMap[AnimeTosho].mirrors, result.Host):
-		return rss.parseAnimeTosho(result), nil
+	case slices.Contains(domainMap[AnimeTosho].mirrors, host):
+		return rss.parseAnimeTosho(xml)
 
 	}
 
-	return []RSSEntry{}, fmt.Errorf("host not supported")
+	return nil, fmt.Errorf("host not supported")
 }
 
-func (RSS) parseAnimeTosho(result RSSResult) []RSSEntry {
-	doc, err := xmlquery.Parse(strings.NewReader(result.Content))
+func (RSS) parseAnimeTosho(xml string) ([]RSSEntry, error) {
+	doc, err := xmlquery.Parse(strings.NewReader(xml))
 	if err != nil {
-		panic(err)
+		return []RSSEntry{}, err
 	}
 
 	expr, err := xpath.Compile("count(//item)")
@@ -147,7 +132,7 @@ func (RSS) parseAnimeTosho(result RSSResult) []RSSEntry {
 		date := d.SelectElement("pubDate").InnerText()
 		parsedTime, err := time.Parse(time.RFC1123Z, date)
 		if err != nil {
-			panic(err)
+			return []RSSEntry{}, err
 		}
 		results[i] = RSSEntry{
 			Title:   d.SelectElement("title").InnerText(),
@@ -155,13 +140,13 @@ func (RSS) parseAnimeTosho(result RSSResult) []RSSEntry {
 			Torrent: d.SelectElement("enclosure").SelectAttr("url"),
 		}
 	}
-	return results
+	return results, nil
 }
 
-func (RSS) parseNyaa(result RSSResult) []RSSEntry {
-	doc, err := xmlquery.Parse(strings.NewReader(result.Content))
+func (RSS) parseNyaa(xml string) ([]RSSEntry, error) {
+	doc, err := xmlquery.Parse(strings.NewReader(xml))
 	if err != nil {
-		panic(err)
+		return []RSSEntry{}, err
 	}
 
 	expr, err := xpath.Compile("count(//item)")
@@ -173,7 +158,7 @@ func (RSS) parseNyaa(result RSSResult) []RSSEntry {
 		date := d.SelectElement("pubDate").InnerText()
 		parsedTime, err := time.Parse(time.RFC1123Z, date)
 		if err != nil {
-			panic(err)
+			return []RSSEntry{}, err
 		}
 		results[i] = RSSEntry{
 			Title:   d.SelectElement("title").InnerText(),
@@ -183,5 +168,5 @@ func (RSS) parseNyaa(result RSSResult) []RSSEntry {
 			Size:    d.SelectElement("nyaa:size").InnerText(),
 		}
 	}
-	return results
+	return results, nil
 }
