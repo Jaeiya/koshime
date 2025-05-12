@@ -366,7 +366,7 @@ func (m findMenuModel) ShortHelp() []key.Binding {
 	switch m.state.view {
 	case Find_QueryEntryView:
 		return []key.Binding{
-			keyMap.Submit, keyMap.MainMenu, m.keys.tab,
+			keyMap.Submit, m.keys.tab, keyMap.MainMenu,
 		}
 
 	case Find_ResultsView, Find_AnimeView:
