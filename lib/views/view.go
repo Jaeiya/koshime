@@ -23,6 +23,7 @@ const (
 	None = UIView(iota)
 	SetupUserView
 	MenuView
+	ExitView
 	WatchAnimeView
 	AddAnimeView
 	FindAnimeView
@@ -229,6 +230,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		case key.Matches(msg, keyMap.MainMenu):
 			if m.state.view == MenuView {
+				m.state.view = ExitView
 				return m, tea.Quit
 			}
 			if m.state.view != MenuView {
@@ -304,6 +306,9 @@ func (m Model) View() (string, *tea.Cursor) {
 			m.viewMenu(),
 			ui.TextStyle.Render(m.help.View(m)),
 		), nil
+
+	case ExitView:
+		return "", nil
 
 	case None:
 		anime := m.db.GetAllAnime()
