@@ -2,8 +2,10 @@ package lib
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
+	"slices"
 	"strings"
 	"time"
 
@@ -11,6 +13,27 @@ import (
 	"github.com/antchfx/xmlquery"
 	"github.com/antchfx/xpath"
 )
+
+type RSSDomain int
+
+const (
+	Nyaa = RSSDomain(iota)
+)
+
+type RSSDomainData struct {
+	mirrors       []string
+	queryFragment string
+}
+
+var domainMap = map[RSSDomain]RSSDomainData{
+	Nyaa: {
+		[]string{
+			"nyaa.land",
+			"nyaa.si",
+		},
+		"/?page=rss&f=0&c=1_2&q=$q",
+	},
+}
 
 type RSSResult struct {
 	Content string
@@ -41,44 +64,63 @@ type RSS struct{}
 //
 // Where `$q` will be replaced by the specified query
 // parameter.
-func (RSS) Get(link string, query string) (RSSResult, error) {
-	if !strings.Contains(link, "$q") {
-		return RSSResult{}, fmt.Errorf("missing query replacement: $q")
-	}
-	parsedURL, err := url.Parse(link)
-	if err != nil {
-		return RSSResult{}, err
-	}
-
-	query = url.QueryEscape(query)
-	req, err := http.NewRequest("GET", strings.Replace(link, "$q", query, 1), nil)
-	if err != nil {
-		return RSSResult{}, err
+func (RSS) Get(d RSSDomain, query string) (RSSResult, error) {
+	var domain RSSDomainData
+	if d, ok := domainMap[d]; ok {
+		domain = d
 	}
 
 	var httpUtil utils.Http
-	resp, err := httpUtil.Do(req, "application/xml", "")
-	if err != nil {
-		return RSSResult{}, err
+	var parsedURL *url.URL
+	var err error
+
+	for _, mirror := range domain.mirrors {
+		parsedURL, err = url.Parse(
+			fmt.Sprintf(
+				"https://%s%s",
+				mirror,
+				strings.Replace(domain.queryFragment, "$q", url.QueryEscape(query), 1),
+			),
+		)
+		if err != nil {
+			return RSSResult{}, err
+		}
+
+		req, err := http.NewRequest("GET", parsedURL.String(), nil)
+		if err != nil {
+			return RSSResult{}, err
+		}
+
+		resp, err := httpUtil.Do(req, "application/xml", "")
+		if err != nil {
+			if ne, ok := err.(net.Error); ok && ne.Timeout() {
+				continue
+			} else {
+				return RSSResult{}, err
+			}
+		}
+
+		// Assume site is temporarily unavailable
+		if resp.StatusCode >= 500 {
+			continue
+		}
+
+		return RSSResult{
+			Host:    parsedURL.Host,
+			Content: string(resp.Body),
+		}, nil
 	}
 
-	return RSSResult{
-		Host:    parsedURL.Host,
-		Content: string(resp.Body),
-	}, nil
+	return RSSResult{}, fmt.Errorf("all domain mirrors are down")
 }
 
-func (rss RSS) Parse(result RSSResult) []RSSEntry {
-	switch result.Host {
-	case "nyaa.si",
-		"https://nyaa.ink",
-		"https://nyaa.land",
-		"https://ny.iss.one",
-		"https://nyaa.eu":
-		return rss.parseNyaa(result)
+func (rss RSS) Parse(result RSSResult) ([]RSSEntry, error) {
+	switch {
+	case slices.Contains(domainMap[Nyaa].mirrors, result.Host):
+		return rss.parseNyaa(result), nil
 	}
 
-	panic("host not supported")
+	return []RSSEntry{}, fmt.Errorf("host not supported")
 }
 
 func (RSS) parseNyaa(result RSSResult) []RSSEntry {
