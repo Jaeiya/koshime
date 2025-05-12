@@ -223,9 +223,11 @@ func (m findMenuModel) UpdateResults(msg tea.Msg) (findMenuModel, tea.Cmd) {
 			if m.list.FilterState() == list.Filtering {
 				break
 			}
-			item := m.list.SelectedItem().(ui.ListItem)
-			m.state.selectedIndex = item.Index()
-			m.state.view = Find_AnimeView
+			if !m.state.find.notFound {
+				item := m.list.SelectedItem().(ui.ListItem)
+				m.state.selectedIndex = item.Index()
+				m.state.view = Find_AnimeView
+			}
 
 		}
 
