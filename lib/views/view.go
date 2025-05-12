@@ -233,9 +233,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.state.view = ExitView
 				return m, tea.Quit
 			}
-			if m.state.view != MenuView {
-				return m, func() tea.Msg { return AbortMsg{} }
-			}
 		}
 
 		if msg.String() == "ctrl+c" {
