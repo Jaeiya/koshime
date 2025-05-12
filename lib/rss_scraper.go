@@ -18,6 +18,7 @@ type RSSDomain int
 
 const (
 	Nyaa = RSSDomain(iota)
+	AnimeTosho
 )
 
 type RSSDomainData struct {
@@ -32,6 +33,10 @@ var domainMap = map[RSSDomain]RSSDomainData{
 			"nyaa.si",
 		},
 		"/?page=rss&f=0&c=1_2&q=$q",
+	},
+	AnimeTosho: {
+		[]string{"feed.animetosho.org"},
+		"/rss2?only_tor=1&q=$q",
 	},
 }
 
@@ -118,9 +123,39 @@ func (rss RSS) Parse(result RSSResult) ([]RSSEntry, error) {
 	switch {
 	case slices.Contains(domainMap[Nyaa].mirrors, result.Host):
 		return rss.parseNyaa(result), nil
+
+	case slices.Contains(domainMap[AnimeTosho].mirrors, result.Host):
+		return rss.parseAnimeTosho(result), nil
+
 	}
 
 	return []RSSEntry{}, fmt.Errorf("host not supported")
+}
+
+func (RSS) parseAnimeTosho(result RSSResult) []RSSEntry {
+	doc, err := xmlquery.Parse(strings.NewReader(result.Content))
+	if err != nil {
+		panic(err)
+	}
+
+	expr, err := xpath.Compile("count(//item)")
+	count := expr.Evaluate(xmlquery.CreateXPathNavigator(doc)).(float64)
+
+	results := make([]RSSEntry, int(count))
+
+	for i, d := range xmlquery.Find(doc, "//item") {
+		date := d.SelectElement("pubDate").InnerText()
+		parsedTime, err := time.Parse(time.RFC1123Z, date)
+		if err != nil {
+			panic(err)
+		}
+		results[i] = RSSEntry{
+			Title:   d.SelectElement("title").InnerText(),
+			Date:    parsedTime,
+			Torrent: d.SelectElement("enclosure").SelectAttr("url"),
+		}
+	}
+	return results
 }
 
 func (RSS) parseNyaa(result RSSResult) []RSSEntry {
