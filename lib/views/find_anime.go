@@ -20,8 +20,8 @@ import (
 
 const (
 	inputWidth   = 20
-	itemsPerPage = 5
-	minInputLen  = 4 // Minimum characters to submit search
+	minInputLen  = 4  // Minimum characters to submit search
+	itemsPerPage = 5  // Max list items to display per page
 	maxResults   = 10 // Max results to find per search
 )
 
