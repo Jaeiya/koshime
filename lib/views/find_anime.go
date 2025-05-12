@@ -73,6 +73,9 @@ type findMenuModel struct {
 
 func NewFindMenuModel(db *database.Database, maxResults int) findMenuModel {
 	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
+	// Prevent esc/q key from sending tea.Quit from inside list
+	l.DisableQuitKeybindings()
+
 	input := ui.NewTextInput()
 	input.SetWidth(30)
 	input.Focus()
