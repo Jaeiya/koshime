@@ -29,8 +29,8 @@ type RSSDomainData struct {
 var domainMap = map[RSSDomain]RSSDomainData{
 	Nyaa: {
 		[]string{
-			"nyaa.land",
 			"nyaa.si",
+			"nyaa.land",
 		},
 		"/?page=rss&f=0&c=1_2&q=$q",
 	},
@@ -38,11 +38,6 @@ var domainMap = map[RSSDomain]RSSDomainData{
 		[]string{"feed.animetosho.org"},
 		"/rss2?only_tor=1&q=$q",
 	},
-}
-
-type RSSResult struct {
-	Content string
-	Host    string
 }
 
 type RSSEntry struct {
@@ -53,11 +48,17 @@ type RSSEntry struct {
 	Size    string
 }
 
+type RSSResult struct {
+	Entries []RSSEntry
+	FeedURL string
+	Host    string
+}
+
 type RSS struct{}
 
-// FindFansubTorrent uses predefined anime RSS domains to look up the
+// FindAnimeFansub uses predefined anime RSS domains to look up the
 // specified query and return any results found.
-func (rss RSS) FindFansubTorrent(d RSSDomain, query string) ([]RSSEntry, error) {
+func (rss RSS) FindAnimeFansub(d RSSDomain, query string) (RSSResult, error) {
 	var domain RSSDomainData
 	if d, ok := domainMap[d]; ok {
 		domain = d
@@ -76,12 +77,12 @@ func (rss RSS) FindFansubTorrent(d RSSDomain, query string) ([]RSSEntry, error) 
 			),
 		)
 		if err != nil {
-			return nil, err
+			return RSSResult{}, err
 		}
 
 		req, err := http.NewRequest("GET", parsedURL.String(), nil)
 		if err != nil {
-			return nil, err
+			return RSSResult{}, err
 		}
 
 		resp, err := httpUtil.Do(req, "application/xml", "")
@@ -89,7 +90,7 @@ func (rss RSS) FindFansubTorrent(d RSSDomain, query string) ([]RSSEntry, error) 
 			if ne, ok := err.(net.Error); ok && ne.Timeout() {
 				continue
 			} else {
-				return nil, err
+				return RSSResult{}, err
 			}
 		}
 
@@ -98,10 +99,14 @@ func (rss RSS) FindFansubTorrent(d RSSDomain, query string) ([]RSSEntry, error) 
 			continue
 		}
 
-		return rss.parseByHost(string(resp.Body), parsedURL.Host)
+		entries, err := rss.parseByHost(parsedURL.Host, string(resp.Body))
+		if err != nil {
+			return RSSResult{}, err
+		}
+		return RSSResult{entries, parsedURL.String(), parsedURL.Host}, nil
 	}
 
-	return nil, fmt.Errorf("all domain mirrors are down")
+	return RSSResult{}, fmt.Errorf("all domain mirrors are down")
 }
 
 func (rss RSS) parseByHost(host string, xml string) ([]RSSEntry, error) {
@@ -111,7 +116,6 @@ func (rss RSS) parseByHost(host string, xml string) ([]RSSEntry, error) {
 
 	case slices.Contains(domainMap[AnimeTosho].mirrors, host):
 		return rss.parseAnimeTosho(xml)
-
 	}
 
 	return nil, fmt.Errorf("host not supported")
