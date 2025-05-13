@@ -130,6 +130,10 @@ func (db Database) GetAllAnime() []kitsu.LibraryEntry {
 	return utils.CopySlice(db.data.Library)
 }
 
+func (db Database) GetProfile() kitsu.Profile {
+	return db.data.Profile
+}
+
 // SaveProfile overwrites the existing profile with
 // the specified one.
 func (db *Database) SaveProfile(p kitsu.Profile) error {
