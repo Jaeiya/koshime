@@ -31,6 +31,7 @@ var durationTable []durationData = []durationData{
 }
 
 type DurationUnits struct {
+	d       time.Duration
 	Seconds int
 	Minutes int
 	Hours   int
@@ -87,34 +88,8 @@ func (tu DurationUnits) ToShortString() string {
 	return strings.TrimSpace(sb.String())
 }
 
-func (tu DurationUnits) ToRelativeString() string {
-	toUnitStr := func(s string, u int) string {
-		str := fmt.Sprintf("%d %s", u, s)
-		if u > 1 {
-			str += "s"
-		}
-		return str + " ago"
-	}
-	switch {
-	case tu.Years > 0:
-		return toUnitStr("year", tu.Years)
-	case tu.Months > 0:
-		return toUnitStr("month", tu.Months)
-	case tu.Days > 0:
-		return toUnitStr("day", tu.Days)
-	case tu.Hours > 0:
-		return toUnitStr("hour", tu.Hours)
-	case tu.Minutes > 0:
-		return toUnitStr("minute", tu.Minutes)
-	case tu.Seconds > 0:
-		return toUnitStr("second", tu.Seconds)
-	default:
-		return "invalid duration format"
-	}
-}
-
-func DurationToUnits(d time.Duration) DurationUnits {
-	tu := DurationUnits{}
+func NewDurationUnits(d time.Duration) DurationUnits {
+	tu := DurationUnits{d: d}
 
 	for _, entry := range durationTable {
 		delta := d / entry.unit
@@ -125,4 +100,58 @@ func DurationToUnits(d time.Duration) DurationUnits {
 	}
 
 	return tu
+}
+
+type RelativeUnits struct {
+	DurationUnits
+	isFuture bool
+}
+
+func (ru RelativeUnits) String() string {
+	toUnitStr := func(s, s2 string, u, u2 int) string {
+		str := fmt.Sprintf("%d %s", u, s)
+		if u > 1 {
+			str += "s"
+		}
+		if ru.isFuture {
+			return "in " + str
+		}
+		if u2 > 0 {
+			str += fmt.Sprintf(", %d %s", u2, s2)
+			if u2 > 1 {
+				str += "s"
+			}
+		}
+		return str + " ago"
+	}
+
+	switch {
+	case ru.Years > 0:
+		return toUnitStr("year", "month", ru.Years, ru.Months)
+	case ru.Months > 0:
+		return toUnitStr("month", "day", ru.Months, ru.Days)
+	case ru.Days > 0:
+		return toUnitStr("day", "hour", ru.Days, ru.Hours)
+	case ru.Hours > 0:
+		return toUnitStr("hour", "minute", ru.Hours, ru.Minutes)
+	case ru.Minutes > 0:
+		return toUnitStr("minute", "second", ru.Minutes, ru.Seconds)
+	case ru.Seconds > 0:
+		return toUnitStr("second", "", ru.Seconds, 0)
+	case ru.Seconds == 0:
+		return "just now"
+	default:
+		return "invalid duration format"
+	}
+}
+
+func NewRelativeTimeUnits(unixSeconds int64) RelativeUnits {
+	var isFuture bool
+	relativeSeconds := time.Now().Unix() - unixSeconds
+	if relativeSeconds < 0 {
+		isFuture = true
+		relativeSeconds = unixSeconds - time.Now().Unix()
+	}
+	du := NewDurationUnits(time.Second * time.Duration(relativeSeconds))
+	return RelativeUnits{du, isFuture}
 }
