@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"strconv"
 	"time"
 
 	"github.com/Jaeiya/koshime/lib/database"
@@ -298,8 +299,29 @@ func (m Model) View() (string, *tea.Cursor) {
 		), nil
 
 	case MenuView:
+		profile := m.db.GetProfile()
+		header := ui.TextStyle.
+			MarginTop(1).
+			MarginBottom(1).
+			Render(utils.ColorText(fmt.Sprintf(";dy;%s's;b; profile stats:", profile.Username)))
+
+		d := newPropValDisplay([]string{
+			utils.ColorText(";dc;Completed Anime"),
+			utils.ColorText(";dc;Time Spent"),
+			utils.ColorText(";dc;Token Expiration"),
+			utils.ColorText(";dc;Last Updated"),
+		}, []string{
+			strconv.Itoa(profile.CompletedSeries),
+			utils.NewDurationUnits(time.Second * time.Duration(profile.SecondsWatched)).
+				ToShortString(),
+			utils.NewRelativeTimeUnits(profile.TokenExpirationSec).String(),
+			utils.NewRelativeTimeUnits(profile.LastUpdateSec).String(),
+		})
+
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
+			header,
+			d,
 			m.viewMenu(),
 			ui.TextStyle.Render(m.help.View(m)),
 		), nil
