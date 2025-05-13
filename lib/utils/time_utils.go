@@ -12,6 +12,7 @@ const (
 	minute = time.Minute
 	hour   = time.Hour
 	day    = time.Hour * 24
+	week   = day * 7
 	month  = day * 30
 	year   = month * 12
 )
@@ -24,6 +25,7 @@ type durationData struct {
 var durationTable []durationData = []durationData{
 	{year, func(du *DurationUnits, i int) { du.Years = i }},
 	{month, func(du *DurationUnits, i int) { du.Months = i }},
+	{week, func(du *DurationUnits, i int) { du.Weeks = i }},
 	{day, func(du *DurationUnits, i int) { du.Days = i }},
 	{hour, func(du *DurationUnits, i int) { du.Hours = i }},
 	{minute, func(du *DurationUnits, i int) { du.Minutes = i }},
@@ -36,6 +38,7 @@ type DurationUnits struct {
 	Minutes int
 	Hours   int
 	Days    int
+	Weeks   int
 	Months  int
 	Years   int
 }
@@ -58,6 +61,7 @@ func (tu DurationUnits) String() string {
 
 	writeUnit("year", tu.Years)
 	writeUnit("month", tu.Months)
+	writeUnit("week", tu.Weeks)
 	writeUnit("day", tu.Days)
 	writeUnit("hour", tu.Hours)
 	writeUnit("minute", tu.Minutes)
@@ -80,6 +84,7 @@ func (tu DurationUnits) ToShortString() string {
 
 	writeUnit("y", tu.Years)
 	writeUnit("mo", tu.Months)
+	writeUnit("wk", tu.Weeks)
 	writeUnit("d", tu.Days)
 	writeUnit("h", tu.Hours)
 	writeUnit("m", tu.Minutes)
@@ -129,7 +134,9 @@ func (ru RelativeUnits) String() string {
 	case ru.Years > 0:
 		return toUnitStr("year", "month", ru.Years, ru.Months)
 	case ru.Months > 0:
-		return toUnitStr("month", "day", ru.Months, ru.Days)
+		return toUnitStr("month", "week", ru.Months, ru.Weeks)
+	case ru.Weeks > 0:
+		return toUnitStr("week", "day", ru.Weeks, ru.Days)
 	case ru.Days > 0:
 		return toUnitStr("day", "hour", ru.Days, ru.Hours)
 	case ru.Hours > 0:
