@@ -29,8 +29,9 @@ type Profile struct {
 	CreatedAt       string
 	AccessToken     string
 	RefreshToken    string
-	TokenExpiration int
-	// Last time the profile was retrieved
+	// Unix timestamp in seconds
+	TokenExpirationSec int64
+	// Unix timestamp in seconds
 	LastUpdateSec int64
 }
 

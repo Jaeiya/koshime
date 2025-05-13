@@ -271,9 +271,12 @@ func (m userSetupModel) UpdatePassword(msg tea.Msg) (userSetupModel, tea.Cmd) {
 	case FetchedAuthTokenMsg:
 		m.loader.Stop()
 		passwordState.passed = true
-		m.state.data.Profile.AccessToken = msg.Token
-		m.state.data.Profile.RefreshToken = msg.RefreshToken
-		m.state.data.Profile.TokenExpiration = msg.ExpiresIn
+		p := &m.state.data.Profile
+		p.AccessToken = msg.Token
+		p.RefreshToken = msg.RefreshToken
+		// Because this is a duration and not a time stamp, we stamp
+		// it ourselves by adding the unix time.
+		p.TokenExpirationSec = int64(msg.ExpiresIn) + time.Now().Unix()
 		return m, nil
 
 	case FetchErrorMsg:
