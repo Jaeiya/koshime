@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -84,6 +85,32 @@ func (tu DurationUnits) ToShortString() string {
 	writeUnit("s", tu.Seconds)
 
 	return strings.TrimSpace(sb.String())
+}
+
+func (tu DurationUnits) ToRelativeString() string {
+	toUnitStr := func(s string, u int) string {
+		str := fmt.Sprintf("%d %s", u, s)
+		if u > 1 {
+			str += "s"
+		}
+		return str + " ago"
+	}
+	switch {
+	case tu.Years > 0:
+		return toUnitStr("year", tu.Years)
+	case tu.Months > 0:
+		return toUnitStr("month", tu.Months)
+	case tu.Days > 0:
+		return toUnitStr("day", tu.Days)
+	case tu.Hours > 0:
+		return toUnitStr("hour", tu.Hours)
+	case tu.Minutes > 0:
+		return toUnitStr("minute", tu.Minutes)
+	case tu.Seconds > 0:
+		return toUnitStr("second", tu.Seconds)
+	default:
+		return "invalid duration format"
+	}
 }
 
 func DurationToUnits(d time.Duration) DurationUnits {
