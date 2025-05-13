@@ -113,7 +113,7 @@ type RelativeUnits struct {
 }
 
 func (ru RelativeUnits) String() string {
-	toUnitStr := func(s, s2 string, u, u2 int) string {
+	toUnitStr := func(s string, u int) string {
 		str := fmt.Sprintf("%d %s", u, s)
 		if u > 1 {
 			str += "s"
@@ -121,30 +121,24 @@ func (ru RelativeUnits) String() string {
 		if ru.isFuture {
 			return "in " + str
 		}
-		if u2 > 0 {
-			str += fmt.Sprintf(", %d %s", u2, s2)
-			if u2 > 1 {
-				str += "s"
-			}
-		}
 		return str + " ago"
 	}
 
 	switch {
 	case ru.Years > 0:
-		return toUnitStr("year", "month", ru.Years, ru.Months)
+		return toUnitStr("year", ru.Years)
 	case ru.Months > 0:
-		return toUnitStr("month", "week", ru.Months, ru.Weeks)
+		return toUnitStr("month", ru.Months)
 	case ru.Weeks > 0:
-		return toUnitStr("week", "day", ru.Weeks, ru.Days)
+		return toUnitStr("week", ru.Weeks)
 	case ru.Days > 0:
-		return toUnitStr("day", "hour", ru.Days, ru.Hours)
+		return toUnitStr("day", ru.Days)
 	case ru.Hours > 0:
-		return toUnitStr("hour", "minute", ru.Hours, ru.Minutes)
+		return toUnitStr("hour", ru.Hours)
 	case ru.Minutes > 0:
-		return toUnitStr("minute", "second", ru.Minutes, ru.Seconds)
+		return toUnitStr("minute", ru.Minutes)
 	case ru.Seconds > 0:
-		return toUnitStr("second", "", ru.Seconds, 0)
+		return toUnitStr("second", ru.Seconds)
 	case ru.Seconds == 0:
 		return "just now"
 	default:
