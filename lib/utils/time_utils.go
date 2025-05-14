@@ -231,7 +231,7 @@ func (ru RelativeUnits) String() string {
 }
 
 func (ru RelativeUnits) ToPrecisionString(p TimeUnit) string {
-	var parts []string = make([]string, 0, len(unitTable))
+	parts := make([]string, 0, len(unitTable))
 	for _, entry := range unitTable {
 		value := entry.GetRelativeUnits(ru)
 		if entry.Unit > p {
