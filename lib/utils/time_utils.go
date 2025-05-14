@@ -83,8 +83,8 @@ var durationTable []durationData = []durationData{
 
 type unitData struct {
 	Unit             TimeUnit
-	GetDurationUnits func(du DurationUnits) int
-	GetRelativeUnits func(ru RelativeUnits) int
+	GetDurationValue func(du DurationUnits) int
+	GetRelativeValue func(ru RelativeUnits) int
 }
 
 var unitTable = []unitData{
@@ -153,7 +153,7 @@ func NewDurationUnits(d time.Duration) DurationUnits {
 func (du DurationUnits) String() string {
 	parts := make([]string, 0, len(unitTable))
 	for _, entry := range unitTable {
-		value := entry.GetDurationUnits(du)
+		value := entry.GetDurationValue(du)
 		if value > 0 {
 			unitStr := entry.Unit.String()
 			if value > 1 {
@@ -173,7 +173,7 @@ func (du DurationUnits) String() string {
 func (du DurationUnits) ToShortString() string {
 	parts := make([]string, 0, len(unitTable))
 	for _, entry := range unitTable {
-		value := entry.GetDurationUnits(du)
+		value := entry.GetDurationValue(du)
 		if value > 0 {
 			unitStr := entry.Unit.ToShortString()
 			parts = append(parts, strconv.Itoa(value)+unitStr)
@@ -209,7 +209,7 @@ func NewRelativeTimeUnits(unixSeconds int64) RelativeUnits {
 func (ru RelativeUnits) String() string {
 	var relativeStr string
 	for _, entry := range unitTable {
-		value := entry.GetRelativeUnits(ru)
+		value := entry.GetRelativeValue(ru)
 		if value > 0 {
 			unitStr := entry.Unit.String()
 			if value > 1 {
@@ -233,7 +233,7 @@ func (ru RelativeUnits) String() string {
 func (ru RelativeUnits) ToPrecisionString(p TimeUnit) string {
 	parts := make([]string, 0, len(unitTable))
 	for _, entry := range unitTable {
-		value := entry.GetRelativeUnits(ru)
+		value := entry.GetRelativeValue(ru)
 		if entry.Unit > p {
 			break
 		}
