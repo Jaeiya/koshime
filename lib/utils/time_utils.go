@@ -62,6 +62,21 @@ var durationTable []durationData = []durationData{
 	{second, func(du *DurationUnits, i int) { du.Seconds = i }},
 }
 
+type relativeUnitData struct {
+	Unit TimeUnit
+	Get  func(ru RelativeUnits) (string, int)
+}
+
+var relativeUnitTable = []relativeUnitData{
+	{Years, func(ru RelativeUnits) (string, int) { return Years.String(), ru.Years }},
+	{Months, func(ru RelativeUnits) (string, int) { return Months.String(), ru.Months }},
+	{Weeks, func(ru RelativeUnits) (string, int) { return Weeks.String(), ru.Weeks }},
+	{Days, func(ru RelativeUnits) (string, int) { return Days.String(), ru.Days }},
+	{Hours, func(ru RelativeUnits) (string, int) { return Hours.String(), ru.Hours }},
+	{Minutes, func(ru RelativeUnits) (string, int) { return Minutes.String(), ru.Minutes }},
+	{Seconds, func(ru RelativeUnits) (string, int) { return Seconds.String(), ru.Seconds }},
+}
+
 type DurationUnits struct {
 	d       time.Duration
 	Seconds int
@@ -139,24 +154,18 @@ func NewDurationUnits(d time.Duration) DurationUnits {
 
 type RelativeUnits struct {
 	DurationUnits
-	isFuture  bool
-	unitTable []unitData
-}
-
-type unitData struct {
-	unitType TimeUnit
-	value    int
+	isFuture bool
 }
 
 func (ru RelativeUnits) String() string {
 	var relativeStr string
-	for _, entry := range ru.unitTable {
-		if entry.value > 0 {
-			unit := entry.unitType.String()
-			if entry.value > 1 {
-				unit += "s"
+	for _, entry := range relativeUnitTable {
+		unitStr, value := entry.Get(ru)
+		if value > 0 {
+			if value > 1 {
+				unitStr += "s"
 			}
-			relativeStr = strconv.Itoa(entry.value) + " " + unit
+			relativeStr = strconv.Itoa(value) + " " + unitStr
 			break
 		}
 	}
@@ -172,21 +181,21 @@ func (ru RelativeUnits) String() string {
 }
 
 func (ru RelativeUnits) ToPrecisionString(p TimeUnit) string {
-	var parts []string = make([]string, 0, len(ru.unitTable))
-	for _, entry := range ru.unitTable {
-		if entry.unitType > p {
+	var parts []string = make([]string, 0, len(relativeUnitTable))
+	for _, entry := range relativeUnitTable {
+		unitStr, value := entry.Get(ru)
+		if entry.Unit > p {
 			break
 		}
-		if entry.value == 0 {
+		if value == 0 {
 			continue
 		}
 
-		unit := entry.unitType.String()
-		if entry.value > 1 {
-			unit += "s"
+		if value > 1 {
+			unitStr += "s"
 		}
 
-		parts = append(parts, strconv.Itoa(entry.value)+" "+unit)
+		parts = append(parts, strconv.Itoa(value)+" "+unitStr)
 	}
 
 	if len(parts) == 0 {
@@ -211,16 +220,6 @@ func NewRelativeTimeUnits(unixSeconds int64) RelativeUnits {
 	ru := RelativeUnits{
 		DurationUnits: du,
 		isFuture:      isFuture,
-	}
-
-	ru.unitTable = []unitData{
-		{Years, ru.Years},
-		{Months, ru.Months},
-		{Weeks, ru.Weeks},
-		{Days, ru.Days},
-		{Hours, ru.Hours},
-		{Minutes, ru.Minutes},
-		{Seconds, ru.Seconds},
 	}
 
 	return ru
