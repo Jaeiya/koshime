@@ -305,6 +305,17 @@ func (m Model) View() (string, *tea.Cursor) {
 			MarginBottom(1).
 			Render(utils.ColorText(fmt.Sprintf(";dy;%s's;b; profile stats:", profile.Username)))
 
+		expStyle := ui.Style
+		tokenExpiration := utils.NewRelativeTimeUnits(profile.TokenExpirationSec)
+		switch {
+		case tokenExpiration.Weeks < 1:
+			expStyle = expStyle.Foreground(ansi.BrightRed)
+		case tokenExpiration.Weeks < 2:
+			expStyle = expStyle.Foreground(ansi.BrightYellow)
+		default:
+			expStyle = expStyle.Foreground(ansi.BrightGreen)
+		}
+
 		d := newPropValDisplay([]string{
 			utils.ColorText(";dc;Completed Anime"),
 			utils.ColorText(";dc;Time Spent"),
@@ -314,7 +325,7 @@ func (m Model) View() (string, *tea.Cursor) {
 			strconv.Itoa(profile.CompletedSeries),
 			utils.NewDurationUnits(time.Second * time.Duration(profile.SecondsWatched)).
 				ToShortString(),
-			utils.NewRelativeTimeUnits(profile.TokenExpirationSec).String(),
+			expStyle.Render(tokenExpiration.ToPrecisionString(utils.Days)),
 			utils.NewRelativeTimeUnits(profile.LastUpdateSec).String(),
 		})
 
