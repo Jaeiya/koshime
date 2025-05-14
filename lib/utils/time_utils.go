@@ -136,6 +136,20 @@ type DurationUnits struct {
 	Years   int
 }
 
+func NewDurationUnits(d time.Duration) DurationUnits {
+	tu := DurationUnits{d: d}
+
+	for _, entry := range durationTable {
+		delta := d / entry.unit
+		if delta > 0 {
+			d -= delta * entry.unit
+			entry.set(&tu, int(delta))
+		}
+	}
+
+	return tu
+}
+
 func (du DurationUnits) String() string {
 	parts := make([]string, 0, len(unitTable))
 	for _, entry := range unitTable {
@@ -171,20 +185,6 @@ func (du DurationUnits) ToShortString() string {
 	}
 
 	return strings.Join(parts, " ")
-}
-
-func NewDurationUnits(d time.Duration) DurationUnits {
-	tu := DurationUnits{d: d}
-
-	for _, entry := range durationTable {
-		delta := d / entry.unit
-		if delta > 0 {
-			d -= delta * entry.unit
-			entry.set(&tu, int(delta))
-		}
-	}
-
-	return tu
 }
 
 type RelativeUnits struct {
