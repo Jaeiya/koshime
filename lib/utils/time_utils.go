@@ -37,6 +37,25 @@ func (tp TimeUnit) String() string {
 	}
 }
 
+func (tp TimeUnit) ToShortString() string {
+	switch tp {
+	case Years:
+		return "y"
+	case Months:
+		return "mo"
+	case Weeks:
+		return "wk"
+	case Days:
+		return "d"
+	case Hours:
+		return "h"
+	case Minutes:
+		return "m"
+	default:
+		return "s"
+	}
+}
+
 const (
 	second = time.Second
 	minute = time.Minute
@@ -62,19 +81,48 @@ var durationTable []durationData = []durationData{
 	{second, func(du *DurationUnits, i int) { du.Seconds = i }},
 }
 
-type relativeUnitData struct {
-	Unit TimeUnit
-	Get  func(ru RelativeUnits) (string, int)
+type unitData struct {
+	Unit             TimeUnit
+	GetDurationUnits func(du DurationUnits) int
+	GetRelativeUnits func(ru RelativeUnits) int
 }
 
-var relativeUnitTable = []relativeUnitData{
-	{Years, func(ru RelativeUnits) (string, int) { return Years.String(), ru.Years }},
-	{Months, func(ru RelativeUnits) (string, int) { return Months.String(), ru.Months }},
-	{Weeks, func(ru RelativeUnits) (string, int) { return Weeks.String(), ru.Weeks }},
-	{Days, func(ru RelativeUnits) (string, int) { return Days.String(), ru.Days }},
-	{Hours, func(ru RelativeUnits) (string, int) { return Hours.String(), ru.Hours }},
-	{Minutes, func(ru RelativeUnits) (string, int) { return Minutes.String(), ru.Minutes }},
-	{Seconds, func(ru RelativeUnits) (string, int) { return Seconds.String(), ru.Seconds }},
+var unitTable = []unitData{
+	{
+		Years,
+		func(du DurationUnits) int { return du.Years },
+		func(ru RelativeUnits) int { return ru.Years },
+	},
+	{
+		Months,
+		func(du DurationUnits) int { return du.Months },
+		func(ru RelativeUnits) int { return ru.Months },
+	},
+	{
+		Weeks,
+		func(du DurationUnits) int { return du.Weeks },
+		func(ru RelativeUnits) int { return ru.Weeks },
+	},
+	{
+		Days,
+		func(du DurationUnits) int { return du.Days },
+		func(ru RelativeUnits) int { return ru.Days },
+	},
+	{
+		Hours,
+		func(du DurationUnits) int { return du.Hours },
+		func(ru RelativeUnits) int { return ru.Hours },
+	},
+	{
+		Minutes,
+		func(du DurationUnits) int { return du.Minutes },
+		func(ru RelativeUnits) int { return ru.Minutes },
+	},
+	{
+		Seconds,
+		func(du DurationUnits) int { return du.Seconds },
+		func(ru RelativeUnits) int { return ru.Seconds },
+	},
 }
 
 type DurationUnits struct {
@@ -88,54 +136,41 @@ type DurationUnits struct {
 	Years   int
 }
 
-func (tu DurationUnits) String() string {
-	var sb strings.Builder
-
-	writeUnit := func(s string, u int) {
-		if u == 0 {
-			return
+func (du DurationUnits) String() string {
+	parts := make([]string, 0, len(unitTable))
+	for _, entry := range unitTable {
+		value := entry.GetDurationUnits(du)
+		if value > 0 {
+			unitStr := entry.Unit.String()
+			if value > 1 {
+				unitStr += "s"
+			}
+			parts = append(parts, strconv.Itoa(value)+" "+unitStr)
 		}
-		sb.WriteString(strconv.Itoa(u))
-		sb.WriteString(" ")
-		sb.WriteString(s)
-		if u > 1 {
-			sb.WriteString("s")
-		}
-		sb.WriteString(", ")
 	}
 
-	writeUnit("year", tu.Years)
-	writeUnit("month", tu.Months)
-	writeUnit("week", tu.Weeks)
-	writeUnit("day", tu.Days)
-	writeUnit("hour", tu.Hours)
-	writeUnit("minute", tu.Minutes)
-	writeUnit("second", tu.Seconds)
+	if len(parts) == 0 {
+		return "0 seconds"
+	}
 
-	str := sb.String()
-	return str[:len(str)-2]
+	return strings.Join(parts, ", ")
 }
 
-func (tu DurationUnits) ToShortString() string {
-	var sb strings.Builder
-	writeUnit := func(s string, u int) {
-		if u == 0 {
-			return
+func (du DurationUnits) ToShortString() string {
+	parts := make([]string, 0, len(unitTable))
+	for _, entry := range unitTable {
+		value := entry.GetDurationUnits(du)
+		if value > 0 {
+			unitStr := entry.Unit.ToShortString()
+			parts = append(parts, strconv.Itoa(value)+unitStr)
 		}
-		sb.WriteString(strconv.Itoa(u))
-		sb.WriteString(s)
-		sb.WriteString(" ")
 	}
 
-	writeUnit("y", tu.Years)
-	writeUnit("mo", tu.Months)
-	writeUnit("wk", tu.Weeks)
-	writeUnit("d", tu.Days)
-	writeUnit("h", tu.Hours)
-	writeUnit("m", tu.Minutes)
-	writeUnit("s", tu.Seconds)
+	if len(parts) == 0 {
+		return "0s"
+	}
 
-	return strings.TrimSpace(sb.String())
+	return strings.Join(parts, " ")
 }
 
 func NewDurationUnits(d time.Duration) DurationUnits {
@@ -173,9 +208,10 @@ func NewRelativeTimeUnits(unixSeconds int64) RelativeUnits {
 
 func (ru RelativeUnits) String() string {
 	var relativeStr string
-	for _, entry := range relativeUnitTable {
-		unitStr, value := entry.Get(ru)
+	for _, entry := range unitTable {
+		value := entry.GetRelativeUnits(ru)
 		if value > 0 {
+			unitStr := entry.Unit.String()
 			if value > 1 {
 				unitStr += "s"
 			}
@@ -195,9 +231,9 @@ func (ru RelativeUnits) String() string {
 }
 
 func (ru RelativeUnits) ToPrecisionString(p TimeUnit) string {
-	var parts []string = make([]string, 0, len(relativeUnitTable))
-	for _, entry := range relativeUnitTable {
-		unitStr, value := entry.Get(ru)
+	var parts []string = make([]string, 0, len(unitTable))
+	for _, entry := range unitTable {
+		value := entry.GetRelativeUnits(ru)
 		if entry.Unit > p {
 			break
 		}
@@ -205,6 +241,7 @@ func (ru RelativeUnits) ToPrecisionString(p TimeUnit) string {
 			continue
 		}
 
+		unitStr := entry.Unit.String()
 		if value > 1 {
 			unitStr += "s"
 		}
