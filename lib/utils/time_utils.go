@@ -1,11 +1,41 @@
 package utils
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 	"time"
 )
+
+type TimeUnit int
+
+const (
+	Years = TimeUnit(iota)
+	Months
+	Weeks
+	Days
+	Hours
+	Minutes
+	Seconds
+)
+
+func (tp TimeUnit) String() string {
+	switch tp {
+	case Years:
+		return "year"
+	case Months:
+		return "month"
+	case Weeks:
+		return "week"
+	case Days:
+		return "day"
+	case Hours:
+		return "hour"
+	case Minutes:
+		return "minute"
+	default:
+		return "second"
+	}
+}
 
 const (
 	second = time.Second
@@ -109,41 +139,64 @@ func NewDurationUnits(d time.Duration) DurationUnits {
 
 type RelativeUnits struct {
 	DurationUnits
-	isFuture bool
+	isFuture  bool
+	unitTable []unitData
+}
+
+type unitData struct {
+	unitType TimeUnit
+	value    int
 }
 
 func (ru RelativeUnits) String() string {
-	toUnitStr := func(s string, u int) string {
-		str := fmt.Sprintf("%d %s", u, s)
-		if u > 1 {
-			str += "s"
+	var relativeStr string
+	for _, entry := range ru.unitTable {
+		if entry.value > 0 {
+			unit := entry.unitType.String()
+			if entry.value > 1 {
+				unit += "s"
+			}
+			relativeStr = strconv.Itoa(entry.value) + " " + unit
+			break
 		}
-		if ru.isFuture {
-			return "in " + str
-		}
-		return str + " ago"
 	}
 
-	switch {
-	case ru.Years > 0:
-		return toUnitStr("year", ru.Years)
-	case ru.Months > 0:
-		return toUnitStr("month", ru.Months)
-	case ru.Weeks > 0:
-		return toUnitStr("week", ru.Weeks)
-	case ru.Days > 0:
-		return toUnitStr("day", ru.Days)
-	case ru.Hours > 0:
-		return toUnitStr("hour", ru.Hours)
-	case ru.Minutes > 0:
-		return toUnitStr("minute", ru.Minutes)
-	case ru.Seconds > 0:
-		return toUnitStr("second", ru.Seconds)
-	case ru.Seconds == 0:
+	if len(relativeStr) == 0 {
 		return "just now"
-	default:
-		return "invalid duration format"
 	}
+
+	if ru.isFuture {
+		return "in " + relativeStr
+	}
+	return relativeStr + " ago"
+}
+
+func (ru RelativeUnits) ToPrecisionString(p TimeUnit) string {
+	var parts []string = make([]string, 0, len(ru.unitTable))
+	for _, entry := range ru.unitTable {
+		if entry.unitType > p {
+			break
+		}
+		if entry.value == 0 {
+			continue
+		}
+
+		unit := entry.unitType.String()
+		if entry.value > 1 {
+			unit += "s"
+		}
+
+		parts = append(parts, strconv.Itoa(entry.value)+" "+unit)
+	}
+
+	if len(parts) == 0 {
+		return "just now"
+	}
+
+	if ru.isFuture {
+		return "in " + strings.Join(parts, ", ")
+	}
+	return strings.Join(parts, ", ") + " ago"
 }
 
 func NewRelativeTimeUnits(unixSeconds int64) RelativeUnits {
@@ -154,5 +207,21 @@ func NewRelativeTimeUnits(unixSeconds int64) RelativeUnits {
 		relativeSeconds = unixSeconds - time.Now().Unix()
 	}
 	du := NewDurationUnits(time.Second * time.Duration(relativeSeconds))
-	return RelativeUnits{du, isFuture}
+
+	ru := RelativeUnits{
+		DurationUnits: du,
+		isFuture:      isFuture,
+	}
+
+	ru.unitTable = []unitData{
+		{Years, ru.Years},
+		{Months, ru.Months},
+		{Weeks, ru.Weeks},
+		{Days, ru.Days},
+		{Hours, ru.Hours},
+		{Minutes, ru.Minutes},
+		{Seconds, ru.Seconds},
+	}
+
+	return ru
 }
