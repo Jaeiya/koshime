@@ -250,7 +250,22 @@ func (ru RelativeUnits) ToPrecisionString(p TimeUnit) string {
 	}
 
 	if len(parts) == 0 {
-		return "just now"
+		switch p {
+		case Years:
+			return "this year"
+		case Months:
+			return "this month"
+		case Weeks:
+			return "this week"
+		case Days:
+			return "today"
+		case Hours:
+			return "within an hour"
+		case Minutes:
+			return "within a minute"
+		default:
+			return "just now"
+		}
 	}
 
 	if ru.isFuture {
