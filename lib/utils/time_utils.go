@@ -157,6 +157,20 @@ type RelativeUnits struct {
 	isFuture bool
 }
 
+func NewRelativeTimeUnits(unixSeconds int64) RelativeUnits {
+	var isFuture bool
+	relativeSeconds := time.Now().Unix() - unixSeconds
+	if relativeSeconds < 0 {
+		isFuture = true
+		relativeSeconds = unixSeconds - time.Now().Unix()
+	}
+
+	return RelativeUnits{
+		NewDurationUnits(time.Second * time.Duration(relativeSeconds)),
+		isFuture,
+	}
+}
+
 func (ru RelativeUnits) String() string {
 	var relativeStr string
 	for _, entry := range relativeUnitTable {
@@ -206,21 +220,4 @@ func (ru RelativeUnits) ToPrecisionString(p TimeUnit) string {
 		return "in " + strings.Join(parts, ", ")
 	}
 	return strings.Join(parts, ", ") + " ago"
-}
-
-func NewRelativeTimeUnits(unixSeconds int64) RelativeUnits {
-	var isFuture bool
-	relativeSeconds := time.Now().Unix() - unixSeconds
-	if relativeSeconds < 0 {
-		isFuture = true
-		relativeSeconds = unixSeconds - time.Now().Unix()
-	}
-	du := NewDurationUnits(time.Second * time.Duration(relativeSeconds))
-
-	ru := RelativeUnits{
-		DurationUnits: du,
-		isFuture:      isFuture,
-	}
-
-	return ru
 }
