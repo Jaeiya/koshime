@@ -145,6 +145,12 @@ func (m userSetupModel) UpdateUsername(msg tea.Msg) (userSetupModel, tea.Cmd) {
 	var cmd tea.Cmd
 	usernameState := &m.state.username
 
+	// Ignore all updates when we encounter an
+	// unrecoverable error
+	if m.state.fetchError != nil {
+		return m, nil
+	}
+
 	if usernameState.failed || usernameState.passed {
 		m.consent = m.consent.Update(msg)
 	}
@@ -193,8 +199,7 @@ func (m userSetupModel) UpdateUsername(msg tea.Msg) (userSetupModel, tea.Cmd) {
 			usernameState.failed = true
 			m.consent.SetConsentPos(ui.Yes)
 		} else {
-			// FIX  we should display a proper error, not panic
-			panic(msg)
+			m.state.fetchError = msg
 		}
 
 	}
@@ -210,6 +215,16 @@ func (m userSetupModel) ViewUsername() (string, *tea.Cursor) {
 
 	if m.state.username.failed {
 		return m.consent.View(userSetupMsgs.username.failed), nil
+	}
+
+	if m.state.fetchError != nil {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.TextStyle.Foreground(ansi.BrightRed).Render("Fetch Error"),
+			ui.TextStyle.PaddingLeft(2).
+				Foreground(ansi.BrightYellow).
+				Render(m.state.fetchError.Error()),
+		), nil
 	}
 
 	if m.state.username.passed {
@@ -409,6 +424,10 @@ func (m userSetupModel) ViewLibAnime() string {
 func (m userSetupModel) ShortHelp() []key.Binding {
 	if m.loader.IsLoading() {
 		return []key.Binding{}
+	}
+
+	if m.state.fetchError != nil {
+		return []key.Binding{keyMap.Abort}
 	}
 
 	switch m.state.view {
