@@ -154,6 +154,9 @@ func newText(lines []string, margins ...int) string {
 // newPropValDisplay displays properties and values in a fixed
 // width arrangement.
 func newPropValDisplay(props []string, values []string) string {
+	if len(props) != len(values) {
+		panic("number of properties do not match number of values")
+	}
 	var sb strings.Builder
 
 	var propWidth int
