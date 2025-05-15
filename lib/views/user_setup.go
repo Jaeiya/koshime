@@ -71,7 +71,7 @@ func (m userSetupModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, keyMap.MainMenu):
+		case key.Matches(msg, keyMap.Abort):
 			return m, abort
 		}
 	}
