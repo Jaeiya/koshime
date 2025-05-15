@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/cookiejar"
+	"net/url"
 	"time"
 )
 
@@ -22,6 +23,7 @@ type HttpResponse struct {
 	StatusCode int
 	StatusText string
 	Body       []byte
+	Cookies    []*http.Cookie
 }
 
 type Http struct{}
@@ -63,6 +65,25 @@ func (h Http) Do(req *http.Request, accept, contentType string) (HttpResponse, e
 		StatusCode: resp.StatusCode,
 		StatusText: http.StatusText(resp.StatusCode),
 		Body:       body,
+	}, nil
+}
+
+func (h Http) PostForm(url string, values url.Values) (HttpResponse, error) {
+	resp, err := client.PostForm(url, values)
+	if err != nil {
+		return HttpResponse{}, err
+	}
+
+	body, err := h.ReadResponseBody(resp)
+	if err != nil {
+		return HttpResponse{}, err
+	}
+
+	return HttpResponse{
+		StatusCode: resp.StatusCode,
+		StatusText: http.StatusText(resp.StatusCode),
+		Body:       body,
+		Cookies:    resp.Cookies(),
 	}, nil
 }
 
