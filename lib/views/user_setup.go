@@ -68,6 +68,14 @@ func (m userSetupModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, keyMap.MainMenu):
+			return m, abort
+		}
+	}
+
 	if m.loader.IsLoading() {
 		m.loader, cmd = m.loader.Update(msg)
 		cmds = append(cmds, cmd)
