@@ -4,14 +4,19 @@ import (
 	"compress/gzip"
 	"io"
 	"net/http"
+	"net/http/cookiejar"
 	"time"
 )
 
 const userAgent = "Koshime/0.1"
 
-var client = http.Client{
-	Timeout: 5 * time.Second,
-}
+var client = func() http.Client {
+	jar, _ := cookiejar.New(nil)
+	return http.Client{
+		Timeout: 5 * time.Second,
+		Jar:     jar,
+	}
+}()
 
 type HttpResponse struct {
 	StatusCode int
