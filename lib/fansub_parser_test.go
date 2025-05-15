@@ -194,6 +194,22 @@ func TestFansubParser(t *testing.T) {
 			},
 		},
 		{
+			should: "support EP# episode format",
+			actual: "some kind of title EP02",
+			expected: FansubInfo{
+				Title:   "some kind of title",
+				Episode: "02",
+			},
+		},
+		{
+			should: "support EP# version 2 episode format",
+			actual: "some kind of title EP02v2",
+			expected: FansubInfo{
+				Title:   "some kind of title",
+				Episode: "02v2",
+			},
+		},
+		{
 			should: "ignore episode formats beyond meta-data",
 			actual: "some kind of title S01 [1080p] S05E45",
 			expected: FansubInfo{
