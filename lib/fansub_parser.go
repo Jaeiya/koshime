@@ -300,7 +300,7 @@ func (Fansub) getEpisode(s string, index int, tokens []string) (season string, e
 
 	// Catch "Season # - #" for season & episode
 	if s == "Season" && index+3 < len(tokens) && tokens[index+2][0] == '-' {
-		if utils.IsNumber(tokens[index+1]) && utils.IsNumber(tokens[index+3]) {
+		if utils.IsNumber(tokens[index+1]) && utils.IsNumber(trimEpVersion(tokens[index+3])) {
 			return tokens[index+1], tokens[index+3]
 		}
 	}
