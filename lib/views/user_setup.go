@@ -246,7 +246,7 @@ func (m userSetupModel) ViewUsername() (string, *tea.Cursor) {
 		return m.consent.View(
 			userSetupMsgs.username.confirmHeader,
 			profileStr,
-			userSetupMsgs.username.confirmConsent,
+			ui.Style.PaddingTop(1).Render(userSetupMsgs.username.confirmConsent),
 		), nil
 	}
 
