@@ -23,7 +23,7 @@ var fansubEncodingMap = map[string]string{
 
 	"av1":        "AV1",
 	"aac":        "AAC",
-	"aac2.0":     "AAC2.0",
+	"aac2.0":     "AAC 2.0",
 	"hevc-10bit": "HEVC 10-bit",
 	"hevc":       "HEVC",
 	"h.265":      "HEVC",
@@ -42,7 +42,7 @@ var fansubEncodingMap = map[string]string{
 	"atmos":  "DolbyAtmos",
 
 	"truehd":    "TrueHD",
-	"truehd7.1": "TrueHD7.1",
+	"truehd7.1": "TrueHD 7.1",
 	"opus":      "Opus",
 	"mp3":       "Mp3",
 	"flac":      "FLAC",
@@ -50,6 +50,8 @@ var fansubEncodingMap = map[string]string{
 	"e-ac3":     "EAC3",
 	"eac3":      "EAC3",
 	"eac-3":     "EAC3",
+	"7.1":       "7.1",
+	"2.0":       "2.0",
 
 	"dual-audio": "DualAudio",
 
@@ -205,19 +207,22 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 		possibleEncodings = strings.Split(s, ".")
 	}
 
+	hasNextToken := index+1 < len(tokens)
+
 	if val, exists := fansubEncodingMap[s]; exists {
-		// Catch "AAC 2.0" formatting
-		if s == "aac" && index+1 < len(tokens) {
-			if utils.RemoveBrackets(tokens[index+1]) == "2.0" {
-				return val + "2.0 ", possibleEncodings
+		// Catch "AAC.2.0" formatting
+		if s == "aac" && hasNextToken {
+			nextToken := fansub.normalizeToken(tokens[index+1])
+			if nextToken == "2" {
+				return val + " 2.0 ", possibleEncodings
 			}
 		}
 
-		// Catch "TrueHD 7.1" formatting
-		if s == "truehd" {
+		// Catch "TrueHD.7.1" formatting
+		if s == "truehd" && hasNextToken {
 			nextToken := fansub.normalizeToken(tokens[index+1])
 			if nextToken == "7" {
-				return val + "7.1 ", possibleEncodings
+				return val + " 7.1 ", possibleEncodings
 			}
 		}
 		return val + " ", possibleEncodings
@@ -240,7 +245,7 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 	}
 
 	// Catch "AAC2 0" formatting
-	if s == "aac2" {
+	if s == "aac2" && hasNextToken {
 		nextToken := fansub.normalizeToken(tokens[index+1])
 		if nextToken == "0" {
 			return fansubEncodingMap["aac2.0"] + " ", possibleEncodings
@@ -249,7 +254,7 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 	}
 
 	// Catch "DDP5 1" formatting
-	if s == "ddp5" {
+	if s == "ddp5" && hasNextToken {
 		nextToken := fansub.normalizeToken(tokens[index+1])
 		if nextToken == "1" {
 			return fansubEncodingMap["ddp5.1"] + " ", possibleEncodings
@@ -257,7 +262,7 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 	}
 
 	// Catch "DDP2 0" formatting
-	if s == "ddp2" {
+	if s == "ddp2" && hasNextToken {
 		nextToken := fansub.normalizeToken(tokens[index+1])
 		if nextToken == "0" {
 			return fansubEncodingMap["ddp2.0"] + " ", possibleEncodings
