@@ -1,6 +1,9 @@
 package kitsu
 
-import "encoding/json"
+import (
+	"encoding/json"
+	"fmt"
+)
 
 type LibraryEntry struct {
 	// Anime ID
@@ -102,6 +105,20 @@ type LibraryAnimeData struct {
 	} `json:"data"`
 
 	Included []AnimeData `json:"included"`
+}
+
+type ErrorData struct {
+	Errors []struct {
+		Status int    `json:"status"`
+		Title  string `json:"title"`
+	} `json:"errors"`
+}
+
+func (ed ErrorData) String() string {
+	for _, err := range ed.Errors {
+		return fmt.Sprintf("%d :: %s\n", err.Status, err.Title)
+	}
+	return "no error data"
 }
 
 func newAddAnimePayload(animeID, userID string, status LibAnimeStatus) ([]byte, error) {

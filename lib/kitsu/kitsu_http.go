@@ -105,6 +105,12 @@ func validateResponse(resp utils.HttpResponse) error {
 		if strings.Contains(body, "invalid_grant") {
 			return fmt.Errorf("invalid username or password")
 		}
+		var errData ErrorData
+		err := json.Unmarshal(resp.Body, &errData)
+		if err == nil {
+			return fmt.Errorf("%s", errData)
+		}
+
 		return fmt.Errorf(
 			"ClientError::HTTP %d: %s\n%s",
 			resp.StatusCode,
