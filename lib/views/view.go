@@ -22,16 +22,16 @@ type UIView int
 
 const (
 	None = UIView(iota)
-	SetupUserView
-	MenuView
-	ExitView
+	SetupUser
+	Menu
+	Exit
 	WatchAnimeView
-	AddAnimeView
-	FindAnimeView
-	DropAnimeView
-	RSSView
-	MaintenanceView
-	AbortView
+	AddAnime
+	FindAnime
+	DropAnime
+	RSS
+	Maintenance
+	Abort
 )
 
 type MenuItem int
@@ -180,12 +180,12 @@ func New(dbPath string) (Model, error) {
 	model.db = db
 
 	model.menuViewMap = map[UIView]ViewModel{
-		SetupUserView: NewUserSetupModel(),
-		FindAnimeView: NewFindMenuModel(db),
+		SetupUser: NewUserSetupModel(),
+		FindAnime: NewFindAnimeModel(db),
 	}
 
 	if !utils.FileExists(dbPath) {
-		model.SetViewState(SetupUserView)
+		model.SetViewState(SetupUser)
 		return model, nil
 	}
 
@@ -194,7 +194,7 @@ func New(dbPath string) (Model, error) {
 		return model, err
 	}
 
-	model.SetViewState(MenuView)
+	model.SetViewState(Menu)
 
 	return model, nil
 }
@@ -224,25 +224,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.HelpMore):
-			if (currentModel != nil && len(currentModel.FullHelp()) == 0) || m.state.view == MenuView {
+			if (currentModel != nil && len(currentModel.FullHelp()) == 0) || m.state.view == Menu {
 				break
 			}
 			m.help.ShowAll = !m.help.ShowAll
 
 		case key.Matches(msg, keyMap.MainMenu):
-			if m.state.view == MenuView {
-				m.state.view = ExitView
+			if m.state.view == Menu {
+				m.state.view = Exit
 				return m, tea.Quit
 			}
 		}
 
 		if msg.String() == "ctrl+c" {
-			m.state.view = AbortView
+			m.state.view = Abort
 			return m, tea.Quit
 		}
 
 	case SetupUserFinishedMsg:
-		m.SetViewState(MenuView)
+		m.SetViewState(Menu)
 		err := m.db.LoadData(msg)
 		if err != nil {
 			// FIX  Do not panic, we should display a message
@@ -252,11 +252,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case AbortMsg:
 		// Do not abort application when inside of sub-menu
 		switch m.state.view {
-		case FindAnimeView, AddAnimeView, DropAnimeView:
-			m.SetViewState(MenuView)
+		case FindAnime, AddAnime, DropAnime:
+			m.SetViewState(Menu)
 			return m, nil
 		}
-		m.SetViewState(AbortView)
+		m.SetViewState(Abort)
 		return m, tea.Quit
 
 	}
@@ -270,7 +270,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	switch m.state.view {
-	case MenuView:
+	case Menu:
 		m, cmd = m.UpdateMenu(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -293,12 +293,12 @@ func (m Model) View() (string, *tea.Cursor) {
 	}
 
 	switch m.state.view {
-	case AbortView:
+	case Abort:
 		return ui.AbortStyle.Render(
 			utils.ColorText(";g;>>> ;y;User Aborted Operation ;g;<<<"),
 		), nil
 
-	case MenuView:
+	case Menu:
 		profile := m.db.GetProfile()
 		header := ui.TextStyle.
 			MarginTop(1).
@@ -318,7 +318,7 @@ func (m Model) View() (string, *tea.Cursor) {
 
 		d := newPropValDisplay([]string{
 			utils.ColorText(";dc;Completed Anime"),
-			utils.ColorText(";dc;Time Spent"),
+			utils.ColorText(";dc;Time Watched"),
 			utils.ColorText(";dc;Token Expiration"),
 			utils.ColorText(";dc;Last Updated"),
 		}, []string{
@@ -337,7 +337,7 @@ func (m Model) View() (string, *tea.Cursor) {
 			ui.TextStyle.Render(m.help.View(m)),
 		), nil
 
-	case ExitView:
+	case Exit:
 		return "", nil
 
 	case None:
@@ -360,7 +360,7 @@ func (m Model) UpdateMenu(msg tea.Msg) (Model, tea.Cmd) {
 		case key.Matches(msg, keyMap.Select):
 			switch m.menuItems[m.state.menuPos] {
 			case Find:
-				m.SetViewState(FindAnimeView)
+				m.SetViewState(FindAnime)
 				cmd = textinput.Blink
 			}
 
@@ -406,7 +406,7 @@ func (m Model) viewMenu() string {
 
 func (m Model) ShortHelp() []key.Binding {
 	switch m.state.view {
-	case MenuView:
+	case Menu:
 		return []key.Binding{
 			keyMap.Up,
 			keyMap.Down,
