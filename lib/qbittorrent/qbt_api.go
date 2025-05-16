@@ -14,10 +14,10 @@ var (
 	qbtPort        = "8080"
 	errNotLoggedIn = fmt.Errorf("you need to be logged into qbittorrent")
 	errConnFailed  = fmt.Errorf("cannot connect to qbittorrent")
+	httpUtils      = utils.Http{}
 )
 
 func Login(password string, port string) error {
-	var httpUtils utils.Http
 	if port != "" {
 		qbtPort = port
 	}
@@ -50,7 +50,6 @@ func AddFeed(feedURL string, name string) error {
 		return errNotLoggedIn
 	}
 
-	var httpUtils utils.Http
 	resp, err := httpUtils.PostForm(getBaseURL()+"/rss/addFeed", url.Values{
 		"url":  {feedURL},
 		"path": {name},
