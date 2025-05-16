@@ -18,13 +18,6 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-const (
-	inputWidth   = 20
-	minInputLen  = 4  // Minimum characters to submit search
-	itemsPerPage = 5  // Max list items to display per page
-	maxResults   = 10 // Max results to find per search
-)
-
 type FindAnimeView int
 
 const (
@@ -50,6 +43,11 @@ type AnimeInfo struct {
 }
 
 type findAnimeModel struct {
+	config struct {
+		minInputLen  int
+		itemsPerPage int
+		maxResults   int
+	}
 	list       list.Model
 	input      textinput.Model
 	loader     ui.LoaderModel
@@ -58,7 +56,6 @@ type findAnimeModel struct {
 		width  int
 		height int
 	}
-	maxResults   int
 	sourceStrMap map[AnimeSource]string
 	keys         struct {
 		tab       key.Binding
@@ -85,11 +82,18 @@ func NewFindAnimeModel(db *database.Database) findAnimeModel {
 	l.DisableQuitKeybindings()
 
 	input := ui.NewTextInput()
-	input.SetWidth(inputWidth)
 	input.Focus()
 	input.Placeholder = "Enter your query"
-	m := findAnimeModel{input: input, loader: ui.NewLoader(), maxResults: maxResults, list: l}
+
+	m := findAnimeModel{input: input, loader: ui.NewLoader(), list: l}
+
+	m.input.SetWidth(20)
+	m.config.minInputLen = 4  // Minimum characters to submit search
+	m.config.itemsPerPage = 5 // Max list items to display per page
+	m.config.maxResults = 10  // Max results to find per search
+
 	m.db = db
+
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
 	m.keys.backspace = key.NewBinding(
 		key.WithKeys("left", "backspace"),
@@ -171,7 +175,7 @@ func (m findAnimeModel) UpdateQueryEntry(msg tea.Msg) (findAnimeModel, tea.Cmd) 
 
 		case key.Matches(msg, keyMap.Submit):
 			inputLen := utf8.RuneCountInString(m.input.Value())
-			if m.loader.IsLoading() || inputLen < minInputLen {
+			if m.loader.IsLoading() || inputLen < m.config.minInputLen {
 				break
 			}
 
@@ -200,10 +204,12 @@ func (m findAnimeModel) ViewQueryEntry() (string, *tea.Cursor) {
 
 	charLimit := ""
 	switch {
-	case inputLen < minInputLen && inputLen > 0:
-		charLimit = utils.ColorText(fmt.Sprintf(";r;%d;x;/;g;%d", inputLen, minInputLen))
+	case inputLen < m.config.minInputLen && inputLen > 0:
+		charLimit = utils.ColorText(
+			fmt.Sprintf(";r;%d;x;/;g;%d", inputLen, m.config.minInputLen),
+		)
 
-	case inputLen >= minInputLen:
+	case inputLen >= m.config.minInputLen:
 		charLimit = utils.ColorText(";g;✓")
 	}
 
@@ -281,7 +287,7 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 				ShortHelpKeys: []key.Binding{m.keys.backspace},
 				Width:         m.windowSize.width,
 				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
-				ItemsPerPage:  itemsPerPage,
+				ItemsPerPage:  m.config.itemsPerPage,
 			},
 		)
 	}
@@ -401,7 +407,7 @@ func (m *findAnimeModel) findAnime(query string) tea.Cmd {
 			anime, err := kitsu.FindAnime(
 				query,
 				[]kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished},
-				m.maxResults,
+				m.config.maxResults,
 			)
 			if err != nil {
 				return FetchErrorMsg(err)
