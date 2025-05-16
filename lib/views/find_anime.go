@@ -173,7 +173,9 @@ func (m findAnimeModel) UpdateQueryEntry(msg tea.Msg) (findAnimeModel, tea.Cmd) 
 			return m, abort
 
 		case key.Matches(msg, keyMap.Submit):
-			if m.loader.IsLoading() || utils.RuneCount(m.input.Value()) < m.config.minInputLen {
+			hasShortInput := utils.RuneCount(m.input.Value()) < m.config.minInputLen
+
+			if m.loader.IsLoading() || hasShortInput {
 				break
 			}
 
