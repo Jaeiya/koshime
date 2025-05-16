@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-	"unicode/utf8"
 
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
@@ -174,8 +173,7 @@ func (m findAnimeModel) UpdateQueryEntry(msg tea.Msg) (findAnimeModel, tea.Cmd) 
 			return m, abort
 
 		case key.Matches(msg, keyMap.Submit):
-			inputLen := utf8.RuneCountInString(m.input.Value())
-			if m.loader.IsLoading() || inputLen < m.config.minInputLen {
+			if m.loader.IsLoading() || utils.RuneCount(m.input.Value()) < m.config.minInputLen {
 				break
 			}
 

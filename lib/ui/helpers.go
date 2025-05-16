@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"unicode/utf8"
 
 	"github.com/Jaeiya/koshime/lib/utils"
 )
@@ -10,7 +9,7 @@ import (
 // DisplayCharLimit returns a string that indicates how many
 // more characters are required to match the minimum.
 func DisplayCharLimit(min int, text string) string {
-	actualLen := utf8.RuneCountInString(text)
+	actualLen := utils.RuneCount(text)
 	var charLimit string
 
 	switch {
