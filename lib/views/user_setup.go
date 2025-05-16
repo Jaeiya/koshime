@@ -32,29 +32,27 @@ const (
 	SetupLibraryView
 )
 
-type userSetupState struct {
-	data       database.Data
-	view       userSetupView
-	fetchError error
-	username   struct {
-		failed bool
-		passed bool
-	}
-	password struct {
-		failed bool
-		passed bool
-	}
-	libAnime struct {
-		failed bool
-		passed bool
-	}
-}
-
 type userSetupModel struct {
 	consent ui.ConsentModel
 	loader  ui.LoaderModel
 	input   textinput.Model
-	state   userSetupState
+	state   struct {
+		data       database.Data
+		view       userSetupView
+		fetchError error
+		username   struct {
+			failed bool
+			passed bool
+		}
+		password struct {
+			failed bool
+			passed bool
+		}
+		libAnime struct {
+			failed bool
+			passed bool
+		}
+	}
 }
 
 func NewUserSetupModel() userSetupModel {

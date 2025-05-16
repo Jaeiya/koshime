@@ -123,26 +123,24 @@ type (
 	}
 )
 
-type viewState struct {
-	view       UIView
-	consentPos ui.Consent
-	menuPos    int
-	height     int
-	width      int
-	loading    struct {
-		active bool
-		text   string
-	}
-}
-
 type Model struct {
 	db          *database.Database
 	menuItems   []MenuItem
 	menuViewMap map[UIView]ViewModel
-	state       viewState
 	help        help.Model
 	input       textinput.Model
 	spinner     spinner.Model
+	state       struct {
+		view       UIView
+		consentPos ui.Consent
+		menuPos    int
+		height     int
+		width      int
+		loading    struct {
+			active bool
+			text   string
+		}
+	}
 }
 
 func New(dbPath string) (Model, error) {
