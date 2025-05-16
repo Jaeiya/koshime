@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/Jaeiya/koshime/lib/database"
+	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/help"
@@ -72,6 +73,8 @@ type (
 		items   []list.Item
 		results []T
 	}
+	FetchedLibEntriesMsg   FetchedListItemsMsg[kitsu.LibraryEntry]
+	FetchedKitsuEntriesMsg FetchedListItemsMsg[kitsu.AnimeData]
 )
 
 type ViewModel interface {

@@ -25,11 +25,6 @@ const (
 	Find_SelectedAnime
 )
 
-type (
-	FetchedLibEntriesMsg   FetchedListItemsMsg[kitsu.LibraryEntry]
-	FetchedKitsuEntriesMsg FetchedListItemsMsg[kitsu.AnimeData]
-)
-
 type AnimeInfo struct {
 	jpn_title string
 	eng_title string
