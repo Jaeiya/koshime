@@ -10,6 +10,8 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+type viewHeader func(view string) string
+
 type userSetupText struct {
 	welcome  string
 	username struct {
@@ -75,26 +77,20 @@ account. If not, sign-up here: ;y;https://kitsu.app`,
 }()
 
 type findAnimeText struct {
-	header       string
-	customHeader func(subMenu string) string
-	title        string
-	kitsu        string
-	local        string
-	notFound     func(query, source string) string
+	header     string
+	viewHeader viewHeader
+	title      string
+	kitsu      string
+	local      string
+	notFound   func(query, source string) string
 }
 
 var findAnimeMsgs = func() findAnimeText {
 	txt := findAnimeText{}
 
-	txt.header = newText([]string{
-		";g;... ;b;Find Anime ;g;...",
-	}, 0, 1)
+	txt.header = newHeader("Find Anime")
 
-	txt.customHeader = func(subMenu string) string {
-		return newText([]string{
-			fmt.Sprintf(";g;... ;b;Find Anime;g; ⟶ ;w;%s ;g;...", subMenu),
-		}, 0, 1)
-	}
+	txt.viewHeader = newViewHeader("Find Anime")
 
 	txt.title = newText(
 		[]string{
@@ -121,6 +117,20 @@ It only contains anime that you're currently watching.`,
 
 	return txt
 }()
+
+func newHeader(s string) string {
+	return newText([]string{
+		fmt.Sprintf(";g;... ;b;%s ;g;...", s),
+	}, 0, 1)
+}
+
+func newViewHeader(s string) viewHeader {
+	return func(view string) string {
+		return newText([]string{
+			fmt.Sprintf(";g;... ;b;%s;g; ⟶ ;w;%s ;g;...", s, view),
+		}, 0, 1)
+	}
+}
 
 // newText creates a single string with multiple lines
 // separated by specific margins.

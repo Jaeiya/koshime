@@ -309,7 +309,7 @@ func (m findAnimeModel) ViewResults() (string, *tea.Cursor) {
 	if m.state.find.notFound {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
-			findAnimeMsgs.customHeader("Results"),
+			findAnimeMsgs.viewHeader("Results"),
 			findAnimeMsgs.notFound(
 				m.input.Value(),
 				m.state.find.source.String(),
@@ -317,7 +317,7 @@ func (m findAnimeModel) ViewResults() (string, *tea.Cursor) {
 		), nil
 	}
 
-	h := findAnimeMsgs.customHeader("Results")
+	h := findAnimeMsgs.viewHeader("Results")
 	var c *tea.Cursor
 	// The filter has no margin, so we enforce
 	if m.list.FilterState() == list.Filtering {
@@ -346,7 +346,7 @@ func (m findAnimeModel) ViewAnime() string {
 	if m.state.localResults != nil {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
-			findAnimeMsgs.customHeader("Entry Info"),
+			findAnimeMsgs.viewHeader("Entry Info"),
 			"",
 			m.displayAnimeInfo(m.state.localResults[m.state.selectedIndex]),
 		)
@@ -355,7 +355,7 @@ func (m findAnimeModel) ViewAnime() string {
 	if m.state.kitsuResults != nil {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
-			findAnimeMsgs.customHeader("Entry Info"),
+			findAnimeMsgs.viewHeader("Entry Info"),
 			"",
 			m.displayAnimeInfo(m.state.kitsuResults[m.state.selectedIndex]),
 		)
