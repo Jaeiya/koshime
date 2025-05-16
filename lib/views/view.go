@@ -168,6 +168,7 @@ func New(dbPath string) (Model, error) {
 	model.menuItems = append(
 		model.menuItems,
 		Find,
+		Add,
 		Watch,
 		Update,
 		Drop,
@@ -183,6 +184,7 @@ func New(dbPath string) (Model, error) {
 	model.menuViewMap = map[UIView]ViewModel{
 		SetupUser: NewUserSetupModel(),
 		FindAnime: NewFindAnimeModel(db),
+		AddAnime:  NewAddAnimeModel(db),
 	}
 
 	if !utils.FileExists(dbPath) {
@@ -362,6 +364,9 @@ func (m Model) UpdateMenu(msg tea.Msg) (Model, tea.Cmd) {
 			switch m.menuItems[m.state.menuPos] {
 			case Find:
 				m.SetViewState(FindAnime)
+				cmd = textinput.Blink
+			case Add:
+				m.SetViewState(AddAnime)
 				cmd = textinput.Blink
 			}
 

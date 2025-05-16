@@ -118,6 +118,27 @@ It only contains anime that you're currently watching.`,
 	return txt
 }()
 
+type addAnimeText struct {
+	header     string
+	viewHeader viewHeader
+	queryDesc  string
+}
+
+var addAnimeMsgs = func() addAnimeText {
+	txt := addAnimeText{}
+
+	txt.header = newHeader("Add Anime")
+	txt.viewHeader = newViewHeader("Add Anime")
+
+	txt.queryDesc = newText([]string{
+		`Lookup an anime by any ;b;word ;x;or ;b;phrase;x;. Try to use
+words that might be in the ;dc;title ;x;or ;dc;description;x;, for
+better results.`,
+	}, 1)
+
+	return txt
+}()
+
 func newHeader(s string) string {
 	return newText([]string{
 		fmt.Sprintf(";g;... ;b;%s ;g;...", s),
