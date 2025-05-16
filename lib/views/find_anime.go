@@ -60,7 +60,12 @@ type findAnimeModel struct {
 	}
 	maxResults int
 	sourceMap  map[AnimeSource]string
-	state      struct {
+	keys       struct {
+		tab       key.Binding
+		backspace key.Binding
+		escBack   key.Binding
+	}
+	state struct {
 		fetchErr      FetchErrorMsg
 		view          FindAnimeView
 		kitsuResults  []kitsu.AnimeData
@@ -71,11 +76,6 @@ type findAnimeModel struct {
 			failed   bool
 			notFound bool
 		}
-	}
-	keys struct {
-		tab       key.Binding
-		backspace key.Binding
-		escBack   key.Binding
 	}
 }
 
