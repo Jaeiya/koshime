@@ -9,6 +9,12 @@ import (
 	"github.com/Jaeiya/koshime/lib/utils"
 )
 
+const (
+	apiLoginURI     = "/auth/login"
+	apiFeedItemsURI = "/rss/items"
+	apiAddFeedURI   = "/rss/addFeed"
+)
+
 var (
 	isLoggedIn     = false
 	qbtPort        = "8080"
@@ -23,14 +29,14 @@ func Login(password string, port string) error {
 	}
 
 	// Make sure we can connect to the qbittorrent service
-	req, _ := http.NewRequest("HEAD", getBaseURL(), nil)
+	req, _ := http.NewRequest("HEAD", buildApiUrl(""), nil)
 	resp, err := httpUtils.Do(req, "", "")
 	if err != nil {
 		return errConnFailed
 	}
 
 	resp, err = httpUtils.PostForm(
-		getBaseURL()+"/auth/login",
+		buildApiUrl(apiLoginURI),
 		url.Values{"username": {"admin"}, "password": {password}},
 	)
 	if err != nil {
@@ -50,7 +56,7 @@ func AddFeed(feedURL string, name string) error {
 		return errNotLoggedIn
 	}
 
-	resp, err := httpUtils.PostForm(getBaseURL()+"/rss/addFeed", url.Values{
+	resp, err := httpUtils.PostForm(buildApiUrl(apiAddFeedURI), url.Values{
 		"url":  {feedURL},
 		"path": {name},
 	})
@@ -70,7 +76,7 @@ func GetFeeds() ([]RSSFeedItem, error) {
 	}
 
 	httpUtils := utils.Http{}
-	req, _ := http.NewRequest("GET", getBaseURL()+"/rss/items", nil)
+	req, _ := http.NewRequest("GET", buildApiUrl(apiFeedItemsURI), nil)
 	resp, err := httpUtils.Do(req, "application/json", "")
 	if err != nil {
 		return nil, err
@@ -93,6 +99,6 @@ func GetFeeds() ([]RSSFeedItem, error) {
 	return items, nil
 }
 
-func getBaseURL() string {
-	return "http://localhost:" + qbtPort + "/api/v2"
+func buildApiUrl(uri string) string {
+	return fmt.Sprintf("http://localhost:%s/api/v2/%s", qbtPort, uri)
 }
