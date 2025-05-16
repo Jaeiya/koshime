@@ -200,19 +200,6 @@ func (m findAnimeModel) ViewQueryEntry() (string, *tea.Cursor) {
 	search := ui.TextStyle.Foreground(ansi.BrightBlack).
 		Render("Source: " + m.sourceStrMap[m.state.find.source])
 
-	inputLen := utf8.RuneCountInString(m.input.Value())
-
-	charLimit := ""
-	switch {
-	case inputLen < m.config.minInputLen && inputLen > 0:
-		charLimit = utils.ColorText(
-			fmt.Sprintf(";r;%d;x;/;g;%d", inputLen, m.config.minInputLen),
-		)
-
-	case inputLen >= m.config.minInputLen:
-		charLimit = utils.ColorText(";g;✓")
-	}
-
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		findAnimeMsgs.header,
@@ -221,7 +208,7 @@ func (m findAnimeModel) ViewQueryEntry() (string, *tea.Cursor) {
 		ui.Style.MarginTop(1).Render(lipgloss.JoinHorizontal(
 			lipgloss.Left,
 			m.input.View(),
-			charLimit,
+			ui.DisplayCharLimit(m.config.minInputLen, m.input.Value()),
 		)),
 	)
 	c.Y += lipgloss.Height(view) - 1
