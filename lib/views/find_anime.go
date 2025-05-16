@@ -58,9 +58,9 @@ type findAnimeModel struct {
 		width  int
 		height int
 	}
-	maxResults int
-	sourceMap  map[AnimeSource]string
-	keys       struct {
+	maxResults   int
+	sourceStrMap map[AnimeSource]string
+	keys         struct {
 		tab       key.Binding
 		backspace key.Binding
 		escBack   key.Binding
@@ -100,7 +100,7 @@ func NewFindAnimeModel(db *database.Database) findAnimeModel {
 		key.WithHelp("esc/←", "back"),
 	)
 
-	m.sourceMap = map[AnimeSource]string{
+	m.sourceStrMap = map[AnimeSource]string{
 		Kitsu: findAnimeMsgs.kitsu,
 		Local: findAnimeMsgs.local,
 	}
@@ -194,7 +194,7 @@ func (m findAnimeModel) ViewQueryEntry() (string, *tea.Cursor) {
 	c.Shape = tea.CursorBar
 
 	search := ui.TextStyle.Foreground(ansi.BrightBlack).
-		Render("Source: " + m.sourceMap[m.state.find.source])
+		Render("Source: " + m.sourceStrMap[m.state.find.source])
 
 	inputLen := utf8.RuneCountInString(m.input.Value())
 
