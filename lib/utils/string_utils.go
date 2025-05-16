@@ -2,7 +2,10 @@ package utils
 
 import (
 	"strings"
+	"unicode/utf8"
 )
+
+var RuneCount = utf8.RuneCountInString
 
 /*
 ReplaceAll uses the token map to replace all keys with the
