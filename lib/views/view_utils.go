@@ -1,0 +1,90 @@
+package views
+
+import (
+	"github.com/Jaeiya/koshime/lib/database"
+	"github.com/Jaeiya/koshime/lib/kitsu"
+	"github.com/Jaeiya/koshime/lib/ui"
+	"github.com/charmbracelet/bubbles/v2/list"
+)
+
+type AnimeFinder interface {
+	Search(query string) (AnimeFinderResult, error)
+}
+
+type AnimeFinderResult struct {
+	listItems    []list.Item
+	animeEntries []AnimeInfo
+}
+
+type KitsuAnimeFinder struct {
+	maxResults int
+	status     []kitsu.AnimeStatus
+}
+
+func NewKitsuAnimeFinder(maxResults int, status []kitsu.AnimeStatus) KitsuAnimeFinder {
+	return KitsuAnimeFinder{maxResults, status}
+}
+
+func (af KitsuAnimeFinder) Search(query string) (AnimeFinderResult, error) {
+	anime, err := kitsu.FindAnime(query, af.status, af.maxResults)
+	if err != nil {
+		return AnimeFinderResult{}, err
+	}
+	info := make([]AnimeInfo, len(anime))
+	items := make([]list.Item, len(anime))
+	for i, item := range anime {
+		items[i] = ui.NewListItem(
+			item.Attributes.CanonicalTitle,
+			item.Attributes.Titles.English,
+			i,
+		)
+		info[i] = AnimeInfo{
+			jpn_title: item.Attributes.CanonicalTitle,
+			eng_title: item.Attributes.Titles.English,
+			altTitles: item.Attributes.AltTitles,
+			showType:  item.Attributes.Type,
+			synopsis:  item.Attributes.Synopsis,
+			progress:  -1,
+			episodes:  item.Attributes.EpCount,
+			slug:      item.Attributes.Slug,
+		}
+	}
+
+	return AnimeFinderResult{items, info}, nil
+}
+
+type LocalAnimeFinder struct {
+	db         *database.Database
+	maxResults int
+}
+
+func NewLocalAnimeFinder(maxResults int, db *database.Database) LocalAnimeFinder {
+	return LocalAnimeFinder{db, maxResults}
+}
+
+func (af LocalAnimeFinder) Search(query string) (AnimeFinderResult, error) {
+	anime, err := af.db.FindAnime(query)
+	if err != nil {
+		return AnimeFinderResult{}, err
+	}
+
+	anime = anime[:min(af.maxResults, len(anime))]
+
+	info := make([]AnimeInfo, len(anime))
+	items := make([]list.Item, len(anime))
+	for i, item := range anime {
+		items[i] = ui.NewListItem(item.JPN_Title, item.ENG_Title, i)
+		info[i] = AnimeInfo{
+			jpn_title: item.JPN_Title,
+			eng_title: item.ENG_Title,
+			altTitles: item.AltTitles,
+			showType:  string(item.Type),
+			synopsis:  item.Synopsis,
+			progress:  item.Progress,
+			episodes:  item.Episodes,
+			slug:      item.Slug,
+		}
+	}
+
+	return AnimeFinderResult{items, info}, nil
+}
