@@ -2,9 +2,25 @@ package ui
 
 import (
 	"fmt"
+	"net/url"
+	"strconv"
+	"strings"
 
+	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/utils"
+	"github.com/charmbracelet/lipgloss/v2"
 )
+
+type AnimeInfo struct {
+	JpnTitle  string
+	EngTitle  string
+	AltTitles []string
+	ShowType  string
+	Synopsis  string
+	Progress  int
+	Episodes  int
+	Slug      string
+}
 
 // DisplayCharLimit returns a string that indicates how many
 // more characters are required to match the minimum.
@@ -23,4 +39,77 @@ func DisplayCharLimit(min int, text string) string {
 	}
 
 	return charLimit
+}
+
+func DisplayAnimeInfo(info AnimeInfo) string {
+	headers := []string{
+		utils.ColorText(";g;Title"),
+		utils.ColorText(";dc;English"),
+	}
+	items := []string{
+		info.JpnTitle,
+		info.EngTitle,
+	}
+
+	for range len(info.AltTitles) {
+		headers = append(headers, utils.ColorText(";db;AltTitle"))
+	}
+	items = append(items, info.AltTitles...)
+
+	headers = append(headers, utils.ColorText(";y;Type"))
+	items = append(items, utils.ColorText(";c;"+info.ShowType))
+
+	totalEpsStr := "Unknown"
+	if info.Episodes > 0 {
+		totalEpsStr = strconv.Itoa(info.Episodes)
+	}
+
+	if info.Progress > -1 {
+		headers = append(headers, utils.ColorText(";y;Progress"))
+		items = append(items, utils.ColorText(
+			fmt.Sprintf(";dg;%d ;y;/ ;m;%s", info.Progress, totalEpsStr),
+		))
+	} else {
+		headers = append(headers, utils.ColorText(";dc;Episodes"))
+		items = append(items, utils.ColorText(fmt.Sprintf(";m;%s", totalEpsStr)))
+	}
+
+	link, _ := url.JoinPath(kitsu.KitsuDomain, info.Slug)
+	headers = append(headers, utils.ColorText(";dc;Synopsis"), utils.ColorText(";x;Link"))
+	items = append(items, info.Synopsis, utils.ColorText(";bk;"+link))
+
+	return DisplayPropValue(headers, items)
+}
+
+// DisplayPropValue displays properties and values in a fixed
+// width arrangement.
+func DisplayPropValue(props []string, values []string) string {
+	if len(props) != len(values) {
+		panic("number of properties do not match number of values")
+	}
+	var sb strings.Builder
+
+	var propWidth int
+	for _, p := range props {
+		if propWidth < lipgloss.Width(p) {
+			propWidth = lipgloss.Width(p)
+		}
+	}
+
+	propStyle := Style.Width(propWidth + 1).
+		Align(lipgloss.Right).
+		Foreground(lipgloss.BrightWhite)
+	valStyle := Style.Width(60)
+
+	for i, prop := range props {
+		sb.WriteString(
+			lipgloss.JoinHorizontal(
+				lipgloss.Left,
+				propStyle.Render(prop+":")+" ",
+				valStyle.Render(utils.ColorText(values[i])),
+			) + "\n",
+		)
+	}
+
+	return Style.MarginLeft(5).Render(strings.TrimRight(sb.String(), "\n"))
 }
