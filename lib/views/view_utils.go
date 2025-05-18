@@ -12,8 +12,8 @@ type AnimeFinder interface {
 }
 
 type AnimeFinderResult struct {
-	listItems    []list.Item
-	animeEntries []AnimeInfo
+	listItems []list.Item
+	infoItems []ui.AnimeInfo
 }
 
 type KitsuAnimeFinder struct {
@@ -30,7 +30,7 @@ func (af KitsuAnimeFinder) Search(query string) (AnimeFinderResult, error) {
 	if err != nil {
 		return AnimeFinderResult{}, err
 	}
-	info := make([]AnimeInfo, len(anime))
+	info := make([]ui.AnimeInfo, len(anime))
 	items := make([]list.Item, len(anime))
 	for i, item := range anime {
 		items[i] = ui.NewListItem(
@@ -38,15 +38,15 @@ func (af KitsuAnimeFinder) Search(query string) (AnimeFinderResult, error) {
 			item.Attributes.Titles.English,
 			i,
 		)
-		info[i] = AnimeInfo{
-			jpn_title: item.Attributes.CanonicalTitle,
-			eng_title: item.Attributes.Titles.English,
-			altTitles: item.Attributes.AltTitles,
-			showType:  item.Attributes.Type,
-			synopsis:  item.Attributes.Synopsis,
-			progress:  -1,
-			episodes:  item.Attributes.EpCount,
-			slug:      item.Attributes.Slug,
+		info[i] = ui.AnimeInfo{
+			JpnTitle:  item.Attributes.CanonicalTitle,
+			EngTitle:  item.Attributes.Titles.English,
+			AltTitles: item.Attributes.AltTitles,
+			ShowType:  item.Attributes.Type,
+			Synopsis:  item.Attributes.Synopsis,
+			Progress:  -1,
+			Episodes:  item.Attributes.EpCount,
+			Slug:      item.Attributes.Slug,
 		}
 	}
 
@@ -70,19 +70,19 @@ func (af LocalAnimeFinder) Search(query string) (AnimeFinderResult, error) {
 
 	anime = anime[:min(af.maxResults, len(anime))]
 
-	info := make([]AnimeInfo, len(anime))
+	info := make([]ui.AnimeInfo, len(anime))
 	items := make([]list.Item, len(anime))
 	for i, item := range anime {
 		items[i] = ui.NewListItem(item.JPN_Title, item.ENG_Title, i)
-		info[i] = AnimeInfo{
-			jpn_title: item.JPN_Title,
-			eng_title: item.ENG_Title,
-			altTitles: item.AltTitles,
-			showType:  string(item.Type),
-			synopsis:  item.Synopsis,
-			progress:  item.Progress,
-			episodes:  item.Episodes,
-			slug:      item.Slug,
+		info[i] = ui.AnimeInfo{
+			JpnTitle:  item.JPN_Title,
+			EngTitle:  item.ENG_Title,
+			AltTitles: item.AltTitles,
+			ShowType:  string(item.Type),
+			Synopsis:  item.Synopsis,
+			Progress:  item.Progress,
+			Episodes:  item.Episodes,
+			Slug:      item.Slug,
 		}
 	}
 

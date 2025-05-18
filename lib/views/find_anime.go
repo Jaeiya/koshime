@@ -1,10 +1,6 @@
 package views
 
 import (
-	"fmt"
-	"net/url"
-	"strconv"
-
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
@@ -24,17 +20,6 @@ const (
 	Find_Results
 	Find_SelectedAnime
 )
-
-type AnimeInfo struct {
-	jpn_title string
-	eng_title string
-	altTitles []string
-	showType  string
-	synopsis  string
-	progress  int
-	episodes  int
-	slug      string
-}
 
 type findAnimeModel struct {
 	config struct {
@@ -60,7 +45,7 @@ type findAnimeModel struct {
 	state struct {
 		fetchErr      FetchErrorMsg
 		view          FindAnimeView
-		animeResults  []AnimeInfo
+		animeResults  []ui.AnimeInfo
 		selectedIndex int
 		find          struct {
 			source   AnimeSource
@@ -260,7 +245,7 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 	case AnimeFinderResult:
 		m.loader.Stop()
 		m.state.view = Find_Results
-		m.state.animeResults = msg.animeEntries
+		m.state.animeResults = msg.infoItems
 
 		m.list = ui.NewList(
 			ui.ListOptions{
@@ -329,7 +314,7 @@ func (m findAnimeModel) ViewAnime() string {
 			lipgloss.Left,
 			findAnimeMsgs.viewHeader("Entry Info"),
 			"",
-			m.toAnimeInfoCard(m.state.animeResults[m.state.selectedIndex]),
+			ui.DisplayAnimeInfo(m.state.animeResults[m.state.selectedIndex]),
 		)
 	}
 
@@ -389,50 +374,10 @@ func (m *findAnimeModel) findAnime(query string) tea.Cmd {
 			}
 		}
 
-		if len(result.animeEntries) == 0 {
+		if len(result.infoItems) == 0 {
 			return FetchedNoResultsMsg{}
 		}
-		m.state.animeResults = result.animeEntries
+		m.state.animeResults = result.infoItems
 		return result
 	}
-}
-
-func (m findAnimeModel) toAnimeInfoCard(info AnimeInfo) string {
-	headers := []string{
-		utils.ColorText(";g;Title"),
-		utils.ColorText(";dc;English"),
-	}
-	items := []string{
-		info.jpn_title,
-		info.eng_title,
-	}
-
-	for range len(info.altTitles) {
-		headers = append(headers, utils.ColorText(";db;AltTitle"))
-	}
-	items = append(items, info.altTitles...)
-
-	headers = append(headers, utils.ColorText(";y;Type"))
-	items = append(items, utils.ColorText(";c;"+info.showType))
-
-	totalEpsStr := "Unknown"
-	if info.episodes > 0 {
-		totalEpsStr = strconv.Itoa(info.episodes)
-	}
-
-	if info.progress > -1 {
-		headers = append(headers, utils.ColorText(";y;Progress"))
-		items = append(items, utils.ColorText(
-			fmt.Sprintf(";dg;%d ;y;/ ;m;%s", info.progress, totalEpsStr),
-		))
-	} else {
-		headers = append(headers, utils.ColorText(";dc;Episodes"))
-		items = append(items, utils.ColorText(fmt.Sprintf(";m;%s", totalEpsStr)))
-	}
-
-	link, _ := url.JoinPath(kitsu.KitsuDomain, info.slug)
-	headers = append(headers, utils.ColorText(";dc;Synopsis"), utils.ColorText(";x;Link"))
-	items = append(items, info.synopsis, utils.ColorText(";bk;"+link))
-
-	return newPropValDisplay(headers, items)
 }
