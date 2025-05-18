@@ -42,11 +42,12 @@ type findAnimeModel struct {
 		itemsPerPage int
 		maxResults   int
 	}
-	list       list.Model
-	input      textinput.Model
-	loader     ui.LoaderModel
-	db         *database.Database
-	windowSize struct {
+	list           list.Model
+	input          textinput.Model
+	loader         ui.LoaderModel
+	db             *database.Database
+	animeFinderMap map[AnimeSource]AnimeFinder
+	windowSize     struct {
 		width  int
 		height int
 	}
@@ -59,8 +60,7 @@ type findAnimeModel struct {
 	state struct {
 		fetchErr      FetchErrorMsg
 		view          FindAnimeView
-		kitsuResults  []kitsu.AnimeData
-		localResults  []kitsu.LibraryEntry
+		animeResults  []AnimeInfo
 		selectedIndex int
 		find          struct {
 			source   AnimeSource
@@ -101,6 +101,14 @@ func NewFindAnimeModel(db *database.Database) findAnimeModel {
 	m.sourceStrMap = map[AnimeSource]string{
 		Kitsu: findAnimeMsgs.kitsu,
 		Local: findAnimeMsgs.local,
+	}
+
+	m.animeFinderMap = map[AnimeSource]AnimeFinder{
+		Kitsu: NewKitsuAnimeFinder(
+			10,
+			[]kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished},
+		),
+		Local: NewLocalAnimeFinder(10, db),
 	}
 	return m
 }
@@ -249,23 +257,14 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 		m.loader.Stop()
 		m.state.find.notFound = true
 
-	case FetchedLibEntriesMsg, FetchedKitsuEntriesMsg:
+	case AnimeFinderResult:
 		m.loader.Stop()
 		m.state.view = Find_Results
-
-		var items []list.Item
-		switch msg := msg.(type) {
-		case FetchedLibEntriesMsg:
-			m.state.localResults = msg.results
-			items = msg.items
-		case FetchedKitsuEntriesMsg:
-			m.state.kitsuResults = msg.results
-			items = msg.items
-		}
+		m.state.animeResults = msg.animeEntries
 
 		m.list = ui.NewList(
 			ui.ListOptions{
-				Items:         items,
+				Items:         msg.listItems,
 				ShortHelpKeys: []key.Binding{m.keys.backspace},
 				Width:         m.windowSize.width,
 				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
@@ -325,21 +324,12 @@ func (m findAnimeModel) UpdateAnime(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 }
 
 func (m findAnimeModel) ViewAnime() string {
-	if m.state.localResults != nil {
+	if m.state.animeResults != nil {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			findAnimeMsgs.viewHeader("Entry Info"),
 			"",
-			m.displayAnimeInfo(m.state.localResults[m.state.selectedIndex]),
-		)
-	}
-
-	if m.state.kitsuResults != nil {
-		return lipgloss.JoinVertical(
-			lipgloss.Left,
-			findAnimeMsgs.viewHeader("Entry Info"),
-			"",
-			m.displayAnimeInfo(m.state.kitsuResults[m.state.selectedIndex]),
+			m.toAnimeInfoCard(m.state.animeResults[m.state.selectedIndex]),
 		)
 	}
 
@@ -375,96 +365,39 @@ func (m findAnimeModel) FullHelp() [][]key.Binding {
 func (m *findAnimeModel) Reset() {
 	m.state.view = Find_QueryEntry
 	m.input.Reset()
-	m.state.kitsuResults = nil
-	m.state.localResults = nil
+	m.state.animeResults = nil
 	m.state.find.failed = false
 	m.state.find.notFound = false
 }
 
 func (m *findAnimeModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
-		var items []list.Item
+		var result AnimeFinderResult
+		var err error
+
 		switch m.state.find.source {
 		case Kitsu:
-			anime, err := kitsu.FindAnime(
-				query,
-				[]kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished},
-				m.config.maxResults,
-			)
+			result, err = m.animeFinderMap[Kitsu].Search(query)
 			if err != nil {
 				return FetchErrorMsg(err)
-			}
-			if len(anime) == 0 {
-				return FetchedNoResultsMsg{}
-			}
-			m.state.kitsuResults = anime
-			items = make([]list.Item, len(anime))
-			for i, item := range anime {
-				items[i] = ui.NewListItem(
-					item.Attributes.CanonicalTitle,
-					item.Attributes.Titles.English,
-					i,
-				)
-			}
-			return FetchedKitsuEntriesMsg{
-				items:   items,
-				results: anime,
 			}
 
 		case Local:
-			anime, err := m.db.FindAnime(query)
+			result, err = m.animeFinderMap[Local].Search(query)
 			if err != nil {
 				return FetchErrorMsg(err)
 			}
-			if len(anime) == 0 {
-				return FetchedNoResultsMsg{}
-			}
-			m.state.localResults = anime
-			items = make([]list.Item, len(anime))
-			for i, item := range anime {
-				items[i] = ui.NewListItem(item.JPN_Title, item.ENG_Title, i)
-			}
-			return FetchedLibEntriesMsg{
-				items:   items,
-				results: anime,
-			}
 		}
 
-		return FetchErrorMsg(fmt.Errorf("unrecognized anime source: %d", m.state.find.source))
+		if len(result.animeEntries) == 0 {
+			return FetchedNoResultsMsg{}
+		}
+		m.state.animeResults = result.animeEntries
+		return result
 	}
 }
 
-func (m findAnimeModel) displayAnimeInfo(animeData any) string {
-	switch d := animeData.(type) {
-	case kitsu.LibraryEntry:
-		info := AnimeInfo{
-			jpn_title: d.JPN_Title,
-			eng_title: d.ENG_Title,
-			altTitles: d.AltTitles,
-			showType:  string(d.Type),
-			synopsis:  d.Synopsis,
-			progress:  d.Progress,
-			episodes:  d.Episodes,
-			slug:      d.Slug,
-		}
-		return m.stringifyAnimeInfo(info)
-
-	case kitsu.AnimeData:
-		return m.stringifyAnimeInfo(AnimeInfo{
-			jpn_title: d.Attributes.CanonicalTitle,
-			eng_title: d.Attributes.Titles.English,
-			altTitles: d.Attributes.AltTitles,
-			showType:  d.Attributes.Type,
-			synopsis:  d.Attributes.Synopsis,
-			progress:  -1,
-			episodes:  d.Attributes.EpCount,
-			slug:      d.Attributes.Slug,
-		})
-	}
-	return "unsupported anime data type"
-}
-
-func (findAnimeModel) stringifyAnimeInfo(info AnimeInfo) string {
+func (m findAnimeModel) toAnimeInfoCard(info AnimeInfo) string {
 	headers := []string{
 		utils.ColorText(";g;Title"),
 		utils.ColorText(";dc;English"),
