@@ -13,6 +13,8 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+type ReviewAnimeMsg = ui.AnimeInfo
+
 type AddAnimeView int
 
 const (
@@ -47,6 +49,7 @@ func NewAddAnimeModel(db *database.Database) AddAnimeModel {
 	m.viewStateMap = make(map[AddAnimeView]addAnimeViewState, 2)
 	m.viewStateMap[Add_QueryAnime] = newAddAnimeQueryView()
 	m.viewStateMap[Add_Results] = newAddAnimeResultsView()
+	m.viewStateMap[Add_ReviewAnime] = newAddAnimeReviewView()
 	return m
 }
 
@@ -98,9 +101,14 @@ func (m *AddAnimeModel) SetView(v AddAnimeView) {
 	m.currentView = v
 }
 
+func (m *AddAnimeModel) reset() {
+	m.SetView(Add_QueryAnime)
+}
+
 type addAnimeQueryView struct {
 	minInputLen int
 	input       textinput.Model
+	animeFinder AnimeFinder
 }
 
 func newAddAnimeQueryView() *addAnimeQueryView {
@@ -108,6 +116,8 @@ func newAddAnimeQueryView() *addAnimeQueryView {
 	v.input = ui.NewTextInput()
 	v.input.SetWidth(30)
 	v.input.Placeholder = "Enter query"
+	v.minInputLen = 4
+	v.animeFinder = NewKitsuAnimeFinder(10, []kitsu.AnimeStatus{kitsu.AnimeNew})
 	return v
 }
 
@@ -168,29 +178,23 @@ func (v addAnimeQueryView) FullHelp() [][]key.Binding {
 
 func (v addAnimeQueryView) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
-		anime, err := kitsu.FindAnime(query, []kitsu.AnimeStatus{kitsu.AnimeNew}, 10)
+		anime, err := v.animeFinder.Search(query)
 		if err != nil {
 			return FetchErrorMsg(err)
 		}
-		list := make([]list.Item, len(anime))
-		for i, item := range anime {
-			list[i] = ui.NewListItem(
-				item.Attributes.CanonicalTitle,
-				item.Attributes.Titles.English,
-				i,
-			)
-		}
-		return FetchedKitsuEntriesMsg{list, anime}
+		return anime
 	}
 }
 
 type addAnimeResultsView struct {
 	list         list.Model
 	itemsPerPage int
+	results      []ui.AnimeInfo
 }
 
 func newAddAnimeResultsView() *addAnimeResultsView {
 	v := &addAnimeResultsView{}
+	v.itemsPerPage = 5
 	return v
 }
 
@@ -202,13 +206,21 @@ func (v *addAnimeResultsView) Update(msg tea.Msg, m *AddAnimeModel) tea.Cmd {
 		switch {
 		case key.Matches(msg, keyMap.MainMenu):
 			m.reset()
+
+		case key.Matches(msg, keyMap.Select):
+			m.SetView(Add_ReviewAnime)
+			item := v.list.SelectedItem().(ui.ListItem)
+			return func() tea.Msg {
+				return v.results[item.Index()]
+			}
 		}
 
-	case FetchedKitsuEntriesMsg:
+	case AnimeFinderResult:
 		m.loader.Stop()
+		v.results = msg.infoItems
 		v.list = ui.NewList(
 			ui.ListOptions{
-				Items: msg.items,
+				Items: msg.listItems,
 				// ShortHelpKeys: []key.Binding{m.keys.backspace},
 				Width:        m.windowSize.width,
 				MaxHeight:    int(float64(m.windowSize.height) * 0.66),
@@ -250,6 +262,43 @@ func (v addAnimeResultsView) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m *AddAnimeModel) reset() {
-	m.SetView(Add_QueryAnime)
+type addAnimeReviewView struct {
+	animeInfo ui.AnimeInfo
+}
+
+func newAddAnimeReviewView() *addAnimeReviewView {
+	v := &addAnimeReviewView{}
+	return v
+}
+
+func (v *addAnimeReviewView) Update(msg tea.Msg, m *AddAnimeModel) tea.Cmd {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, keyMap.EscBack):
+			m.SetView(Add_Results)
+		}
+	case ReviewAnimeMsg:
+		v.animeInfo = msg
+	}
+	return nil
+}
+
+func (v addAnimeReviewView) View(m AddAnimeModel) (string, *tea.Cursor) {
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		findAnimeMsgs.viewHeader("Entry Info"),
+		"",
+		ui.DisplayAnimeInfo(v.animeInfo),
+	), nil
+}
+
+func (v addAnimeReviewView) ShortHelp() []key.Binding {
+	return []key.Binding{
+		keyMap.EscBack,
+	}
+}
+
+func (v addAnimeReviewView) FullHelp() [][]key.Binding {
+	return [][]key.Binding{}
 }
