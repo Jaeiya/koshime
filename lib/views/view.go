@@ -99,6 +99,7 @@ type MainKeyMap struct {
 	Down     key.Binding
 	Select   key.Binding
 	Submit   key.Binding
+	EscBack  key.Binding
 	Abort    key.Binding
 	MainMenu key.Binding
 	HelpMore key.Binding
@@ -114,6 +115,7 @@ var keyMap = MainKeyMap{
 	HelpMore: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more help")),
 	HelpLess: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "less help")),
 	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
+	EscBack:  key.NewBinding(key.WithKeys("esc", "backspace"), key.WithHelp("esc/←", "back")),
 	MainMenu: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "menu")),
 	Exit:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "exit")),
 }
