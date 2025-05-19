@@ -189,9 +189,18 @@ func (m addAnimeModel) UpdateAnimeResults(msg tea.Msg) (addAnimeModel, tea.Cmd) 
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.MainMenu):
+			// Delegate esc key to list, during filter operations
+			if m.ui.list.FilterState() > list.Unfiltered {
+				break
+			}
+
 			m.reset()
 
 		case key.Matches(msg, keyMap.Select):
+			// Do not attempt to select an item while filtering
+			if m.ui.list.FilterState() == list.Filtering {
+				break
+			}
 			item := m.ui.list.SelectedItem().(ui.ListItem)
 			m.state.view = Add_AnimeReview
 			return m, func() tea.Msg {
