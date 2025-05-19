@@ -77,6 +77,11 @@ type (
 	FetchedKitsuEntriesMsg FetchedListItemsMsg[kitsu.AnimeData]
 )
 
+type HelpInfo struct {
+	ShortHelp []key.Binding
+	FullHelp  [][]key.Binding
+}
+
 type ViewModel interface {
 	tea.CursorModel
 	help.KeyMap
