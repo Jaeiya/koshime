@@ -193,7 +193,9 @@ func (m addAnimeModel) UpdateAnimeResults(msg tea.Msg) (addAnimeModel, tea.Cmd) 
 			if m.ui.list.FilterState() > list.Unfiltered {
 				break
 			}
+			m.reset()
 
+		case key.Matches(msg, keyMap.Back):
 			m.reset()
 
 		case key.Matches(msg, keyMap.Select):
@@ -216,11 +218,11 @@ func (m addAnimeModel) UpdateAnimeResults(msg tea.Msg) (addAnimeModel, tea.Cmd) 
 		m.state.results = msg.infoItems
 		m.ui.list = ui.NewList(
 			ui.ListOptions{
-				Items: msg.listItems,
-				// ShortHelpKeys: []key.Binding{m.keys.backspace},
-				Width:        m.windowSize.width,
-				MaxHeight:    int(float64(m.windowSize.height) * 0.66),
-				ItemsPerPage: m.config.itemsPerPage,
+				Items:         msg.listItems,
+				ShortHelpKeys: []key.Binding{keyMap.Back},
+				Width:         m.windowSize.width,
+				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
+				ItemsPerPage:  m.config.itemsPerPage,
 			},
 		)
 	}
