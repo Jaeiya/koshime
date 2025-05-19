@@ -122,7 +122,7 @@ var keyMap = MainKeyMap{
 	HelpLess: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "less help")),
 	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
 	EscBack:  key.NewBinding(key.WithKeys("esc", "backspace"), key.WithHelp("esc/←", "back")),
-	Back:     key.NewBinding(key.WithKeys("backspace"), key.WithHelp("←", "back")),
+	Back:     key.NewBinding(key.WithKeys("backspace", "left"), key.WithHelp("←", "back")),
 	MainMenu: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "menu")),
 	Exit:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "exit")),
 }
