@@ -186,7 +186,7 @@ func New(dbPath string) (Model, error) {
 	model.menuViewMap = map[UIView]ViewModel{
 		SetupUser: NewUserSetupModel(),
 		FindAnime: NewFindAnimeModel(db),
-		AddAnime:  NewAddAnimeModel(db),
+		AddAnime:  newAddAnimeModel(db),
 	}
 
 	if !utils.FileExists(dbPath) {
