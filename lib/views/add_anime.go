@@ -41,9 +41,10 @@ type addAnimeModel struct {
 		height int
 	}
 	config struct {
-		maxInputWidth int
-		minInputLen   int // Min required chars to submit input
-		itemsPerPage  int // How many list items per page
+		maxInputWidth   int
+		minInputLen     int // Min required chars to submit input
+		itemsPerPage    int // How many list items per page
+		maxAnimeResults int // Max number of results to search kitsu for
 	}
 	ui struct {
 		loader ui.LoaderModel
@@ -66,6 +67,7 @@ func newAddAnimeModel(db *database.Database) addAnimeModel {
 	m.config.minInputLen = 4
 	m.config.maxInputWidth = 30
 	m.config.itemsPerPage = 5
+	m.config.maxAnimeResults = 10
 
 	m.ui.input = ui.NewTextInput()
 	m.ui.input.SetWidth(m.config.maxInputWidth)
@@ -287,7 +289,7 @@ func (m *addAnimeModel) reset() {
 
 func (m addAnimeModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
-		af := NewKitsuAnimeFinder(10, []kitsu.AnimeStatus{kitsu.AnimeNew})
+		af := NewKitsuAnimeFinder(m.config.maxAnimeResults, []kitsu.AnimeStatus{kitsu.AnimeNew})
 		anime, err := af.Search(query)
 		if err != nil {
 			return FetchErrorMsg(err)
