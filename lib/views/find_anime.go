@@ -76,16 +76,14 @@ type findAnimeState struct {
 
 func NewFindAnimeModel(db *database.Database) findAnimeModel {
 	m := findAnimeModel{db: db}
-	m.ui.list = list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
-	// Prevent esc/q key from sending tea.Quit from inside list
-	m.ui.list.DisableQuitKeybindings()
+
+	m.ui.loader = ui.NewLoader()
+	m.ui.list = ui.NewList(ui.ListOptions{})
 
 	m.ui.input = ui.NewTextInput()
 	m.ui.input.Focus()
 	m.ui.input.Placeholder = "Enter your query"
 	m.ui.input.SetWidth(20)
-
-	m.ui.loader = ui.NewLoader()
 
 	m.config.minInputLen = 4  // Minimum characters to submit search
 	m.config.itemsPerPage = 5 // Max list items to display per page
