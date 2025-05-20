@@ -22,25 +22,27 @@ const (
 )
 
 type findAnimeModel struct {
+	windowSize struct {
+		width  int
+		height int
+	}
 	config struct {
 		minInputLen  int
 		itemsPerPage int
 		maxResults   int
 	}
-	list           list.Model
-	input          textinput.Model
-	loader         ui.LoaderModel
-	db             *database.Database
-	animeFinderMap map[AnimeSource]AnimeFinder
-	windowSize     struct {
-		width  int
-		height int
+	ui struct {
+		list   list.Model
+		input  textinput.Model
+		loader ui.LoaderModel
 	}
-	sourceStrMap map[AnimeSource]string
-	keys         struct {
+	keys struct {
 		tab key.Binding
 	}
-	state findAnimeState
+	db             *database.Database
+	animeFinderMap map[AnimeSource]AnimeFinder
+	sourceStrMap   map[AnimeSource]string
+	state          findAnimeState
 }
 
 type findAnimeState struct {
@@ -56,22 +58,21 @@ type findAnimeState struct {
 }
 
 func NewFindAnimeModel(db *database.Database) findAnimeModel {
-	l := list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
+	m := findAnimeModel{db: db}
+	m.ui.list = list.New([]list.Item{}, list.NewDefaultDelegate(), 0, 0)
 	// Prevent esc/q key from sending tea.Quit from inside list
-	l.DisableQuitKeybindings()
+	m.ui.list.DisableQuitKeybindings()
 
-	input := ui.NewTextInput()
-	input.Focus()
-	input.Placeholder = "Enter your query"
+	m.ui.input = ui.NewTextInput()
+	m.ui.input.Focus()
+	m.ui.input.Placeholder = "Enter your query"
+	m.ui.input.SetWidth(20)
 
-	m := findAnimeModel{input: input, loader: ui.NewLoader(), list: l}
+	m.ui.loader = ui.NewLoader()
 
-	m.input.SetWidth(20)
 	m.config.minInputLen = 4  // Minimum characters to submit search
 	m.config.itemsPerPage = 5 // Max list items to display per page
 	m.config.maxResults = 10  // Max results to find per search
-
-	m.db = db
 
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
 
@@ -100,14 +101,14 @@ func (m findAnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m.windowSize.height = msg.Height
 
 	case FetchErrorMsg:
-		m.loader.Stop()
+		m.ui.loader.Stop()
 		m.state.view = Find_Results
 		m.state.find.failed = true
 		m.state.fetchErr = msg
 	}
 
-	if m.loader.IsLoading() {
-		m.loader, cmd = m.loader.Update(msg)
+	if m.ui.loader.IsLoading() {
+		m.ui.loader, cmd = m.ui.loader.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -153,28 +154,28 @@ func (m findAnimeModel) UpdateQueryEntry(msg tea.Msg) (findAnimeModel, tea.Cmd) 
 			return m, abort
 
 		case key.Matches(msg, keyMap.Submit):
-			hasShortInput := utils.RuneCount(m.input.Value()) < m.config.minInputLen
+			hasShortInput := utils.RuneCount(m.ui.input.Value()) < m.config.minInputLen
 
-			if m.loader.IsLoading() || hasShortInput {
+			if m.ui.loader.IsLoading() || hasShortInput {
 				break
 			}
 
 			m.state.view = Find_Results
-			m.loader, cmd = m.loader.Start("Find Anime")
-			return m, tea.Batch(cmd, m.findAnime(m.input.Value()))
+			m.ui.loader, cmd = m.ui.loader.Start("Find Anime")
+			return m, tea.Batch(cmd, m.findAnime(m.ui.input.Value()))
 
 		case key.Matches(msg, m.keys.tab):
 			m.state.find.source = (m.state.find.source + 1) % 2
 		}
 	}
 
-	m.input, cmd = m.input.Update(msg)
+	m.ui.input, cmd = m.ui.input.Update(msg)
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
 func (m findAnimeModel) ViewQueryEntry() (string, *tea.Cursor) {
-	c := m.input.Cursor()
+	c := m.ui.input.Cursor()
 	c.Shape = tea.CursorBar
 
 	search := ui.TextStyle.Foreground(ansi.BrightBlack).
@@ -187,8 +188,8 @@ func (m findAnimeModel) ViewQueryEntry() (string, *tea.Cursor) {
 		search,
 		ui.Style.MarginTop(1).Render(lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			m.input.View(),
-			ui.DisplayCharLimit(m.config.minInputLen, m.input.Value()),
+			m.ui.input.View(),
+			ui.DisplayCharLimit(m.config.minInputLen, m.ui.input.Value()),
 		)),
 	)
 	c.Y += lipgloss.Height(view) - 1
@@ -205,25 +206,25 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 		// Go back to query-entry-view from results-view
 		case key.Matches(msg, keyMap.MainMenu):
 			// List needs 'Esc' control to cancel filter
-			if m.list.FilterState() > list.Unfiltered {
+			if m.ui.list.FilterState() > list.Unfiltered {
 				break
 			}
 			m.Reset()
 
 		// Go back to query-entry-view from results-view
 		case key.Matches(msg, keyMap.Back):
-			if m.list.FilterState() != list.Filtering {
+			if m.ui.list.FilterState() != list.Filtering {
 				m.Reset()
 			}
 
 		// Select Anime
 		case key.Matches(msg, keyMap.Submit):
 			// List needs 'Enter' control for applying filter
-			if m.list.FilterState() == list.Filtering {
+			if m.ui.list.FilterState() == list.Filtering {
 				break
 			}
 			if !m.state.find.notFound {
-				item := m.list.SelectedItem().(ui.ListItem)
+				item := m.ui.list.SelectedItem().(ui.ListItem)
 				m.state.selectedIndex = item.Index()
 				m.state.view = Find_SelectedAnime
 			}
@@ -231,15 +232,15 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 		}
 
 	case FetchedNoResultsMsg:
-		m.loader.Stop()
+		m.ui.loader.Stop()
 		m.state.find.notFound = true
 
 	case AnimeFinderResult:
-		m.loader.Stop()
+		m.ui.loader.Stop()
 		m.state.view = Find_Results
 		m.state.animeResults = msg.infoItems
 
-		m.list = ui.NewList(
+		m.ui.list = ui.NewList(
 			ui.ListOptions{
 				Items:         msg.listItems,
 				ShortHelpKeys: []key.Binding{keyMap.Back},
@@ -250,14 +251,14 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 		)
 	}
 
-	m.list, cmd = m.list.Update(msg)
+	m.ui.list, cmd = m.ui.list.Update(msg)
 	cmds = append(cmds, cmd)
 	return m, tea.Batch(cmds...)
 }
 
 func (m findAnimeModel) ViewResults() (string, *tea.Cursor) {
-	if m.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.loader.View()), nil
+	if m.ui.loader.IsLoading() {
+		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
 	}
 
 	if m.state.find.failed {
@@ -269,7 +270,7 @@ func (m findAnimeModel) ViewResults() (string, *tea.Cursor) {
 			lipgloss.Left,
 			findAnimeMsgs.viewHeader("Results"),
 			findAnimeMsgs.notFound(
-				m.input.Value(),
+				m.ui.input.Value(),
 				m.state.find.source.String(),
 			),
 		), nil
@@ -278,15 +279,15 @@ func (m findAnimeModel) ViewResults() (string, *tea.Cursor) {
 	h := findAnimeMsgs.viewHeader("Results")
 	var c *tea.Cursor
 	// The filter has no margin, so we enforce
-	if m.list.FilterState() == list.Filtering {
+	if m.ui.list.FilterState() == list.Filtering {
 		h = ui.Style.MarginBottom(1).Render(h)
-		c = m.list.FilterInput.Cursor()
+		c = m.ui.list.FilterInput.Cursor()
 		c.Shape = tea.CursorBlock
 		c.Color = ansi.Yellow
 		c.Y += lipgloss.Height(h)
 		c.X += 2 // Adjust for custom margin
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, h, m.list.View()), c
+	return lipgloss.JoinVertical(lipgloss.Left, h, m.ui.list.View()), c
 }
 
 func (m findAnimeModel) UpdateAnime(msg tea.Msg) (findAnimeModel, tea.Cmd) {
@@ -314,7 +315,7 @@ func (m findAnimeModel) ViewAnime() string {
 }
 
 func (m findAnimeModel) ShortHelp() []key.Binding {
-	if m.loader.IsLoading() {
+	if m.ui.loader.IsLoading() {
 		return []key.Binding{}
 	}
 
@@ -342,7 +343,7 @@ func (m *findAnimeModel) Reset() {
 	source := m.state.find.source
 	m.state = findAnimeState{}
 	m.state.find.source = source
-	m.input.Reset()
+	m.ui.input.Reset()
 }
 
 func (m *findAnimeModel) findAnime(query string) tea.Cmd {
