@@ -27,6 +27,14 @@ var findAnimeHelpMap = map[FindAnimeView]HelpInfo[findAnimeModel]{
 			return []key.Binding{keyMap.Submit, keyMap.Abort}
 		},
 	},
+	Find_Results: {
+		ShortHelp: func(m findAnimeModel) []key.Binding {
+			if len(m.ui.list.Items()) == 0 {
+				return []key.Binding{keyMap.EscBack}
+			}
+			return []key.Binding{}
+		},
+	},
 	Find_SelectedAnime: {
 		ShortHelp: func(findAnimeModel) []key.Binding {
 			return []key.Binding{keyMap.EscBack}
