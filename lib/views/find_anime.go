@@ -67,15 +67,11 @@ type findAnimeModel struct {
 }
 
 type findAnimeState struct {
-	fetchErr      FetchErrorMsg
 	view          FindAnimeView
-	animeResults  []ui.AnimeInfo
-	selectedIndex int
-	find          struct {
-		source   AnimeSource
-		failed   bool
-		notFound bool
-	}
+	fetchErr      FetchErrorMsg
+	results       []ui.AnimeInfo
+	selectedAnime ui.AnimeInfo
+	source        AnimeSource
 }
 
 func NewFindAnimeModel(db *database.Database) findAnimeModel {
@@ -124,7 +120,6 @@ func (m findAnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	case FetchErrorMsg:
 		m.ui.loader.Stop()
 		m.state.view = Find_Results
-		m.state.find.failed = true
 		m.state.fetchErr = msg
 	}
 
@@ -186,7 +181,7 @@ func (m findAnimeModel) UpdateQueryEntry(msg tea.Msg) (findAnimeModel, tea.Cmd) 
 			return m, tea.Batch(cmd, m.findAnime(m.ui.input.Value()))
 
 		case key.Matches(msg, m.keys.tab):
-			m.state.find.source = (m.state.find.source + 1) % 2
+			m.state.source = (m.state.source + 1) % 2
 		}
 	}
 
@@ -200,7 +195,7 @@ func (m findAnimeModel) ViewQueryEntry() (string, *tea.Cursor) {
 	c.Shape = tea.CursorBar
 
 	search := ui.TextStyle.Foreground(ansi.BrightBlack).
-		Render("Source: " + m.sourceStrMap[m.state.find.source])
+		Render("Source: " + m.sourceStrMap[m.state.source])
 
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -244,9 +239,9 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 			if m.ui.list.FilterState() == list.Filtering {
 				break
 			}
-			if !m.state.find.notFound {
+			if len(m.ui.list.Items()) > 0 {
 				item := m.ui.list.SelectedItem().(ui.ListItem)
-				m.state.selectedIndex = item.Index()
+				m.state.selectedAnime = m.state.results[item.Index()]
 				m.state.view = Find_SelectedAnime
 			}
 
@@ -254,12 +249,11 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 
 	case FetchedNoResultsMsg:
 		m.ui.loader.Stop()
-		m.state.find.notFound = true
 
 	case AnimeFinderResult:
 		m.ui.loader.Stop()
 		m.state.view = Find_Results
-		m.state.animeResults = msg.infoItems
+		m.state.results = msg.infoItems
 
 		m.ui.list = ui.NewList(
 			ui.ListOptions{
@@ -282,17 +276,17 @@ func (m findAnimeModel) ViewResults() (string, *tea.Cursor) {
 		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
 	}
 
-	if m.state.find.failed {
+	if m.state.fetchErr != nil {
 		return m.state.fetchErr.Error(), nil
 	}
 
-	if m.state.find.notFound {
+	if len(m.ui.list.Items()) == 0 {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			findAnimeMsgs.viewHeader("Results"),
 			findAnimeMsgs.notFound(
 				m.ui.input.Value(),
-				m.state.find.source.String(),
+				m.state.source.String(),
 			),
 		), nil
 	}
@@ -323,12 +317,12 @@ func (m findAnimeModel) UpdateAnime(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 }
 
 func (m findAnimeModel) ViewAnime() string {
-	if m.state.animeResults != nil {
+	if m.state.results != nil {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			findAnimeMsgs.viewHeader("Entry Info"),
 			"",
-			ui.DisplayAnimeInfo(m.state.animeResults[m.state.selectedIndex]),
+			ui.DisplayAnimeInfo(m.state.selectedAnime),
 		)
 	}
 
@@ -356,9 +350,9 @@ func (m findAnimeModel) FullHelp() [][]key.Binding {
 
 func (m *findAnimeModel) Reset() {
 	// Do not reset source
-	source := m.state.find.source
+	source := m.state.source
 	m.state = findAnimeState{}
-	m.state.find.source = source
+	m.state.source = source
 	m.ui.input.Reset()
 }
 
@@ -367,7 +361,7 @@ func (m *findAnimeModel) findAnime(query string) tea.Cmd {
 		var result AnimeFinderResult
 		var err error
 
-		switch m.state.find.source {
+		switch m.state.source {
 		case Kitsu:
 			result, err = m.animeFinderMap[Kitsu].Search(query)
 			if err != nil {
@@ -381,10 +375,7 @@ func (m *findAnimeModel) findAnime(query string) tea.Cmd {
 			}
 		}
 
-		if len(result.infoItems) == 0 {
-			return FetchedNoResultsMsg{}
-		}
-		m.state.animeResults = result.infoItems
+		m.state.results = result.infoItems
 		return result
 	}
 }
