@@ -38,9 +38,8 @@ type findAnimeModel struct {
 	}
 	sourceStrMap map[AnimeSource]string
 	keys         struct {
-		tab       key.Binding
-		backspace key.Binding
-		escBack   key.Binding
+		tab     key.Binding
+		escBack key.Binding
 	}
 	state struct {
 		fetchErr      FetchErrorMsg
@@ -74,10 +73,6 @@ func NewFindAnimeModel(db *database.Database) findAnimeModel {
 	m.db = db
 
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
-	m.keys.backspace = key.NewBinding(
-		key.WithKeys("left", "backspace"),
-		key.WithHelp("←", "back"),
-	)
 	m.keys.escBack = key.NewBinding(
 		key.WithKeys("esc"),
 		key.WithHelp("esc/←", "back"),
@@ -219,7 +214,7 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 			m.Reset()
 
 		// Go back to query-entry-view from results-view
-		case key.Matches(msg, m.keys.backspace):
+		case key.Matches(msg, keyMap.Back):
 			if m.list.FilterState() != list.Filtering {
 				m.Reset()
 			}
@@ -250,7 +245,7 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 		m.list = ui.NewList(
 			ui.ListOptions{
 				Items:         msg.listItems,
-				ShortHelpKeys: []key.Binding{m.keys.backspace},
+				ShortHelpKeys: []key.Binding{keyMap.Back},
 				Width:         m.windowSize.width,
 				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
 				ItemsPerPage:  m.config.itemsPerPage,
@@ -301,7 +296,7 @@ func (m findAnimeModel) UpdateAnime(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, m.keys.escBack, m.keys.backspace):
+		case key.Matches(msg, m.keys.escBack, keyMap.Back):
 			m.state.view = Find_Results
 		}
 	}
