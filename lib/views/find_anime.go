@@ -156,6 +156,25 @@ func (m findAnimeModel) View() (string, *tea.Cursor) {
 	return "missing view", nil
 }
 
+func (m findAnimeModel) ShortHelp() []key.Binding {
+	if m.ui.loader.IsLoading() {
+		return []key.Binding{}
+	}
+
+	if v, exists := findAnimeHelpMap[m.state.view]; exists {
+		return v.ShortHelp(m)
+	}
+
+	return []key.Binding{}
+}
+
+func (m findAnimeModel) FullHelp() [][]key.Binding {
+	if v, exists := findAnimeHelpMap[m.state.view]; exists {
+		return v.FullHelp(m)
+	}
+	return [][]key.Binding{}
+}
+
 func (m findAnimeModel) UpdateQueryEntry(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
@@ -164,7 +183,7 @@ func (m findAnimeModel) UpdateQueryEntry(msg tea.Msg) (findAnimeModel, tea.Cmd) 
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.MainMenu):
-			m.Reset()
+			m.reset()
 			return m, abort
 
 		case key.Matches(msg, keyMap.Submit):
@@ -223,12 +242,12 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 			if m.ui.list.FilterState() > list.Unfiltered {
 				break
 			}
-			m.Reset()
+			m.reset()
 
 		// Go back to query-entry-view from results-view
 		case key.Matches(msg, keyMap.Back):
 			if m.ui.list.FilterState() != list.Filtering {
-				m.Reset()
+				m.reset()
 			}
 
 		// Select Anime
@@ -244,9 +263,6 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 			}
 
 		}
-
-	case FetchedNoResultsMsg:
-		m.ui.loader.Stop()
 
 	case AnimeFinderResult:
 		m.ui.loader.Stop()
@@ -327,26 +343,7 @@ func (m findAnimeModel) ViewAnime() string {
 	return "missing local or kitsu results to display"
 }
 
-func (m findAnimeModel) ShortHelp() []key.Binding {
-	if m.ui.loader.IsLoading() {
-		return []key.Binding{}
-	}
-
-	if v, exists := findAnimeHelpMap[m.state.view]; exists {
-		return v.ShortHelp(m)
-	}
-
-	return []key.Binding{}
-}
-
-func (m findAnimeModel) FullHelp() [][]key.Binding {
-	if v, exists := findAnimeHelpMap[m.state.view]; exists {
-		return v.FullHelp(m)
-	}
-	return [][]key.Binding{}
-}
-
-func (m *findAnimeModel) Reset() {
+func (m *findAnimeModel) reset() {
 	// Do not reset source
 	source := m.state.source
 	m.state = findAnimeState{}
