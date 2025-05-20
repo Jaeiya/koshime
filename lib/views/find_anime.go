@@ -29,7 +29,7 @@ var findAnimeHelpMap = map[FindAnimeView]HelpInfo[findAnimeModel]{
 	},
 	Find_Results: {
 		ShortHelp: func(m findAnimeModel) []key.Binding {
-			if len(m.ui.list.Items()) == 0 {
+			if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
 				return []key.Binding{keyMap.EscBack}
 			}
 			return []key.Binding{}
@@ -256,7 +256,7 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 			if m.ui.list.FilterState() == list.Filtering {
 				break
 			}
-			if len(m.ui.list.Items()) > 0 {
+			if len(m.state.results) > 0 {
 				item := m.ui.list.SelectedItem().(ui.ListItem)
 				m.state.selectedAnime = m.state.results[item.Index()]
 				m.state.view = Find_SelectedAnime
