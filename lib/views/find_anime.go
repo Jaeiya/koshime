@@ -40,16 +40,18 @@ type findAnimeModel struct {
 	keys         struct {
 		tab key.Binding
 	}
-	state struct {
-		fetchErr      FetchErrorMsg
-		view          FindAnimeView
-		animeResults  []ui.AnimeInfo
-		selectedIndex int
-		find          struct {
-			source   AnimeSource
-			failed   bool
-			notFound bool
-		}
+	state findAnimeState
+}
+
+type findAnimeState struct {
+	fetchErr      FetchErrorMsg
+	view          FindAnimeView
+	animeResults  []ui.AnimeInfo
+	selectedIndex int
+	find          struct {
+		source   AnimeSource
+		failed   bool
+		notFound bool
 	}
 }
 
@@ -336,11 +338,11 @@ func (m findAnimeModel) FullHelp() [][]key.Binding {
 }
 
 func (m *findAnimeModel) Reset() {
-	m.state.view = Find_QueryEntry
+	// Do not reset source
+	source := m.state.find.source
+	m.state = findAnimeState{}
+	m.state.find.source = source
 	m.input.Reset()
-	m.state.animeResults = nil
-	m.state.find.failed = false
-	m.state.find.notFound = false
 }
 
 func (m *findAnimeModel) findAnime(query string) tea.Cmd {
