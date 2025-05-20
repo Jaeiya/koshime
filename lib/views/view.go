@@ -77,9 +77,9 @@ type (
 	FetchedKitsuEntriesMsg FetchedListItemsMsg[kitsu.AnimeData]
 )
 
-type HelpInfo struct {
-	ShortHelp []key.Binding
-	FullHelp  [][]key.Binding
+type HelpInfo[T any] struct {
+	ShortHelp func(T) []key.Binding
+	FullHelp  func(T) [][]key.Binding
 }
 
 type ViewModel interface {

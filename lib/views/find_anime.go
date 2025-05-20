@@ -21,12 +21,16 @@ const (
 	Find_SelectedAnime
 )
 
-var findAnimeHelpMap = map[FindAnimeView]HelpInfo{
+var findAnimeHelpMap = map[FindAnimeView]HelpInfo[findAnimeModel]{
 	Find_QueryEntry: {
-		ShortHelp: []key.Binding{keyMap.Submit, keyMap.Abort},
+		ShortHelp: func(findAnimeModel) []key.Binding {
+			return []key.Binding{keyMap.Submit, keyMap.Abort}
+		},
 	},
 	Find_SelectedAnime: {
-		ShortHelp: []key.Binding{keyMap.EscBack},
+		ShortHelp: func(findAnimeModel) []key.Binding {
+			return []key.Binding{keyMap.EscBack}
+		},
 	},
 }
 
@@ -329,7 +333,7 @@ func (m findAnimeModel) ShortHelp() []key.Binding {
 	}
 
 	if v, exists := findAnimeHelpMap[m.state.view]; exists {
-		return v.ShortHelp
+		return v.ShortHelp(m)
 	}
 
 	return []key.Binding{}
@@ -337,7 +341,7 @@ func (m findAnimeModel) ShortHelp() []key.Binding {
 
 func (m findAnimeModel) FullHelp() [][]key.Binding {
 	if v, exists := findAnimeHelpMap[m.state.view]; exists {
-		return v.FullHelp
+		return v.FullHelp(m)
 	}
 	return [][]key.Binding{}
 }

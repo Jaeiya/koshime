@@ -26,12 +26,16 @@ const (
 	Add_RssReview
 )
 
-var addAnimeHelpMap = map[AddAnimeView]HelpInfo{
+var addAnimeHelpMap = map[AddAnimeView]HelpInfo[addAnimeModel]{
 	Add_AnimeQuery: {
-		ShortHelp: []key.Binding{keyMap.Submit, keyMap.Abort},
+		ShortHelp: func(addAnimeModel) []key.Binding {
+			return []key.Binding{keyMap.Submit, keyMap.Abort}
+		},
 	},
 	Add_AnimeReview: {
-		ShortHelp: []key.Binding{keyMap.EscBack},
+		ShortHelp: func(addAnimeModel) []key.Binding {
+			return []key.Binding{keyMap.EscBack}
+		},
 	},
 }
 
@@ -125,14 +129,14 @@ func (m addAnimeModel) ShortHelp() []key.Binding {
 		return []key.Binding{keyMap.EscBack}
 	}
 	if bindings, exists := addAnimeHelpMap[m.state.view]; exists {
-		return bindings.ShortHelp
+		return bindings.ShortHelp(m)
 	}
 	return []key.Binding{}
 }
 
 func (m addAnimeModel) FullHelp() [][]key.Binding {
 	if bindings, exists := addAnimeHelpMap[m.state.view]; exists {
-		return bindings.FullHelp
+		return bindings.FullHelp(m)
 	}
 	return [][]key.Binding{}
 }
