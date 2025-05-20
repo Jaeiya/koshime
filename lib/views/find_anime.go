@@ -21,6 +21,15 @@ const (
 	Find_SelectedAnime
 )
 
+var findAnimeHelpMap = map[FindAnimeView]HelpInfo{
+	Find_QueryEntry: {
+		ShortHelp: []key.Binding{keyMap.Submit, keyMap.Abort},
+	},
+	Find_SelectedAnime: {
+		ShortHelp: []key.Binding{keyMap.EscBack},
+	},
+}
+
 type findAnimeModel struct {
 	windowSize struct {
 		width  int
@@ -319,22 +328,17 @@ func (m findAnimeModel) ShortHelp() []key.Binding {
 		return []key.Binding{}
 	}
 
-	switch m.state.view {
-	case Find_QueryEntry:
-		return []key.Binding{
-			keyMap.Submit, m.keys.tab, keyMap.MainMenu,
-		}
-
-	case Find_Results, Find_SelectedAnime:
-		if m.state.find.notFound || m.state.view == Find_SelectedAnime {
-			return []key.Binding{keyMap.EscBack}
-		}
+	if v, exists := findAnimeHelpMap[m.state.view]; exists {
+		return v.ShortHelp
 	}
 
 	return []key.Binding{}
 }
 
 func (m findAnimeModel) FullHelp() [][]key.Binding {
+	if v, exists := findAnimeHelpMap[m.state.view]; exists {
+		return v.FullHelp
+	}
 	return [][]key.Binding{}
 }
 
