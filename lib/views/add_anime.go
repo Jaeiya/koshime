@@ -1,6 +1,8 @@
 package views
 
 import (
+	"fmt"
+
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
@@ -30,6 +32,14 @@ var addAnimeHelpMap = map[AddAnimeView]HelpInfo[addAnimeModel]{
 	Add_AnimeQuery: {
 		ShortHelp: func(addAnimeModel) []key.Binding {
 			return []key.Binding{keyMap.Submit, keyMap.Abort}
+		},
+	},
+	Add_AnimeResults: {
+		ShortHelp: func(m addAnimeModel) []key.Binding {
+			if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
+				return []key.Binding{keyMap.EscBack}
+			}
+			return []key.Binding{}
 		},
 	},
 	Add_AnimeReview: {
@@ -73,6 +83,7 @@ func newAddAnimeModel(db *database.Database) addAnimeModel {
 	m.config.itemsPerPage = 5
 	m.config.maxAnimeResults = 10
 
+	m.ui.list = ui.NewList(ui.ListOptions{})
 	m.ui.input = ui.NewTextInput()
 	m.ui.input.SetWidth(m.config.maxInputWidth)
 	m.ui.input.Placeholder = "Enter query"
@@ -233,15 +244,25 @@ func (m addAnimeModel) UpdateAnimeResults(msg tea.Msg) (addAnimeModel, tea.Cmd) 
 		)
 	}
 
-	if len(m.ui.list.Items()) > 0 {
-		m.ui.list, cmd = m.ui.list.Update(msg)
-	}
+	m.ui.list, cmd = m.ui.list.Update(msg)
 	return m, cmd
 }
 
 func (m addAnimeModel) ViewAnimeResults() (string, *tea.Cursor) {
 	if m.ui.loader.IsLoading() {
 		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+	}
+
+	if len(m.state.results) == 0 {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			findAnimeMsgs.viewHeader("Results"),
+			ui.TextStyle.MarginTop(1).Render(
+				utils.ColorText(
+					fmt.Sprintf("No results found for: ;y;%s", m.ui.input.Value()),
+				),
+			),
+		), nil
 	}
 
 	if m.state.fetchErr != nil {
