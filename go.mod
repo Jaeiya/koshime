@@ -1,6 +1,6 @@
 module github.com/Jaeiya/koshime
 
-go 1.24.1
+go 1.24
 
 require (
 	github.com/antchfx/xmlquery v1.4.4
