@@ -6,12 +6,10 @@ import (
 	"time"
 
 	"github.com/Jaeiya/koshime/lib/database"
-	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/help"
 	"github.com/charmbracelet/bubbles/v2/key"
-	"github.com/charmbracelet/bubbles/v2/list"
 	"github.com/charmbracelet/bubbles/v2/spinner"
 	"github.com/charmbracelet/bubbles/v2/textinput"
 	tea "github.com/charmbracelet/bubbletea/v2"
@@ -67,14 +65,8 @@ func (s AnimeSource) String() string {
 }
 
 type (
-	FetchErrorMsg              error
-	FetchedNoResultsMsg        struct{}
-	FetchedListItemsMsg[T any] struct {
-		items   []list.Item
-		results []T
-	}
-	FetchedLibEntriesMsg   FetchedListItemsMsg[kitsu.LibraryEntry]
-	FetchedKitsuEntriesMsg FetchedListItemsMsg[kitsu.AnimeData]
+	FetchErrorMsg       error
+	FetchedNoResultsMsg struct{}
 )
 
 type HelpInfo[T any] struct {
