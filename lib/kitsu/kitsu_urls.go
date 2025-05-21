@@ -254,11 +254,6 @@ func (k *KitsuURL) QueryLibAnimeStatus(status LibAnimeStatus) *KitsuURL {
 	return k
 }
 
-func (k *KitsuURL) queryStatus(status []string) *KitsuURL {
-	k.query.Add("filter[status]", strings.Join(status, ","))
-	return k
-}
-
 func (k *KitsuURL) QueryMediaType(mType string) *KitsuURL {
 	k.query.Add("filter[kind]", string(mType))
 	return k
