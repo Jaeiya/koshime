@@ -109,6 +109,7 @@ func getAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (APIUrl, e
 		return "", nil
 	}
 
+	// This is the hard limit of the Kitsu API per request
 	if maxItems > 200 || maxItems < 1 {
 		return "", fmt.Errorf("max items should be between 1 and 200; inclusive")
 	}
