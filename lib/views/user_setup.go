@@ -128,7 +128,7 @@ func (m userSetupModel) UpdateConsent(msg tea.Msg) (userSetupModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.Select):
-			if ui.No == m.consent.Get() {
+			if ui.No == m.consent.Select() {
 				return m, abort
 			}
 			m.state.view = SetupUsernameView
@@ -164,7 +164,7 @@ func (m userSetupModel) UpdateUsername(msg tea.Msg) (userSetupModel, tea.Cmd) {
 
 			// User chooses to either abort or try again
 			if usernameState.failed {
-				if ui.No == m.consent.Get() {
+				if ui.No == m.consent.Select() {
 					return m, abort
 				}
 				m.input.Reset()
@@ -173,7 +173,7 @@ func (m userSetupModel) UpdateUsername(msg tea.Msg) (userSetupModel, tea.Cmd) {
 
 			// User chooses if profile is theirs or not
 			if usernameState.passed {
-				if ui.No == m.consent.Get() {
+				if ui.No == m.consent.Select() {
 					usernameState.passed = false
 					m.input.Reset()
 					return m, nil
@@ -275,7 +275,7 @@ func (m userSetupModel) UpdatePassword(msg tea.Msg) (userSetupModel, tea.Cmd) {
 			}
 
 			if passwordState.failed {
-				if ui.No == m.consent.Get() {
+				if ui.No == m.consent.Select() {
 					return m, abort
 				}
 				passwordState.failed = false
@@ -361,7 +361,7 @@ func (m userSetupModel) UpdateLibAnime(msg tea.Msg) (userSetupModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		if key.Matches(msg, keyMap.Select) {
 			if state.failed {
-				if ui.No == m.consent.Get() {
+				if ui.No == m.consent.Select() {
 					return m, abort
 				}
 				// Retry getting library anime

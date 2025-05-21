@@ -47,9 +47,9 @@ func (m ConsentModel) View(msg ...string) string {
 	return lipgloss.JoinVertical(lipgloss.Left, msg...)
 }
 
-// Get returns the current consent value
-// and resets the consent position for re-use.
-func (m *ConsentModel) Get() Consent {
+// Select returns the currently selected consent value
+// and resets the consent position to a default of No.
+func (m *ConsentModel) Select() Consent {
 	lastPos := m.pos
 	// Reset for re-use
 	m.pos = No
