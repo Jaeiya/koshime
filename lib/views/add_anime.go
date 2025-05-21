@@ -161,9 +161,6 @@ func (m addAnimeModel) ShortHelp() []key.Binding {
 }
 
 func (m addAnimeModel) FullHelp() [][]key.Binding {
-	if bindings, exists := addAnimeHelpMap[m.state.view]; exists {
-		return bindings.FullHelp(m)
-	}
 	return [][]key.Binding{}
 }
 
