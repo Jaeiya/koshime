@@ -64,6 +64,7 @@ const (
 	TitlesField            = AnimeField("titles")
 	AgeRatingField         = AnimeField("ageRating")
 	ShowType               = AnimeField("subtype")
+	Status                 = AnimeField("status")
 )
 
 type AnimeStatus []string
@@ -129,6 +130,7 @@ func getAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (APIUrl, e
 				SynopsisField,
 				AgeRatingField,
 				ShowType,
+				Status,
 			},
 		)
 

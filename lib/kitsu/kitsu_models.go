@@ -15,6 +15,7 @@ type LibraryEntry struct {
 	AltTitles []string
 	Episodes  int
 	Type      AnimeType
+	Status    string
 	Progress  int
 	Synopsis  string
 	Slug      string
@@ -89,6 +90,7 @@ type AnimeData struct {
 		StartDate string   `json:"startDate"`
 		EndDate   string   `json:"endDate"`
 		Type      string   `json:"subtype"`
+		Status    string   `json:"status"`
 		Slug      string   `json:"slug"`
 		Synopsis  string   `json:"synopsis"`
 	} `json:"attributes"`

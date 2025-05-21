@@ -17,6 +17,7 @@ type AnimeInfo struct {
 	AltTitles []string
 	ShowType  string
 	Synopsis  string
+	Status    string
 	Progress  int
 	Episodes  int
 	Slug      string
@@ -55,6 +56,9 @@ func DisplayAnimeInfo(info AnimeInfo) string {
 		headers = append(headers, utils.ColorText(";db;AltTitle"))
 	}
 	items = append(items, info.AltTitles...)
+
+	headers = append(headers, utils.ColorText(";dc;Status"))
+	items = append(items, utils.ColorText(";b;"+info.Status))
 
 	headers = append(headers, utils.ColorText(";y;Type"))
 	items = append(items, utils.ColorText(";c;"+info.ShowType))
