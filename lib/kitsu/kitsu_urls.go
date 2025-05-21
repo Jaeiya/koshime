@@ -26,7 +26,7 @@ const (
 	UserURL
 )
 
-type AnimeType string
+type AnimeType = string
 
 const (
 	TV      = AnimeType("TV")
@@ -115,7 +115,7 @@ func getAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (APIUrl, e
 
 	u = u.QueryText(query).
 		PageLimit(maxItems).
-		QueryAnimeType(TV).
+		QueryAnimeType([]AnimeType{TV, ONA, OVA}).
 		QueryAnimeStatus(status).
 		QueryAnimeFields(
 			[]AnimeField{
@@ -239,8 +239,8 @@ func (k *KitsuURL) QueryIDs(ids []string) *KitsuURL {
 	return k
 }
 
-func (k *KitsuURL) QueryAnimeType(aType AnimeType) *KitsuURL {
-	k.query.Add("filter[subtype]", string(aType))
+func (k *KitsuURL) QueryAnimeType(aType []AnimeType) *KitsuURL {
+	k.query.Add("filter[subtype]", strings.Join(aType, ","))
 	return k
 }
 
