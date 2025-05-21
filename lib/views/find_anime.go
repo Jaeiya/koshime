@@ -36,8 +36,12 @@ var findAnimeHelpMap = map[FindAnimeView]HelpInfo[findAnimeModel]{
 		},
 	},
 	Find_SelectedAnime: {
-		ShortHelp: func(findAnimeModel) []key.Binding {
-			return []key.Binding{keyMap.EscBack}
+		ShortHelp: func(m findAnimeModel) []key.Binding {
+			synKey := m.keys.openSynopsis
+			if m.state.showSynopsis {
+				synKey = m.keys.closeSynopsis
+			}
+			return []key.Binding{synKey, keyMap.EscBack}
 		},
 	},
 }
@@ -58,7 +62,9 @@ type findAnimeModel struct {
 		loader ui.LoaderModel
 	}
 	keys struct {
-		tab key.Binding
+		tab           key.Binding
+		openSynopsis  key.Binding
+		closeSynopsis key.Binding
 	}
 	db             *database.Database
 	animeFinderMap map[AnimeSource]AnimeFinder
@@ -72,6 +78,7 @@ type findAnimeState struct {
 	results       []ui.AnimeInfo
 	selectedAnime ui.AnimeInfo
 	source        AnimeSource
+	showSynopsis  bool
 }
 
 func NewFindAnimeModel(db *database.Database) findAnimeModel {
@@ -90,6 +97,11 @@ func NewFindAnimeModel(db *database.Database) findAnimeModel {
 	m.config.maxResults = 10  // Max results to find per search
 
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
+	m.keys.openSynopsis = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "open synopsis"))
+	m.keys.closeSynopsis = key.NewBinding(
+		key.WithKeys("s"),
+		key.WithHelp("s", "close synopsis"),
+	)
 
 	m.sourceStrMap = map[AnimeSource]string{
 		Kitsu: findAnimeMsgs.kitsu,
@@ -325,6 +337,9 @@ func (m findAnimeModel) UpdateAnime(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, keyMap.EscBack, keyMap.Back):
 			m.state.view = Find_Results
+
+		case key.Matches(msg, m.keys.openSynopsis):
+			m.state.showSynopsis = !m.state.showSynopsis
 		}
 	}
 	return m, nil
@@ -336,7 +351,7 @@ func (m findAnimeModel) ViewAnime() string {
 			lipgloss.Left,
 			findAnimeMsgs.viewHeader("Entry Info"),
 			"",
-			ui.DisplayAnimeInfo(m.state.selectedAnime),
+			ui.DisplayAnimeInfo(m.state.selectedAnime, m.state.showSynopsis),
 		)
 	}
 

@@ -42,7 +42,7 @@ func DisplayCharLimit(min int, text string) string {
 	return charLimit
 }
 
-func DisplayAnimeInfo(info AnimeInfo) string {
+func DisplayAnimeInfo(info AnimeInfo, showSynopsis bool) string {
 	headers := []string{
 		utils.ColorText(";g;Title"),
 		utils.ColorText(";dc;English"),
@@ -79,8 +79,13 @@ func DisplayAnimeInfo(info AnimeInfo) string {
 	}
 
 	link, _ := url.JoinPath(kitsu.KitsuDomain, info.Slug)
-	headers = append(headers, utils.ColorText(";dc;Synopsis"), utils.ColorText(";x;Link"))
-	items = append(items, info.Synopsis, utils.ColorText(";bk;"+link))
+	if showSynopsis {
+		headers = append(headers, utils.ColorText(";dc;Synopsis"), utils.ColorText(";x;Link"))
+		items = append(items, info.Synopsis, utils.ColorText(";bk;"+link))
+	} else {
+		headers = append(headers, utils.ColorText(";x;Link"))
+		items = append(items, utils.ColorText(";bk;"+link))
+	}
 
 	return DisplayPropValue(headers, items)
 }

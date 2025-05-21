@@ -43,8 +43,12 @@ var addAnimeHelpMap = map[AddAnimeView]HelpInfo[addAnimeModel]{
 		},
 	},
 	Add_AnimeReview: {
-		ShortHelp: func(addAnimeModel) []key.Binding {
-			return []key.Binding{keyMap.EscBack}
+		ShortHelp: func(m addAnimeModel) []key.Binding {
+			synKey := m.keys.openSynopsis
+			if m.state.showSynopsis {
+				synKey = m.keys.closeSynopsis
+			}
+			return []key.Binding{synKey, keyMap.EscBack}
 		},
 	},
 }
@@ -65,6 +69,10 @@ type addAnimeModel struct {
 		input  textinput.Model
 		list   list.Model
 	}
+	keys struct {
+		openSynopsis  key.Binding
+		closeSynopsis key.Binding
+	}
 	db    *database.Database
 	state addAnimeModelState
 }
@@ -74,6 +82,7 @@ type addAnimeModelState struct {
 	fetchErr      error
 	results       []ui.AnimeInfo
 	selectedAnime ui.AnimeInfo
+	showSynopsis  bool
 }
 
 func newAddAnimeModel(db *database.Database) addAnimeModel {
@@ -88,6 +97,12 @@ func newAddAnimeModel(db *database.Database) addAnimeModel {
 	m.ui.input.SetWidth(m.config.maxInputWidth)
 	m.ui.input.Placeholder = "Enter query"
 	m.ui.loader = ui.NewLoader()
+
+	m.keys.openSynopsis = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "open synopsis"))
+	m.keys.closeSynopsis = key.NewBinding(
+		key.WithKeys("s"),
+		key.WithHelp("s", "close synopsis"),
+	)
 
 	return m
 }
@@ -289,6 +304,9 @@ func (m addAnimeModel) UpdateAnimeReview(msg tea.Msg) (addAnimeModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, keyMap.EscBack):
 			m.state.view = Add_AnimeResults
+
+		case key.Matches(msg, m.keys.openSynopsis):
+			m.state.showSynopsis = !m.state.showSynopsis
 		}
 	case ui.AnimeInfo:
 		m.state.selectedAnime = msg
@@ -301,7 +319,7 @@ func (m addAnimeModel) ViewAnimeReview() (string, *tea.Cursor) {
 		lipgloss.Left,
 		findAnimeMsgs.viewHeader("Entry Info"),
 		"",
-		ui.DisplayAnimeInfo(m.state.selectedAnime),
+		ui.DisplayAnimeInfo(m.state.selectedAnime, m.state.showSynopsis),
 	), nil
 }
 
