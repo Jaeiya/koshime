@@ -48,7 +48,7 @@ var addAnimeHelpMap = map[AddAnimeView]HelpInfo[addAnimeModel]{
 			if m.state.showSynopsis {
 				synKey = m.keys.closeSynopsis
 			}
-			return []key.Binding{synKey, keyMap.EscBack}
+			return []key.Binding{synKey, keyMap.Up, keyMap.Down, keyMap.Select}
 		},
 	},
 }
@@ -65,9 +65,10 @@ type addAnimeModel struct {
 		maxAnimeResults int // Max number of results to search kitsu for
 	}
 	ui struct {
-		loader ui.LoaderModel
-		input  textinput.Model
-		list   list.Model
+		loader  ui.LoaderModel
+		input   textinput.Model
+		list    list.Model
+		consent ui.ConsentModel
 	}
 	keys struct {
 		openSynopsis  key.Binding
@@ -304,10 +305,18 @@ func (m addAnimeModel) UpdateAnimeReview(msg tea.Msg) (addAnimeModel, tea.Cmd) {
 
 		case key.Matches(msg, m.keys.openSynopsis):
 			m.state.showSynopsis = !m.state.showSynopsis
+
+		case key.Matches(msg, keyMap.Submit):
+			if m.ui.consent.Select() == ui.No {
+				m.state.view = Add_AnimeResults
+				return m, nil
+			}
 		}
 	case ui.AnimeInfo:
 		m.state.selectedAnime = msg
 	}
+
+	m.ui.consent = m.ui.consent.Update(msg)
 	return m, nil
 }
 
@@ -317,6 +326,9 @@ func (m addAnimeModel) ViewAnimeReview() (string, *tea.Cursor) {
 		findAnimeMsgs.viewHeader("Entry Info"),
 		"",
 		ui.DisplayAnimeInfo(m.state.selectedAnime, m.state.showSynopsis),
+		ui.TextStyle.MarginTop(1).Render(
+			m.ui.consent.View(utils.ColorText(";b;Would you like to add the above anime to your library?"), ""),
+		),
 	), nil
 }
 
