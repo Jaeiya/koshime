@@ -39,6 +39,7 @@ func (af KitsuAnimeFinder) Search(query string) (AnimeFinderResult, error) {
 			i,
 		)
 		info[i] = ui.AnimeInfo{
+			ID:        item.ID,
 			JpnTitle:  item.Attributes.CanonicalTitle,
 			EngTitle:  item.Attributes.Titles.English,
 			AltTitles: item.Attributes.AltTitles,
@@ -76,6 +77,7 @@ func (af LocalAnimeFinder) Search(query string) (AnimeFinderResult, error) {
 	for i, item := range anime {
 		items[i] = ui.NewListItem(item.JPN_Title, item.ENG_Title, i)
 		info[i] = ui.AnimeInfo{
+			ID:        item.ID,
 			JpnTitle:  item.JPN_Title,
 			EngTitle:  item.ENG_Title,
 			AltTitles: item.AltTitles,

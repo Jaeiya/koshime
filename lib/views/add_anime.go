@@ -28,7 +28,10 @@ const (
 	Add_RssReview
 )
 
-type Add_AnimeHelp map[Add_AnimeView]HelpInfo[Add_AnimeModel]
+type (
+	AnimeAddedMsg struct{}
+	Add_AnimeHelp map[Add_AnimeView]HelpInfo[Add_AnimeModel]
+)
 
 type Add_AnimeModel struct {
 	windowSize struct {
@@ -62,6 +65,7 @@ type Add_AnimeModelState struct {
 	results       []ui.AnimeInfo
 	selectedAnime ui.AnimeInfo
 	showSynopsis  bool
+	animeAdded    bool
 }
 
 func newAddAnimeModel(db *database.Database) Add_AnimeModel {
@@ -99,6 +103,9 @@ func newAddAnimeModel(db *database.Database) Add_AnimeModel {
 		},
 		Add_AnimeReview: {
 			ShortHelp: func(m Add_AnimeModel) []key.Binding {
+				if m.state.animeAdded {
+					return []key.Binding{}
+				}
 				synKey := m.keys.openSynopsis
 				if m.state.showSynopsis {
 					synKey = m.keys.closeSynopsis
@@ -299,21 +306,40 @@ func (m Add_AnimeModel) ViewAnimeResults() (string, *tea.Cursor) {
 }
 
 func (m Add_AnimeModel) UpdateAnimeReview(msg tea.Msg) (Add_AnimeModel, tea.Cmd) {
+	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, keyMap.EscBack):
-			m.state.view = Add_AnimeResults
+			if m.state.fetchErr != nil {
+				m.reset()
+			} else {
+				m.state.view = Add_AnimeResults
+			}
 
 		case key.Matches(msg, m.keys.openSynopsis):
 			m.state.showSynopsis = !m.state.showSynopsis
 
 		case key.Matches(msg, keyMap.Submit):
+			if m.state.fetchErr != nil || m.ui.loader.IsLoading() || m.state.animeAdded {
+				break
+			}
 			if m.ui.consent.Select() == ui.No {
 				m.state.view = Add_AnimeResults
 				return m, nil
 			}
+			m.ui.loader, cmd = m.ui.loader.Start("Adding Anime")
+			return m, tea.Batch(cmd, m.addAnime(m.state.selectedAnime.ID))
 		}
+
+	case AnimeAddedMsg:
+		m.ui.loader.Stop()
+		m.state.animeAdded = true
+
+	case FetchErrorMsg:
+		m.ui.loader.Stop()
+		m.state.fetchErr = msg
+
 	case ui.AnimeInfo:
 		m.state.selectedAnime = msg
 	}
@@ -323,6 +349,18 @@ func (m Add_AnimeModel) UpdateAnimeReview(msg tea.Msg) (Add_AnimeModel, tea.Cmd)
 }
 
 func (m Add_AnimeModel) ViewAnimeReview() (string, *tea.Cursor) {
+	if m.ui.loader.IsLoading() {
+		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+	}
+
+	if m.state.fetchErr != nil {
+		return ui.DisplayError(m.state.fetchErr), nil
+	}
+
+	if m.state.animeAdded {
+		return ui.TextStyle.MarginTop(1).Render("Anime Added Successfully"), nil
+	}
+
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		findAnimeMsgs.viewHeader("Entry Info"),
@@ -349,5 +387,16 @@ func (m Add_AnimeModel) findAnime(query string) tea.Cmd {
 			return FetchErrorMsg(err)
 		}
 		return anime
+	}
+}
+
+func (m Add_AnimeModel) addAnime(animeID string) tea.Cmd {
+	return func() tea.Msg {
+		p := m.db.GetProfile()
+		_, err := kitsu.AddAnime(animeID, p.ID, p.AccessToken, kitsu.LibAnimeWatching)
+		if err != nil {
+			return FetchErrorMsg(err)
+		}
+		return AnimeAddedMsg{}
 	}
 }
