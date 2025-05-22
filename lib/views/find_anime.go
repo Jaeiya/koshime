@@ -21,31 +21,6 @@ const (
 	Find_SelectedAnime
 )
 
-var findAnimeHelpMap = map[FindAnimeView]HelpInfo[findAnimeModel]{
-	Find_QueryEntry: {
-		ShortHelp: func(findAnimeModel) []key.Binding {
-			return []key.Binding{keyMap.Submit, keyMap.Abort}
-		},
-	},
-	Find_Results: {
-		ShortHelp: func(m findAnimeModel) []key.Binding {
-			if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
-				return []key.Binding{keyMap.EscBack}
-			}
-			return []key.Binding{}
-		},
-	},
-	Find_SelectedAnime: {
-		ShortHelp: func(m findAnimeModel) []key.Binding {
-			synKey := m.keys.openSynopsis
-			if m.state.showSynopsis {
-				synKey = m.keys.closeSynopsis
-			}
-			return []key.Binding{synKey, keyMap.EscBack}
-		},
-	},
-}
-
 type findAnimeModel struct {
 	windowSize struct {
 		width  int
@@ -67,6 +42,7 @@ type findAnimeModel struct {
 		closeSynopsis key.Binding
 	}
 	db             *database.Database
+	helpMap        map[FindAnimeView]HelpInfo[findAnimeModel]
 	animeFinderMap map[AnimeSource]AnimeFinder
 	sourceStrMap   map[AnimeSource]string
 	state          findAnimeState
@@ -96,13 +72,6 @@ func NewFindAnimeModel(db *database.Database) findAnimeModel {
 	m.config.itemsPerPage = 5 // Max list items to display per page
 	m.config.maxResults = 10  // Max results to find per search
 
-	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
-	m.keys.openSynopsis = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "open synopsis"))
-	m.keys.closeSynopsis = key.NewBinding(
-		key.WithKeys("s"),
-		key.WithHelp("s", "close synopsis"),
-	)
-
 	m.sourceStrMap = map[AnimeSource]string{
 		Kitsu: findAnimeMsgs.kitsu,
 		Local: findAnimeMsgs.local,
@@ -114,6 +83,38 @@ func NewFindAnimeModel(db *database.Database) findAnimeModel {
 			[]kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished},
 		),
 		Local: NewLocalAnimeFinder(10, db),
+	}
+
+	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
+	m.keys.openSynopsis = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "open synopsis"))
+	m.keys.closeSynopsis = key.NewBinding(
+		key.WithKeys("s"),
+		key.WithHelp("s", "close synopsis"),
+	)
+
+	m.helpMap = map[FindAnimeView]HelpInfo[findAnimeModel]{
+		Find_QueryEntry: {
+			ShortHelp: func(findAnimeModel) []key.Binding {
+				return []key.Binding{keyMap.Submit, keyMap.Abort}
+			},
+		},
+		Find_Results: {
+			ShortHelp: func(m findAnimeModel) []key.Binding {
+				if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
+					return []key.Binding{keyMap.EscBack}
+				}
+				return []key.Binding{}
+			},
+		},
+		Find_SelectedAnime: {
+			ShortHelp: func(m findAnimeModel) []key.Binding {
+				synKey := m.keys.openSynopsis
+				if m.state.showSynopsis {
+					synKey = m.keys.closeSynopsis
+				}
+				return []key.Binding{synKey, keyMap.EscBack}
+			},
+		},
 	}
 	return m
 }
@@ -173,7 +174,7 @@ func (m findAnimeModel) ShortHelp() []key.Binding {
 		return []key.Binding{}
 	}
 
-	if v, exists := findAnimeHelpMap[m.state.view]; exists {
+	if v, exists := m.helpMap[m.state.view]; exists {
 		return v.ShortHelp(m)
 	}
 

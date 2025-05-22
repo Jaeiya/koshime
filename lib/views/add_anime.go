@@ -28,31 +28,6 @@ const (
 	Add_RssReview
 )
 
-var addAnimeHelpMap = map[AddAnimeView]HelpInfo[addAnimeModel]{
-	Add_AnimeQuery: {
-		ShortHelp: func(addAnimeModel) []key.Binding {
-			return []key.Binding{keyMap.Submit, keyMap.Abort}
-		},
-	},
-	Add_AnimeResults: {
-		ShortHelp: func(m addAnimeModel) []key.Binding {
-			if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
-				return []key.Binding{keyMap.EscBack}
-			}
-			return []key.Binding{}
-		},
-	},
-	Add_AnimeReview: {
-		ShortHelp: func(m addAnimeModel) []key.Binding {
-			synKey := m.keys.openSynopsis
-			if m.state.showSynopsis {
-				synKey = m.keys.closeSynopsis
-			}
-			return []key.Binding{synKey, keyMap.Up, keyMap.Down, keyMap.Select}
-		},
-	},
-}
-
 type addAnimeModel struct {
 	windowSize struct {
 		width  int
@@ -74,8 +49,9 @@ type addAnimeModel struct {
 		openSynopsis  key.Binding
 		closeSynopsis key.Binding
 	}
-	db    *database.Database
-	state addAnimeModelState
+	helpMap map[AddAnimeView]HelpInfo[addAnimeModel]
+	db      *database.Database
+	state   addAnimeModelState
 }
 
 type addAnimeModelState struct {
@@ -105,6 +81,30 @@ func newAddAnimeModel(db *database.Database) addAnimeModel {
 		key.WithHelp("s", "close synopsis"),
 	)
 
+	m.helpMap = map[AddAnimeView]HelpInfo[addAnimeModel]{
+		Add_AnimeQuery: {
+			ShortHelp: func(addAnimeModel) []key.Binding {
+				return []key.Binding{keyMap.Submit, keyMap.Abort}
+			},
+		},
+		Add_AnimeResults: {
+			ShortHelp: func(m addAnimeModel) []key.Binding {
+				if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
+					return []key.Binding{keyMap.EscBack}
+				}
+				return []key.Binding{}
+			},
+		},
+		Add_AnimeReview: {
+			ShortHelp: func(m addAnimeModel) []key.Binding {
+				synKey := m.keys.openSynopsis
+				if m.state.showSynopsis {
+					synKey = m.keys.closeSynopsis
+				}
+				return []key.Binding{synKey, keyMap.Up, keyMap.Down, keyMap.Select}
+			},
+		},
+	}
 	return m
 }
 
@@ -155,7 +155,7 @@ func (m addAnimeModel) ShortHelp() []key.Binding {
 	if m.state.fetchErr != nil {
 		return []key.Binding{keyMap.EscBack}
 	}
-	if bindings, exists := addAnimeHelpMap[m.state.view]; exists {
+	if bindings, exists := m.helpMap[m.state.view]; exists {
 		return bindings.ShortHelp(m)
 	}
 	return []key.Binding{}
