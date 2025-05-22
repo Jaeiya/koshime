@@ -5,6 +5,7 @@ import (
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/charmbracelet/bubbles/v2/list"
+	tea "github.com/charmbracelet/bubbletea/v2"
 )
 
 type AnimeFinder interface {
@@ -109,4 +110,26 @@ func (af LocalAnimeFinder) Search(query string) (AnimeFinderResult, error) {
 	}
 
 	return AnimeFinderResult{items, info}, nil
+}
+
+func FindKitsuAnime(query string, maxResults int, status []kitsu.AnimeStatus) tea.Cmd {
+	return func() tea.Msg {
+		af := NewKitsuAnimeFinder(maxResults, status)
+		results, err := af.Search(query)
+		if err != nil {
+			return FetchErrorMsg(err)
+		}
+		return results
+	}
+}
+
+func FindLocalAnime(query string, maxResults int, db *database.Database) tea.Cmd {
+	return func() tea.Msg {
+		af := NewLocalAnimeFinder(maxResults, db)
+		results, err := af.Search(query)
+		if err != nil {
+			return FetchErrorMsg(err)
+		}
+		return results
+	}
 }
