@@ -281,7 +281,7 @@ func (m Add_AnimeModel) ViewAnimeResults() (string, *tea.Cursor) {
 	}
 
 	if m.state.fetchErr != nil {
-		return ui.Style.MarginTop(1).Render(m.state.fetchErr.Error()), nil
+		return ui.DisplayError(m.state.fetchErr), nil
 	}
 
 	h := addAnimeMsgs.viewHeader("Results")

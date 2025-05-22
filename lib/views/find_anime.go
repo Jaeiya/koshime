@@ -303,7 +303,7 @@ func (m Find_AnimeModel) ViewResults() (string, *tea.Cursor) {
 	}
 
 	if m.state.fetchErr != nil {
-		return m.state.fetchErr.Error(), nil
+		return ui.DisplayError(m.state.fetchErr), nil
 	}
 
 	if len(m.ui.list.Items()) == 0 {
