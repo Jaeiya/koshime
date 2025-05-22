@@ -28,6 +28,8 @@ const (
 	Add_RssReview
 )
 
+type Add_AnimeHelp map[AddAnimeView]HelpInfo[addAnimeModel]
+
 type addAnimeModel struct {
 	windowSize struct {
 		width  int
@@ -49,7 +51,7 @@ type addAnimeModel struct {
 		openSynopsis  key.Binding
 		closeSynopsis key.Binding
 	}
-	helpMap map[AddAnimeView]HelpInfo[addAnimeModel]
+	helpMap Add_AnimeHelp
 	db      *database.Database
 	state   addAnimeModelState
 }
@@ -81,7 +83,7 @@ func newAddAnimeModel(db *database.Database) addAnimeModel {
 		key.WithHelp("s", "close synopsis"),
 	)
 
-	m.helpMap = map[AddAnimeView]HelpInfo[addAnimeModel]{
+	m.helpMap = Add_AnimeHelp{
 		Add_AnimeQuery: {
 			ShortHelp: func(addAnimeModel) []key.Binding {
 				return []key.Binding{keyMap.Submit, keyMap.Abort}

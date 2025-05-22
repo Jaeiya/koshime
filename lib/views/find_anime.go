@@ -21,6 +21,8 @@ const (
 	Find_SelectedAnime
 )
 
+type Find_AnimeHelp map[FindAnimeView]HelpInfo[findAnimeModel]
+
 type findAnimeModel struct {
 	windowSize struct {
 		width  int
@@ -42,7 +44,7 @@ type findAnimeModel struct {
 		closeSynopsis key.Binding
 	}
 	db             *database.Database
-	helpMap        map[FindAnimeView]HelpInfo[findAnimeModel]
+	helpMap        Find_AnimeHelp
 	animeFinderMap map[AnimeSource]AnimeFinder
 	sourceStrMap   map[AnimeSource]string
 	state          findAnimeState
@@ -92,7 +94,7 @@ func NewFindAnimeModel(db *database.Database) findAnimeModel {
 		key.WithHelp("s", "close synopsis"),
 	)
 
-	m.helpMap = map[FindAnimeView]HelpInfo[findAnimeModel]{
+	m.helpMap = Find_AnimeHelp{
 		Find_QueryEntry: {
 			ShortHelp: func(findAnimeModel) []key.Binding {
 				return []key.Binding{keyMap.Submit, keyMap.Abort}
