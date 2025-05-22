@@ -9,6 +9,7 @@ import (
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type AnimeInfo struct {
@@ -121,4 +122,12 @@ func DisplayPropValue(props []string, values []string) string {
 	}
 
 	return Style.MarginLeft(5).Render(strings.TrimRight(sb.String(), "\n"))
+}
+
+func DisplayError(err error) string {
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		TextStyle.MarginTop(1).Foreground(ansi.BrightRed).Render("Error"),
+		TextStyle.PaddingLeft(2).Foreground(ansi.BrightYellow).Render(err.Error()),
+	)
 }
