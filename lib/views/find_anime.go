@@ -13,17 +13,17 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-type FindAnimeView int
+type Find_AnimeView int
 
 const (
-	Find_QueryEntry = FindAnimeView(iota)
+	Find_QueryEntry = Find_AnimeView(iota)
 	Find_Results
 	Find_SelectedAnime
 )
 
-type Find_AnimeHelp map[FindAnimeView]HelpInfo[findAnimeModel]
+type Find_AnimeHelp map[Find_AnimeView]HelpInfo[Find_AnimeModel]
 
-type findAnimeModel struct {
+type Find_AnimeModel struct {
 	windowSize struct {
 		width  int
 		height int
@@ -47,11 +47,11 @@ type findAnimeModel struct {
 	helpMap        Find_AnimeHelp
 	animeFinderMap map[AnimeSource]AnimeFinder
 	sourceStrMap   map[AnimeSource]string
-	state          findAnimeState
+	state          Find_AnimeState
 }
 
-type findAnimeState struct {
-	view          FindAnimeView
+type Find_AnimeState struct {
+	view          Find_AnimeView
 	fetchErr      FetchErrorMsg
 	results       []ui.AnimeInfo
 	selectedAnime ui.AnimeInfo
@@ -59,8 +59,8 @@ type findAnimeState struct {
 	showSynopsis  bool
 }
 
-func NewFindAnimeModel(db *database.Database) findAnimeModel {
-	m := findAnimeModel{db: db}
+func newFindAnimeModel(db *database.Database) Find_AnimeModel {
+	m := Find_AnimeModel{db: db}
 
 	m.ui.loader = ui.NewLoader()
 	m.ui.list = ui.NewList(ui.ListOptions{})
@@ -96,12 +96,12 @@ func NewFindAnimeModel(db *database.Database) findAnimeModel {
 
 	m.helpMap = Find_AnimeHelp{
 		Find_QueryEntry: {
-			ShortHelp: func(findAnimeModel) []key.Binding {
+			ShortHelp: func(Find_AnimeModel) []key.Binding {
 				return []key.Binding{keyMap.Submit, keyMap.Abort}
 			},
 		},
 		Find_Results: {
-			ShortHelp: func(m findAnimeModel) []key.Binding {
+			ShortHelp: func(m Find_AnimeModel) []key.Binding {
 				if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
 					return []key.Binding{keyMap.EscBack}
 				}
@@ -109,7 +109,7 @@ func NewFindAnimeModel(db *database.Database) findAnimeModel {
 			},
 		},
 		Find_SelectedAnime: {
-			ShortHelp: func(m findAnimeModel) []key.Binding {
+			ShortHelp: func(m Find_AnimeModel) []key.Binding {
 				synKey := m.keys.openSynopsis
 				if m.state.showSynopsis {
 					synKey = m.keys.closeSynopsis
@@ -121,7 +121,7 @@ func NewFindAnimeModel(db *database.Database) findAnimeModel {
 	return m
 }
 
-func (m findAnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m Find_AnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -156,7 +156,7 @@ func (m findAnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m findAnimeModel) View() (string, *tea.Cursor) {
+func (m Find_AnimeModel) View() (string, *tea.Cursor) {
 	switch m.state.view {
 	case Find_QueryEntry:
 		return m.ViewQueryEntry()
@@ -171,7 +171,7 @@ func (m findAnimeModel) View() (string, *tea.Cursor) {
 	return "missing view", nil
 }
 
-func (m findAnimeModel) ShortHelp() []key.Binding {
+func (m Find_AnimeModel) ShortHelp() []key.Binding {
 	if m.ui.loader.IsLoading() {
 		return []key.Binding{}
 	}
@@ -183,11 +183,11 @@ func (m findAnimeModel) ShortHelp() []key.Binding {
 	return []key.Binding{}
 }
 
-func (m findAnimeModel) FullHelp() [][]key.Binding {
+func (m Find_AnimeModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m findAnimeModel) UpdateQueryEntry(msg tea.Msg) (findAnimeModel, tea.Cmd) {
+func (m Find_AnimeModel) UpdateQueryEntry(msg tea.Msg) (Find_AnimeModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -219,7 +219,7 @@ func (m findAnimeModel) UpdateQueryEntry(msg tea.Msg) (findAnimeModel, tea.Cmd) 
 	return m, tea.Batch(cmds...)
 }
 
-func (m findAnimeModel) ViewQueryEntry() (string, *tea.Cursor) {
+func (m Find_AnimeModel) ViewQueryEntry() (string, *tea.Cursor) {
 	c := m.ui.input.Cursor()
 	c.Shape = tea.CursorBar
 
@@ -241,7 +241,7 @@ func (m findAnimeModel) ViewQueryEntry() (string, *tea.Cursor) {
 	return lipgloss.JoinVertical(lipgloss.Left, view), c
 }
 
-func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
+func (m Find_AnimeModel) UpdateResults(msg tea.Msg) (Find_AnimeModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -297,7 +297,7 @@ func (m findAnimeModel) UpdateResults(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m findAnimeModel) ViewResults() (string, *tea.Cursor) {
+func (m Find_AnimeModel) ViewResults() (string, *tea.Cursor) {
 	if m.ui.loader.IsLoading() {
 		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
 	}
@@ -331,7 +331,7 @@ func (m findAnimeModel) ViewResults() (string, *tea.Cursor) {
 	return lipgloss.JoinVertical(lipgloss.Left, h, m.ui.list.View()), c
 }
 
-func (m findAnimeModel) UpdateAnime(msg tea.Msg) (findAnimeModel, tea.Cmd) {
+func (m Find_AnimeModel) UpdateAnime(msg tea.Msg) (Find_AnimeModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
@@ -345,7 +345,7 @@ func (m findAnimeModel) UpdateAnime(msg tea.Msg) (findAnimeModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m findAnimeModel) ViewAnime() string {
+func (m Find_AnimeModel) ViewAnime() string {
 	if m.state.results != nil {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -358,15 +358,15 @@ func (m findAnimeModel) ViewAnime() string {
 	return "missing local or kitsu results to display"
 }
 
-func (m *findAnimeModel) reset() {
+func (m *Find_AnimeModel) reset() {
 	// Do not reset source
 	source := m.state.source
-	m.state = findAnimeState{}
+	m.state = Find_AnimeState{}
 	m.state.source = source
 	m.ui.input.Reset()
 }
 
-func (m *findAnimeModel) findAnime(query string) tea.Cmd {
+func (m *Find_AnimeModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
 		var result AnimeFinderResult
 		var err error

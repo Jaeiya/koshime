@@ -55,7 +55,7 @@ type userSetupModel struct {
 	}
 }
 
-func NewUserSetupModel() userSetupModel {
+func newUserSetupModel() userSetupModel {
 	return userSetupModel{
 		loader: ui.NewLoader(),
 		input:  ui.NewTextInput(),

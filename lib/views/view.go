@@ -183,8 +183,8 @@ func New(dbPath string) (Model, error) {
 	model.db = db
 
 	model.menuViewMap = map[UIView]ViewModel{
-		SetupUser: NewUserSetupModel(),
-		FindAnime: NewFindAnimeModel(db),
+		SetupUser: newUserSetupModel(),
+		FindAnime: newFindAnimeModel(db),
 		AddAnime:  newAddAnimeModel(db),
 	}
 

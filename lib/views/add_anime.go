@@ -16,11 +16,11 @@ import (
 )
 
 type (
-	AddAnimeView int
+	Add_AnimeView int
 )
 
 const (
-	Add_AnimeQuery = AddAnimeView(iota)
+	Add_AnimeQuery = Add_AnimeView(iota)
 	Add_AnimeResults
 	Add_AnimeReview
 	Add_Rss
@@ -28,9 +28,9 @@ const (
 	Add_RssReview
 )
 
-type Add_AnimeHelp map[AddAnimeView]HelpInfo[addAnimeModel]
+type Add_AnimeHelp map[Add_AnimeView]HelpInfo[Add_AnimeModel]
 
-type addAnimeModel struct {
+type Add_AnimeModel struct {
 	windowSize struct {
 		width  int
 		height int
@@ -53,19 +53,19 @@ type addAnimeModel struct {
 	}
 	helpMap Add_AnimeHelp
 	db      *database.Database
-	state   addAnimeModelState
+	state   Add_AnimeModelState
 }
 
-type addAnimeModelState struct {
-	view          AddAnimeView
+type Add_AnimeModelState struct {
+	view          Add_AnimeView
 	fetchErr      error
 	results       []ui.AnimeInfo
 	selectedAnime ui.AnimeInfo
 	showSynopsis  bool
 }
 
-func newAddAnimeModel(db *database.Database) addAnimeModel {
-	m := addAnimeModel{db: db}
+func newAddAnimeModel(db *database.Database) Add_AnimeModel {
+	m := Add_AnimeModel{db: db}
 	m.config.minInputLen = 4
 	m.config.maxInputWidth = 30
 	m.config.itemsPerPage = 5
@@ -85,12 +85,12 @@ func newAddAnimeModel(db *database.Database) addAnimeModel {
 
 	m.helpMap = Add_AnimeHelp{
 		Add_AnimeQuery: {
-			ShortHelp: func(addAnimeModel) []key.Binding {
+			ShortHelp: func(Add_AnimeModel) []key.Binding {
 				return []key.Binding{keyMap.Submit, keyMap.Abort}
 			},
 		},
 		Add_AnimeResults: {
-			ShortHelp: func(m addAnimeModel) []key.Binding {
+			ShortHelp: func(m Add_AnimeModel) []key.Binding {
 				if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
 					return []key.Binding{keyMap.EscBack}
 				}
@@ -98,7 +98,7 @@ func newAddAnimeModel(db *database.Database) addAnimeModel {
 			},
 		},
 		Add_AnimeReview: {
-			ShortHelp: func(m addAnimeModel) []key.Binding {
+			ShortHelp: func(m Add_AnimeModel) []key.Binding {
 				synKey := m.keys.openSynopsis
 				if m.state.showSynopsis {
 					synKey = m.keys.closeSynopsis
@@ -110,7 +110,7 @@ func newAddAnimeModel(db *database.Database) addAnimeModel {
 	return m
 }
 
-func (m addAnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m Add_AnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -141,7 +141,7 @@ func (m addAnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m addAnimeModel) View() (string, *tea.Cursor) {
+func (m Add_AnimeModel) View() (string, *tea.Cursor) {
 	switch m.state.view {
 	case Add_AnimeQuery:
 		return m.ViewQueryAnime()
@@ -153,7 +153,7 @@ func (m addAnimeModel) View() (string, *tea.Cursor) {
 	return "AddAnime::missing view", nil
 }
 
-func (m addAnimeModel) ShortHelp() []key.Binding {
+func (m Add_AnimeModel) ShortHelp() []key.Binding {
 	if m.state.fetchErr != nil {
 		return []key.Binding{keyMap.EscBack}
 	}
@@ -163,11 +163,11 @@ func (m addAnimeModel) ShortHelp() []key.Binding {
 	return []key.Binding{}
 }
 
-func (m addAnimeModel) FullHelp() [][]key.Binding {
+func (m Add_AnimeModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m addAnimeModel) UpdateAnimeQuery(msg tea.Msg) (addAnimeModel, tea.Cmd) {
+func (m Add_AnimeModel) UpdateAnimeQuery(msg tea.Msg) (Add_AnimeModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -193,7 +193,7 @@ func (m addAnimeModel) UpdateAnimeQuery(msg tea.Msg) (addAnimeModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m addAnimeModel) ViewQueryAnime() (string, *tea.Cursor) {
+func (m Add_AnimeModel) ViewQueryAnime() (string, *tea.Cursor) {
 	c := m.ui.input.Cursor()
 	c.Shape = tea.CursorBar
 
@@ -214,7 +214,7 @@ func (m addAnimeModel) ViewQueryAnime() (string, *tea.Cursor) {
 	), c
 }
 
-func (m addAnimeModel) UpdateAnimeResults(msg tea.Msg) (addAnimeModel, tea.Cmd) {
+func (m Add_AnimeModel) UpdateAnimeResults(msg tea.Msg) (Add_AnimeModel, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -263,7 +263,7 @@ func (m addAnimeModel) UpdateAnimeResults(msg tea.Msg) (addAnimeModel, tea.Cmd) 
 	return m, cmd
 }
 
-func (m addAnimeModel) ViewAnimeResults() (string, *tea.Cursor) {
+func (m Add_AnimeModel) ViewAnimeResults() (string, *tea.Cursor) {
 	if m.ui.loader.IsLoading() {
 		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
 	}
@@ -298,7 +298,7 @@ func (m addAnimeModel) ViewAnimeResults() (string, *tea.Cursor) {
 	return lipgloss.JoinVertical(lipgloss.Left, h, m.ui.list.View()), c
 }
 
-func (m addAnimeModel) UpdateAnimeReview(msg tea.Msg) (addAnimeModel, tea.Cmd) {
+func (m Add_AnimeModel) UpdateAnimeReview(msg tea.Msg) (Add_AnimeModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
@@ -322,7 +322,7 @@ func (m addAnimeModel) UpdateAnimeReview(msg tea.Msg) (addAnimeModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m addAnimeModel) ViewAnimeReview() (string, *tea.Cursor) {
+func (m Add_AnimeModel) ViewAnimeReview() (string, *tea.Cursor) {
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		findAnimeMsgs.viewHeader("Entry Info"),
@@ -334,14 +334,14 @@ func (m addAnimeModel) ViewAnimeReview() (string, *tea.Cursor) {
 	), nil
 }
 
-func (m *addAnimeModel) reset() {
-	m.state = addAnimeModelState{
+func (m *Add_AnimeModel) reset() {
+	m.state = Add_AnimeModelState{
 		view: Add_AnimeQuery,
 	}
 	m.ui.input.Reset()
 }
 
-func (m addAnimeModel) findAnime(query string) tea.Cmd {
+func (m Add_AnimeModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
 		af := NewKitsuAnimeFinder(m.config.maxAnimeResults, []kitsu.AnimeStatus{kitsu.AnimeNew})
 		anime, err := af.Search(query)
