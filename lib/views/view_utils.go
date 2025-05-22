@@ -11,6 +11,24 @@ type AnimeFinder interface {
 	Search(query string) (AnimeFinderResult, error)
 }
 
+type AnimeFinderSource int
+
+const (
+	Kitsu = AnimeFinderSource(iota)
+	Local
+)
+
+func (s AnimeFinderSource) String() string {
+	switch s {
+	case Kitsu:
+		return "Kitsu"
+	case Local:
+		return "Local"
+	default:
+		return "Unknown"
+	}
+}
+
 type AnimeFinderResult struct {
 	listItems []list.Item
 	infoItems []ui.AnimeInfo

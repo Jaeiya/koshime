@@ -45,8 +45,8 @@ type Find_AnimeModel struct {
 	}
 	db             *database.Database
 	helpMap        Find_AnimeHelp
-	animeFinderMap map[AnimeSource]AnimeFinder
-	sourceStrMap   map[AnimeSource]string
+	animeFinderMap map[AnimeFinderSource]AnimeFinder
+	sourceStrMap   map[AnimeFinderSource]string
 	state          Find_AnimeState
 }
 
@@ -55,7 +55,7 @@ type Find_AnimeState struct {
 	fetchErr      FetchErrorMsg
 	results       []ui.AnimeInfo
 	selectedAnime ui.AnimeInfo
-	source        AnimeSource
+	source        AnimeFinderSource
 	showSynopsis  bool
 }
 
@@ -74,12 +74,12 @@ func newFindAnimeModel(db *database.Database) Find_AnimeModel {
 	m.config.itemsPerPage = 5 // Max list items to display per page
 	m.config.maxResults = 10  // Max results to find per search
 
-	m.sourceStrMap = map[AnimeSource]string{
+	m.sourceStrMap = map[AnimeFinderSource]string{
 		Kitsu: findAnimeMsgs.kitsu,
 		Local: findAnimeMsgs.local,
 	}
 
-	m.animeFinderMap = map[AnimeSource]AnimeFinder{
+	m.animeFinderMap = map[AnimeFinderSource]AnimeFinder{
 		Kitsu: NewKitsuAnimeFinder(
 			10,
 			[]kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished},
