@@ -3,6 +3,8 @@ package kitsu
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
+	"strings"
 )
 
 type LibraryEntry struct {
@@ -117,8 +119,17 @@ type ErrorData struct {
 }
 
 func (ed ErrorData) String() string {
+	var sb strings.Builder
 	for _, err := range ed.Errors {
-		return fmt.Sprintf("%s :: %s\n", err.Status, err.Title)
+		status, _ := strconv.Atoi(err.Status)
+		errType := "ClientError"
+		if status >= 500 {
+			errType = "ServerError"
+		}
+		sb.WriteString(fmt.Sprintf("%s: [HTTP %s] %s\n", errType, err.Status, err.Title))
+	}
+	if sb.Len() > 0 {
+		return sb.String()
 	}
 	return "no error data"
 }
