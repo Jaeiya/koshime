@@ -14,6 +14,7 @@ import (
 
 type AnimeInfo struct {
 	ID        string
+	LibID     string
 	JpnTitle  string
 	EngTitle  string
 	AltTitles []string

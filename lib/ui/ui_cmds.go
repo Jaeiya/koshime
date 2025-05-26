@@ -97,6 +97,7 @@ func (af LocalAnimeFinder) Search(query string) (AnimeFinderResult, error) {
 		items[i] = NewListItem(item.JPN_Title, item.ENG_Title, i)
 		info[i] = AnimeInfo{
 			ID:        item.ID,
+			LibID:     item.LibID,
 			JpnTitle:  item.JPN_Title,
 			EngTitle:  item.ENG_Title,
 			AltTitles: item.AltTitles,
