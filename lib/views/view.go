@@ -130,7 +130,7 @@ func New(dbPath string) (Model, error) {
 	model.menuViewMap = map[UIView]ViewModel{
 		SetupUser: newUserSetupModel(),
 		FindAnime: newFindAnimeModel(db),
-		AddAnime:  NewTestModel(db),
+		AddAnime:  newAddAnimeModel(db),
 		DelAnime:  newDelAnimeModel(db),
 	}
 
