@@ -1,0 +1,563 @@
+package ui
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/Jaeiya/koshime/lib/database"
+	"github.com/Jaeiya/koshime/lib/kitsu"
+	"github.com/Jaeiya/koshime/lib/utils"
+	"github.com/charmbracelet/bubbles/v2/key"
+	"github.com/charmbracelet/bubbles/v2/list"
+	"github.com/charmbracelet/bubbles/v2/textinput"
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
+)
+
+type FindAnimeView int
+
+const (
+	FindAnime_Query = FindAnimeView(iota)
+	FindAnime_Results
+	FindAnime_Selected
+)
+
+type (
+	SelectedAnimeMsg = AnimeInfo
+	FindAnimeOption  func(*FindAnimeConfig)
+	FindAnimeHelp    map[FindAnimeView]KeyHelpInfo[FindAnimeModel]
+)
+
+type FindAnimeConfig struct {
+	header       string
+	inputWidth   int
+	minInputLen  int
+	itemsPerPage int
+	maxResults   int
+	source       AnimeFinderSource
+	kitsuStatus  []kitsu.AnimeStatus
+}
+
+func WithHeader(h string) FindAnimeOption {
+	return func(fac *FindAnimeConfig) {
+		fac.header = h
+	}
+}
+
+func WithInputWidth(w int) FindAnimeOption {
+	return func(fac *FindAnimeConfig) {
+		fac.inputWidth = w
+	}
+}
+
+func WithMinInputLen(len int) FindAnimeOption {
+	return func(fac *FindAnimeConfig) {
+		fac.minInputLen = len
+	}
+}
+
+func WithItemsPerPage(ipp int) FindAnimeOption {
+	return func(fac *FindAnimeConfig) {
+		fac.itemsPerPage = ipp
+	}
+}
+
+func WithMaxResults(max int) FindAnimeOption {
+	return func(fac *FindAnimeConfig) {
+		fac.maxResults = max
+	}
+}
+
+func WithKitsuSource(s []kitsu.AnimeStatus) FindAnimeOption {
+	return func(fac *FindAnimeConfig) {
+		if fac.source != NoSource {
+			panic("cannot set to [kitsu] source; already using another source")
+		}
+		fac.kitsuStatus = s
+		fac.source = Kitsu
+	}
+}
+
+func WithLocalSource() FindAnimeOption {
+	return func(fac *FindAnimeConfig) {
+		if fac.source != NoSource {
+			panic("cannot set to [local] source; already using another source")
+		}
+		fac.source = Local
+	}
+}
+
+type FindAnimeModel struct {
+	windowSize struct {
+		width  int
+		height int
+	}
+	config struct {
+		header       string
+		inputWidth   int
+		minInputLen  int
+		itemsPerPage int
+		maxResults   int
+		source       AnimeFinderSource
+	}
+	ui struct {
+		list   list.Model
+		input  textinput.Model
+		loader LoaderModel
+	}
+	keys struct {
+		tab           key.Binding
+		openSynopsis  key.Binding
+		closeSynopsis key.Binding
+	}
+	helpMap        FindAnimeHelp
+	db             *database.Database
+	state          FindAnimeState
+	animeFinderMap map[AnimeFinderSource]AnimeFinder
+}
+
+type FindAnimeState struct {
+	fetchErr      error
+	view          FindAnimeView
+	source        AnimeFinderSource
+	results       []AnimeInfo
+	selectedAnime AnimeInfo
+	showSynopsis  bool
+}
+
+func NewFindAnimeModel(db *database.Database, opts ...FindAnimeOption) *FindAnimeModel {
+	cfg := &FindAnimeConfig{}
+	for _, o := range opts {
+		o(cfg)
+	}
+
+	m := &FindAnimeModel{db: db}
+
+	m.ui.loader = NewLoader()
+	m.ui.list = NewList(ListOptions{})
+
+	m.ui.input = NewTextInput()
+	m.ui.input.Focus()
+	m.ui.input.Placeholder = "Enter your query"
+	m.ui.input.SetWidth(20)
+
+	if cfg.inputWidth > 0 {
+		m.ui.input.SetWidth(cfg.inputWidth)
+	}
+
+	m.config.header = "Find Anime"
+	if cfg.header != "" {
+		m.config.header = cfg.header
+	}
+
+	m.config.minInputLen = 4 // Minimum characters to submit search
+	if cfg.minInputLen > 0 {
+		m.config.minInputLen = cfg.minInputLen
+	}
+
+	m.config.itemsPerPage = 5 // Max list items to display per page
+	if cfg.itemsPerPage > 0 {
+		m.config.itemsPerPage = cfg.itemsPerPage
+	}
+
+	m.config.maxResults = 10 // Max results to find per search
+	if cfg.maxResults > 0 {
+		m.config.maxResults = cfg.maxResults
+	}
+
+	m.config.source = cfg.source
+	if cfg.source != NoSource {
+		m.state.source = cfg.source
+	} else {
+		m.state.source = Kitsu
+	}
+
+	if cfg.kitsuStatus == nil {
+		cfg.kitsuStatus = []kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished}
+	}
+
+	m.animeFinderMap = map[AnimeFinderSource]AnimeFinder{
+		Kitsu: NewKitsuAnimeFinder(m.config.maxResults, cfg.kitsuStatus),
+		Local: NewLocalAnimeFinder(m.config.maxResults, db),
+	}
+
+	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
+	m.keys.openSynopsis = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "open synopsis"))
+	m.keys.closeSynopsis = key.NewBinding(
+		key.WithKeys("s"),
+		key.WithHelp("s", "close synopsis"),
+	)
+
+	m.helpMap = FindAnimeHelp{
+		FindAnime_Query: {
+			ShortHelp: func(fam FindAnimeModel) []key.Binding {
+				if m.config.source == NoSource {
+					return []key.Binding{m.keys.tab, KeyMap.Submit}
+				}
+				return []key.Binding{KeyMap.Submit}
+			},
+		},
+		FindAnime_Results: {
+			ShortHelp: func(fam FindAnimeModel) []key.Binding {
+				if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
+					return []key.Binding{KeyMap.EscBack}
+				}
+				return []key.Binding{}
+			},
+		},
+		FindAnime_Selected: {
+			ShortHelp: func(fam FindAnimeModel) []key.Binding {
+				synKey := m.keys.openSynopsis
+				if m.state.showSynopsis {
+					synKey = m.keys.closeSynopsis
+				}
+				return []key.Binding{synKey, KeyMap.Submit, KeyMap.EscBack}
+			},
+		},
+	}
+
+	return m
+}
+
+func (m *FindAnimeModel) Update(msg tea.Msg) tea.Cmd {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.windowSize.width = msg.Width
+		m.windowSize.height = msg.Height
+	}
+
+	if m.ui.loader.IsLoading() {
+		m.ui.loader, cmd = m.ui.loader.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	switch m.state.view {
+	case FindAnime_Query:
+		cmd = m.UpdateQuery(msg)
+		cmds = append(cmds, cmd)
+	case FindAnime_Results:
+		cmd = m.UpdateResults(msg)
+		cmds = append(cmds, cmd)
+	case FindAnime_Selected:
+		cmd = m.UpdateSelection(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	return tea.Batch(cmds...)
+}
+
+func (m FindAnimeModel) View() (string, *tea.Cursor) {
+	switch m.state.view {
+	case FindAnime_Query:
+		return m.ViewQuery()
+	case FindAnime_Results:
+		return m.ViewResults()
+	case FindAnime_Selected:
+		return m.ViewSelection()
+	}
+	return "", nil
+}
+
+func (m FindAnimeModel) ShortHelp() []key.Binding {
+	return m.helpMap[m.state.view].ShortHelp(m)
+}
+
+func (m FindAnimeModel) FullHelp() [][]key.Binding {
+	return [][]key.Binding{}
+}
+
+func (m *FindAnimeModel) UpdateQuery(msg tea.Msg) tea.Cmd {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, KeyMap.Submit):
+			hasShortInput := utils.RuneCount(m.ui.input.Value()) < m.config.minInputLen
+
+			if m.ui.loader.IsLoading() || hasShortInput {
+				break
+			}
+
+			m.ui.loader, cmd = m.ui.loader.Start(m.config.header)
+			m.state.view = FindAnime_Results
+			return tea.Batch(cmd, m.findAnime(m.ui.input.Value()))
+
+		case key.Matches(msg, m.keys.tab):
+			// Only show tab when defaulting to multi-source search
+			if m.config.source != NoSource {
+				break
+			}
+			m.state.source = (m.state.source + 1) % 3
+			// Ignore 'NoSource' state
+			if m.state.source == 0 {
+				m.state.source += 1
+			}
+		}
+	}
+
+	m.ui.input, cmd = m.ui.input.Update(msg)
+	cmds = append(cmds, cmd)
+	return tea.Batch(cmds...)
+}
+
+func (m FindAnimeModel) ViewQuery() (string, *tea.Cursor) {
+	c := m.ui.input.Cursor()
+	c.Shape = tea.CursorBar
+
+	search := ""
+	if m.config.source == NoSource {
+		search = TextStyle.Foreground(ansi.BrightBlack).
+			Render(utils.ColorText(fmt.Sprintf(";bk;Source: ;dgu;%s", m.state.source)))
+	}
+
+	desc := Style.MarginTop(1).Render(newText([]string{
+		`Lookup an anime by any ;b;word ;x;or ;b;phrase;x;. Try to use
+words that might be in the ;dc;title ;x;or ;dc;description;x;, for
+better results.`,
+	}, 0))
+
+	if m.config.source == NoSource {
+		desc = newText(
+			[]string{
+				`;x;You can search for a ;b;full title;x;, ;b;phrase;x;, or just a ;b;single
+word;x;. You can even search for ;b;part ;x;of a word. Your query will be applied to all
+available titles, as well as the synopsis.`,
+				`The ;dgu;Kitsu;x; source searches ;b;all ;x;of Kitsu (not just your Kitsu
+library) for any matches.`,
+				`The ;dgu;Local;x; source searches your ;b;Koshime ;x;database for any matches.
+It only contains anime that you're currently watching.`,
+			},
+			0, 1, 1,
+		)
+	}
+
+	header := lipgloss.JoinVertical(
+		lipgloss.Left,
+		newHeader(m.config.header),
+		desc,
+	)
+
+	footer := lipgloss.JoinVertical(
+		lipgloss.Left,
+		Style.MarginTop(1).Render(lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			m.ui.input.View(),
+			DisplayCharLimit(m.config.minInputLen, m.ui.input.Value()),
+		)),
+	)
+
+	view := header
+	if m.config.source == NoSource {
+		view = lipgloss.JoinVertical(
+			lipgloss.Left,
+			view,
+			search,
+		)
+	}
+
+	view = lipgloss.JoinVertical(
+		lipgloss.Left,
+		view,
+		footer,
+	)
+	c.Y += lipgloss.Height(view) - 1
+	return view, c
+}
+
+func (m *FindAnimeModel) UpdateResults(msg tea.Msg) tea.Cmd {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		// Go back to query-entry-view from results-view
+		case key.Matches(msg, KeyMap.MainMenu):
+			// List needs 'Esc' control to cancel filter
+			if m.ui.list.FilterState() > list.Unfiltered {
+				break
+			}
+			m.reset()
+
+		// Go back to query-entry-view from results-view
+		case key.Matches(msg, KeyMap.Back):
+			if m.ui.list.FilterState() != list.Filtering {
+				m.reset()
+			}
+
+		// Select Anime
+		case key.Matches(msg, KeyMap.Submit):
+			// List needs 'Enter' control for applying filter
+			if m.ui.list.FilterState() == list.Filtering {
+				break
+			}
+			if len(m.state.results) > 0 {
+				item := m.ui.list.SelectedItem().(ListItem)
+				m.state.selectedAnime = m.state.results[item.Index()]
+				m.state.view = FindAnime_Selected
+			}
+
+		}
+
+	case AnimeFinderResult:
+		m.ui.loader.Stop()
+		m.state.results = msg.InfoItems
+
+		m.ui.list = NewList(
+			ListOptions{
+				Items:         msg.ListItems,
+				ShortHelpKeys: []key.Binding{KeyMap.Back},
+				Width:         m.windowSize.width,
+				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
+				ItemsPerPage:  m.config.itemsPerPage,
+			},
+		)
+	}
+
+	m.ui.list, cmd = m.ui.list.Update(msg)
+	cmds = append(cmds, cmd)
+	return tea.Batch(cmds...)
+}
+
+func (m FindAnimeModel) ViewResults() (string, *tea.Cursor) {
+	if m.ui.loader.IsLoading() {
+		return Style.MarginTop(1).Render(m.ui.loader.View()), nil
+	}
+
+	if m.state.fetchErr != nil {
+		return DisplayError(m.state.fetchErr), nil
+	}
+
+	if len(m.ui.list.Items()) == 0 {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			newViewHeader(m.config.header)("Results"),
+			newText([]string{
+				fmt.Sprintf(
+					";x;No ;dgu;%s;x; results found for: ;y;%s",
+					m.state.source,
+					m.ui.input.Value(),
+				),
+			}, 0, 1),
+		), nil
+	}
+
+	h := newViewHeader(m.config.header)("Results")
+	var c *tea.Cursor
+	// The filter has no margin, so we enforce
+	if m.ui.list.FilterState() == list.Filtering {
+		h = Style.MarginBottom(1).Render(h)
+		c = m.ui.list.FilterInput.Cursor()
+		c.Shape = tea.CursorBlock
+		c.Color = ansi.Yellow
+		c.Y += lipgloss.Height(h)
+		c.X += 2 // Adjust for custom margin
+	}
+	return lipgloss.JoinVertical(lipgloss.Left, h, m.ui.list.View()), c
+}
+
+func (m *FindAnimeModel) UpdateSelection(msg tea.Msg) tea.Cmd {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, KeyMap.EscBack, KeyMap.Back):
+			m.state.view = FindAnime_Results
+
+		case key.Matches(msg, m.keys.openSynopsis):
+			m.state.showSynopsis = !m.state.showSynopsis
+
+		case key.Matches(msg, KeyMap.Submit):
+			return func() tea.Msg { return SelectedAnimeMsg(m.state.selectedAnime) }
+		}
+	}
+	return nil
+}
+
+func (m FindAnimeModel) ViewSelection() (string, *tea.Cursor) {
+	if m.state.results != nil {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			newViewHeader(m.config.header)("Entry Info"),
+			"",
+			DisplayAnimeInfo(m.state.selectedAnime, m.state.showSynopsis),
+		), nil
+	}
+
+	return fmt.Sprintf("missing [%s] results to display", m.state.source), nil
+}
+
+func (m *FindAnimeModel) reset() {
+	source := m.state.source
+	m.state = FindAnimeState{}
+	m.state.source = source
+	m.ui.input.Reset()
+}
+
+func (m *FindAnimeModel) findAnime(query string) tea.Cmd {
+	return func() tea.Msg {
+		var result AnimeFinderResult
+		var err error
+
+		switch m.state.source {
+		case Kitsu:
+			result, err = m.animeFinderMap[Kitsu].Search(query)
+			if err != nil {
+				return err
+			}
+
+		case Local:
+			result, err = m.animeFinderMap[Local].Search(query)
+			if err != nil {
+				return err
+			}
+		}
+
+		m.state.results = result.InfoItems
+		return result
+	}
+}
+
+func newHeader(s string) string {
+	return newText([]string{
+		fmt.Sprintf(";g;... ;b;%s ;g;...", s),
+	}, 0, 1)
+}
+
+func newText(lines []string, margins ...int) string {
+	marginLen := len(margins)
+	for i, para := range lines {
+		s := TextStyle
+		if marginLen > 0 && margins[0] > 0 {
+			s = s.Margin().MarginBottom(margins[0])
+		}
+
+		if marginLen > 1 && margins[1] > 0 {
+			s = s.MarginTop(margins[1])
+		}
+
+		para = strings.ReplaceAll(para, "\n", " ")
+		lines[i] = s.Render(utils.ColorText(para))
+	}
+
+	text := lipgloss.JoinVertical(lipgloss.Left, lines...)
+	if marginLen > 2 && margins[2] > 0 {
+		text = Style.MarginBottom(margins[2]).Render(text)
+	}
+	return text
+}
+
+func newViewHeader(s string) viewHeader {
+	return func(view string) string {
+		return newText([]string{
+			fmt.Sprintf(";g;... ;b;%s;g; ⟶ ;w;%s ;g;...", s, view),
+		}, 0, 1)
+	}
+}
+
+type viewHeader func(view string) string
