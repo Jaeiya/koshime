@@ -1,9 +1,8 @@
-package views
+package ui
 
 import (
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
-	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/charmbracelet/bubbles/v2/list"
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
@@ -15,7 +14,8 @@ type AnimeFinder interface {
 type AnimeFinderSource int
 
 const (
-	Kitsu = AnimeFinderSource(iota)
+	NoSource = AnimeFinderSource(iota)
+	Kitsu
 	Local
 )
 
@@ -31,8 +31,8 @@ func (s AnimeFinderSource) String() string {
 }
 
 type AnimeFinderResult struct {
-	listItems []list.Item
-	infoItems []ui.AnimeInfo
+	ListItems []list.Item
+	InfoItems []AnimeInfo
 }
 
 type KitsuAnimeFinder struct {
@@ -49,15 +49,15 @@ func (af KitsuAnimeFinder) Search(query string) (AnimeFinderResult, error) {
 	if err != nil {
 		return AnimeFinderResult{}, err
 	}
-	info := make([]ui.AnimeInfo, len(anime))
+	info := make([]AnimeInfo, len(anime))
 	items := make([]list.Item, len(anime))
 	for i, item := range anime {
-		items[i] = ui.NewListItem(
+		items[i] = NewListItem(
 			item.Attributes.CanonicalTitle,
 			item.Attributes.Titles.English,
 			i,
 		)
-		info[i] = ui.AnimeInfo{
+		info[i] = AnimeInfo{
 			ID:        item.ID,
 			JpnTitle:  item.Attributes.CanonicalTitle,
 			EngTitle:  item.Attributes.Titles.English,
@@ -91,11 +91,11 @@ func (af LocalAnimeFinder) Search(query string) (AnimeFinderResult, error) {
 
 	anime = anime[:min(af.maxResults, len(anime))]
 
-	info := make([]ui.AnimeInfo, len(anime))
+	info := make([]AnimeInfo, len(anime))
 	items := make([]list.Item, len(anime))
 	for i, item := range anime {
-		items[i] = ui.NewListItem(item.JPN_Title, item.ENG_Title, i)
-		info[i] = ui.AnimeInfo{
+		items[i] = NewListItem(item.JPN_Title, item.ENG_Title, i)
+		info[i] = AnimeInfo{
 			ID:        item.ID,
 			JpnTitle:  item.JPN_Title,
 			EngTitle:  item.ENG_Title,
@@ -117,7 +117,7 @@ func FindKitsuAnime(query string, maxResults int, status []kitsu.AnimeStatus) te
 		af := NewKitsuAnimeFinder(maxResults, status)
 		results, err := af.Search(query)
 		if err != nil {
-			return FetchErrorMsg(err)
+			return err
 		}
 		return results
 	}
@@ -128,7 +128,7 @@ func FindLocalAnime(query string, maxResults int, db *database.Database) tea.Cmd
 		af := NewLocalAnimeFinder(maxResults, db)
 		results, err := af.Search(query)
 		if err != nil {
-			return FetchErrorMsg(err)
+			return err
 		}
 		return results
 	}

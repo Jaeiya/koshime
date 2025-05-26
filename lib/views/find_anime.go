@@ -21,7 +21,7 @@ const (
 	Find_SelectedAnime
 )
 
-type Find_AnimeHelp map[Find_AnimeView]HelpInfo[Find_AnimeModel]
+type Find_AnimeHelp map[Find_AnimeView]ui.KeyHelpInfo[Find_AnimeModel]
 
 type Find_AnimeModel struct {
 	windowSize struct {
@@ -45,8 +45,8 @@ type Find_AnimeModel struct {
 	}
 	db             *database.Database
 	helpMap        Find_AnimeHelp
-	animeFinderMap map[AnimeFinderSource]AnimeFinder
-	sourceStrMap   map[AnimeFinderSource]string
+	animeFinderMap map[ui.AnimeFinderSource]ui.AnimeFinder
+	sourceStrMap   map[ui.AnimeFinderSource]string
 	state          Find_AnimeState
 }
 
@@ -55,7 +55,7 @@ type Find_AnimeState struct {
 	fetchErr      FetchErrorMsg
 	results       []ui.AnimeInfo
 	selectedAnime ui.AnimeInfo
-	source        AnimeFinderSource
+	source        ui.AnimeFinderSource
 	showSynopsis  bool
 }
 
@@ -74,17 +74,17 @@ func newFindAnimeModel(db *database.Database) Find_AnimeModel {
 	m.config.itemsPerPage = 5 // Max list items to display per page
 	m.config.maxResults = 10  // Max results to find per search
 
-	m.sourceStrMap = map[AnimeFinderSource]string{
-		Kitsu: findAnimeMsgs.kitsu,
-		Local: findAnimeMsgs.local,
+	m.sourceStrMap = map[ui.AnimeFinderSource]string{
+		ui.Kitsu: findAnimeMsgs.kitsu,
+		ui.Local: findAnimeMsgs.local,
 	}
 
-	m.animeFinderMap = map[AnimeFinderSource]AnimeFinder{
-		Kitsu: NewKitsuAnimeFinder(
+	m.animeFinderMap = map[ui.AnimeFinderSource]ui.AnimeFinder{
+		ui.Kitsu: ui.NewKitsuAnimeFinder(
 			10,
 			[]kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished},
 		),
-		Local: NewLocalAnimeFinder(10, db),
+		ui.Local: ui.NewLocalAnimeFinder(10, db),
 	}
 
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
@@ -97,13 +97,13 @@ func newFindAnimeModel(db *database.Database) Find_AnimeModel {
 	m.helpMap = Find_AnimeHelp{
 		Find_QueryEntry: {
 			ShortHelp: func(Find_AnimeModel) []key.Binding {
-				return []key.Binding{keyMap.Submit, keyMap.Abort}
+				return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.Abort}
 			},
 		},
 		Find_Results: {
 			ShortHelp: func(m Find_AnimeModel) []key.Binding {
 				if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
-					return []key.Binding{keyMap.EscBack}
+					return []key.Binding{ui.KeyMap.EscBack}
 				}
 				return []key.Binding{}
 			},
@@ -114,7 +114,7 @@ func newFindAnimeModel(db *database.Database) Find_AnimeModel {
 				if m.state.showSynopsis {
 					synKey = m.keys.closeSynopsis
 				}
-				return []key.Binding{synKey, keyMap.EscBack}
+				return []key.Binding{synKey, ui.KeyMap.EscBack}
 			},
 		},
 	}
@@ -194,11 +194,11 @@ func (m Find_AnimeModel) UpdateQueryEntry(msg tea.Msg) (Find_AnimeModel, tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, keyMap.MainMenu):
+		case key.Matches(msg, ui.KeyMap.MainMenu):
 			m.reset()
 			return m, abort
 
-		case key.Matches(msg, keyMap.Submit):
+		case key.Matches(msg, ui.KeyMap.Submit):
 			hasShortInput := utils.RuneCount(m.ui.input.Value()) < m.config.minInputLen
 
 			if m.ui.loader.IsLoading() || hasShortInput {
@@ -249,7 +249,7 @@ func (m Find_AnimeModel) UpdateResults(msg tea.Msg) (Find_AnimeModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		// Go back to query-entry-view from results-view
-		case key.Matches(msg, keyMap.MainMenu):
+		case key.Matches(msg, ui.KeyMap.MainMenu):
 			// List needs 'Esc' control to cancel filter
 			if m.ui.list.FilterState() > list.Unfiltered {
 				break
@@ -257,13 +257,13 @@ func (m Find_AnimeModel) UpdateResults(msg tea.Msg) (Find_AnimeModel, tea.Cmd) {
 			m.reset()
 
 		// Go back to query-entry-view from results-view
-		case key.Matches(msg, keyMap.Back):
+		case key.Matches(msg, ui.KeyMap.Back):
 			if m.ui.list.FilterState() != list.Filtering {
 				m.reset()
 			}
 
 		// Select Anime
-		case key.Matches(msg, keyMap.Submit):
+		case key.Matches(msg, ui.KeyMap.Submit):
 			// List needs 'Enter' control for applying filter
 			if m.ui.list.FilterState() == list.Filtering {
 				break
@@ -276,15 +276,14 @@ func (m Find_AnimeModel) UpdateResults(msg tea.Msg) (Find_AnimeModel, tea.Cmd) {
 
 		}
 
-	case AnimeFinderResult:
+	case ui.AnimeFinderResult:
 		m.ui.loader.Stop()
-		m.state.view = Find_Results
-		m.state.results = msg.infoItems
+		m.state.results = msg.InfoItems
 
 		m.ui.list = ui.NewList(
 			ui.ListOptions{
-				Items:         msg.listItems,
-				ShortHelpKeys: []key.Binding{keyMap.Back},
+				Items:         msg.ListItems,
+				ShortHelpKeys: []key.Binding{ui.KeyMap.Back},
 				Width:         m.windowSize.width,
 				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
 				ItemsPerPage:  m.config.itemsPerPage,
@@ -335,7 +334,7 @@ func (m Find_AnimeModel) UpdateAnime(msg tea.Msg) (Find_AnimeModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, keyMap.EscBack, keyMap.Back):
+		case key.Matches(msg, ui.KeyMap.EscBack, ui.KeyMap.Back):
 			m.state.view = Find_Results
 
 		case key.Matches(msg, m.keys.openSynopsis):
@@ -368,24 +367,24 @@ func (m *Find_AnimeModel) reset() {
 
 func (m *Find_AnimeModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
-		var result AnimeFinderResult
+		var result ui.AnimeFinderResult
 		var err error
 
 		switch m.state.source {
-		case Kitsu:
-			result, err = m.animeFinderMap[Kitsu].Search(query)
+		case ui.Kitsu:
+			result, err = m.animeFinderMap[ui.Kitsu].Search(query)
 			if err != nil {
 				return FetchErrorMsg(err)
 			}
 
-		case Local:
-			result, err = m.animeFinderMap[Local].Search(query)
+		case ui.Local:
+			result, err = m.animeFinderMap[ui.Local].Search(query)
 			if err != nil {
 				return FetchErrorMsg(err)
 			}
 		}
 
-		m.state.results = result.infoItems
+		m.state.results = result.InfoItems
 		return result
 	}
 }

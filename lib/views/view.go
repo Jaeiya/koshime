@@ -26,6 +26,7 @@ const (
 	Exit
 	WatchAnimeView
 	AddAnime
+	DelAnime
 	FindAnime
 	DropAnime
 	RSS
@@ -51,11 +52,6 @@ type (
 	FetchedNoResultsMsg struct{}
 )
 
-type HelpInfo[T any] struct {
-	ShortHelp func(T) []key.Binding
-	FullHelp  func(T) [][]key.Binding
-}
-
 type ViewModel interface {
 	tea.CursorModel
 	help.KeyMap
@@ -71,34 +67,6 @@ var MenuItemMap = map[MenuItem]string{
 	Drop:   "Drop",
 	Rss:    "RSS",
 	Clean:  "Clean",
-}
-
-type MainKeyMap struct {
-	Up       key.Binding
-	Down     key.Binding
-	Select   key.Binding
-	Submit   key.Binding
-	EscBack  key.Binding
-	Abort    key.Binding
-	MainMenu key.Binding
-	HelpMore key.Binding
-	HelpLess key.Binding
-	Back     key.Binding
-	Exit     key.Binding
-}
-
-var keyMap = MainKeyMap{
-	Up:       key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
-	Down:     key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
-	Select:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
-	Submit:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "submit")),
-	HelpMore: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more help")),
-	HelpLess: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "less help")),
-	Abort:    key.NewBinding(key.WithKeys("esc", "ctrl+c"), key.WithHelp("esc", "abort")),
-	EscBack:  key.NewBinding(key.WithKeys("esc", "backspace"), key.WithHelp("esc/←", "back")),
-	Back:     key.NewBinding(key.WithKeys("backspace", "left"), key.WithHelp("←", "back")),
-	MainMenu: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "menu")),
-	Exit:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "exit")),
 }
 
 type (
@@ -152,12 +120,7 @@ func New(dbPath string) (Model, error) {
 		model.menuItems,
 		Find,
 		Add,
-		Watch,
-		Update,
-		Drop,
-		Rss,
 		Delete,
-		Clean,
 	)
 
 	// Initialize empty database
@@ -167,7 +130,8 @@ func New(dbPath string) (Model, error) {
 	model.menuViewMap = map[UIView]ViewModel{
 		SetupUser: newUserSetupModel(),
 		FindAnime: newFindAnimeModel(db),
-		AddAnime:  newAddAnimeModel(db),
+		AddAnime:  NewTestModel(db),
+		DelAnime:  newDelAnimeModel(db),
 	}
 
 	if !utils.FileExists(dbPath) {
@@ -209,13 +173,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, keyMap.HelpMore):
+		case key.Matches(msg, ui.KeyMap.HelpMore):
 			if (currentModel != nil && len(currentModel.FullHelp()) == 0) || m.state.view == Menu {
 				break
 			}
 			m.help.ShowAll = !m.help.ShowAll
 
-		case key.Matches(msg, keyMap.MainMenu):
+		case key.Matches(msg, ui.KeyMap.MainMenu):
 			if m.state.view == Menu {
 				m.state.view = Exit
 				return m, tea.Quit
@@ -238,7 +202,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case AbortMsg:
 		// Do not abort application when inside of sub-menu
 		switch m.state.view {
-		case FindAnime, AddAnime, DropAnime:
+		case FindAnime, AddAnime, DelAnime:
 			m.SetViewState(Menu)
 			return m, nil
 		}
@@ -343,7 +307,7 @@ func (m Model) UpdateMenu(msg tea.Msg) (Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, keyMap.Select):
+		case key.Matches(msg, ui.KeyMap.Select):
 			switch m.menuItems[m.state.menuPos] {
 			case Find:
 				m.SetViewState(FindAnime)
@@ -351,12 +315,15 @@ func (m Model) UpdateMenu(msg tea.Msg) (Model, tea.Cmd) {
 			case Add:
 				m.SetViewState(AddAnime)
 				cmd = textinput.Blink
+			case Delete:
+				m.SetViewState(DelAnime)
+				cmd = textinput.Blink
 			}
 
-		case key.Matches(msg, keyMap.Up):
+		case key.Matches(msg, ui.KeyMap.Up):
 			m.state.menuPos = (m.state.menuPos - 1 + itemLen) % itemLen
 
-		case key.Matches(msg, keyMap.Down):
+		case key.Matches(msg, ui.KeyMap.Down):
 			m.state.menuPos = (m.state.menuPos + 1) % itemLen
 
 		}
@@ -397,10 +364,10 @@ func (m Model) ShortHelp() []key.Binding {
 	switch m.state.view {
 	case Menu:
 		return []key.Binding{
-			keyMap.Up,
-			keyMap.Down,
-			keyMap.Select,
-			keyMap.Exit,
+			ui.KeyMap.Up,
+			ui.KeyMap.Down,
+			ui.KeyMap.Select,
+			ui.KeyMap.Exit,
 		}
 	}
 	return []key.Binding{}

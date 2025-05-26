@@ -69,7 +69,7 @@ func (m userSetupModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, keyMap.Abort):
+		case key.Matches(msg, ui.KeyMap.Abort):
 			return m, abort
 		}
 	}
@@ -127,7 +127,7 @@ func (m userSetupModel) UpdateConsent(msg tea.Msg) (userSetupModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, keyMap.Select):
+		case key.Matches(msg, ui.KeyMap.Select):
 			if ui.No == m.consent.Select() {
 				return m, abort
 			}
@@ -359,7 +359,7 @@ func (m userSetupModel) UpdateLibAnime(msg tea.Msg) (userSetupModel, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
-		if key.Matches(msg, keyMap.Select) {
+		if key.Matches(msg, ui.KeyMap.Select) {
 			if state.failed {
 				if ui.No == m.consent.Select() {
 					return m, abort
@@ -425,35 +425,35 @@ func (m userSetupModel) ShortHelp() []key.Binding {
 	}
 
 	if m.state.fetchError != nil {
-		return []key.Binding{keyMap.Abort}
+		return []key.Binding{ui.KeyMap.Abort}
 	}
 
 	switch m.state.view {
 	case SetupConsentView:
 		return []key.Binding{
-			keyMap.Up,
-			keyMap.Down,
-			keyMap.Select,
-			keyMap.HelpMore,
+			ui.KeyMap.Up,
+			ui.KeyMap.Down,
+			ui.KeyMap.Select,
+			ui.KeyMap.HelpMore,
 		}
 
 	case SetupUsernameView:
 		if m.state.username.failed || m.state.username.passed {
-			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+			return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select}
 		}
-		return []key.Binding{keyMap.Submit, keyMap.Abort}
+		return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.Abort}
 
 	case SetupPasswordView:
 		if m.state.password.failed {
-			return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+			return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select}
 		}
-		return []key.Binding{keyMap.Submit, keyMap.Abort}
+		return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.Abort}
 
 	case SetupLibraryView:
 		if m.state.libAnime.passed {
-			return []key.Binding{keyMap.Submit, keyMap.Abort}
+			return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.Abort}
 		}
-		return []key.Binding{keyMap.Up, keyMap.Down, keyMap.Select}
+		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select}
 	}
 
 	return []key.Binding{}
@@ -463,8 +463,8 @@ func (m userSetupModel) FullHelp() [][]key.Binding {
 	switch m.state.view {
 	case SetupConsentView:
 		return [][]key.Binding{
-			{keyMap.Up, keyMap.Down, keyMap.Select},
-			{keyMap.Abort, keyMap.HelpLess},
+			{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select},
+			{ui.KeyMap.Abort, ui.KeyMap.HelpLess},
 		}
 	}
 	return [][]key.Binding{}
