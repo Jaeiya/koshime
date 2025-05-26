@@ -15,21 +15,21 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-type FindAnimeView int
+type AnimeSearchView int
 
 const (
-	FindAnime_Query = FindAnimeView(iota)
-	FindAnime_Results
-	FindAnime_Selected
+	AnimeSearch_Query = AnimeSearchView(iota)
+	AnimeSearch_Results
+	AnimeSearch_Selected
 )
 
 type (
-	SelectedAnimeMsg = AnimeInfo
-	FindAnimeOption  func(*FindAnimeConfig)
-	FindAnimeHelp    map[FindAnimeView]KeyHelpInfo[FindAnimeModel]
+	SelectedAnimeMsg  = AnimeInfo
+	AnimeSearchOption func(*AnimeSearchConfig)
+	AnimeSearchHelp   map[AnimeSearchView]KeyHelpInfo[AnimeSearchModel]
 )
 
-type FindAnimeConfig struct {
+type AnimeSearchConfig struct {
 	header       string
 	inputWidth   int
 	minInputLen  int
@@ -39,38 +39,38 @@ type FindAnimeConfig struct {
 	kitsuStatus  []kitsu.AnimeStatus
 }
 
-func WithHeader(h string) FindAnimeOption {
-	return func(fac *FindAnimeConfig) {
+func WithHeader(h string) AnimeSearchOption {
+	return func(fac *AnimeSearchConfig) {
 		fac.header = h
 	}
 }
 
-func WithInputWidth(w int) FindAnimeOption {
-	return func(fac *FindAnimeConfig) {
+func WithInputWidth(w int) AnimeSearchOption {
+	return func(fac *AnimeSearchConfig) {
 		fac.inputWidth = w
 	}
 }
 
-func WithMinInputLen(len int) FindAnimeOption {
-	return func(fac *FindAnimeConfig) {
+func WithMinInputLen(len int) AnimeSearchOption {
+	return func(fac *AnimeSearchConfig) {
 		fac.minInputLen = len
 	}
 }
 
-func WithItemsPerPage(ipp int) FindAnimeOption {
-	return func(fac *FindAnimeConfig) {
+func WithItemsPerPage(ipp int) AnimeSearchOption {
+	return func(fac *AnimeSearchConfig) {
 		fac.itemsPerPage = ipp
 	}
 }
 
-func WithMaxResults(max int) FindAnimeOption {
-	return func(fac *FindAnimeConfig) {
+func WithMaxResults(max int) AnimeSearchOption {
+	return func(fac *AnimeSearchConfig) {
 		fac.maxResults = max
 	}
 }
 
-func WithKitsuSource(s []kitsu.AnimeStatus) FindAnimeOption {
-	return func(fac *FindAnimeConfig) {
+func WithKitsuSource(s []kitsu.AnimeStatus) AnimeSearchOption {
+	return func(fac *AnimeSearchConfig) {
 		if fac.source != NoSource {
 			panic("cannot set to [kitsu] source; already using another source")
 		}
@@ -79,8 +79,8 @@ func WithKitsuSource(s []kitsu.AnimeStatus) FindAnimeOption {
 	}
 }
 
-func WithLocalSource() FindAnimeOption {
-	return func(fac *FindAnimeConfig) {
+func WithLocalSource() AnimeSearchOption {
+	return func(fac *AnimeSearchConfig) {
 		if fac.source != NoSource {
 			panic("cannot set to [local] source; already using another source")
 		}
@@ -88,7 +88,7 @@ func WithLocalSource() FindAnimeOption {
 	}
 }
 
-type FindAnimeModel struct {
+type AnimeSearchModel struct {
 	windowSize struct {
 		width  int
 		height int
@@ -111,28 +111,28 @@ type FindAnimeModel struct {
 		openSynopsis  key.Binding
 		closeSynopsis key.Binding
 	}
-	helpMap        FindAnimeHelp
+	helpMap        AnimeSearchHelp
 	db             *database.Database
-	state          FindAnimeState
+	state          AnimeSearchState
 	animeFinderMap map[AnimeFinderSource]AnimeFinder
 }
 
-type FindAnimeState struct {
+type AnimeSearchState struct {
 	fetchErr      error
-	view          FindAnimeView
+	view          AnimeSearchView
 	source        AnimeFinderSource
 	results       []AnimeInfo
 	selectedAnime AnimeInfo
 	showSynopsis  bool
 }
 
-func NewFindAnimeModel(db *database.Database, opts ...FindAnimeOption) *FindAnimeModel {
-	cfg := &FindAnimeConfig{}
+func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *AnimeSearchModel {
+	cfg := &AnimeSearchConfig{}
 	for _, o := range opts {
 		o(cfg)
 	}
 
-	m := &FindAnimeModel{db: db}
+	m := &AnimeSearchModel{db: db}
 
 	m.ui.loader = NewLoader()
 	m.ui.list = NewList(ListOptions{})
@@ -189,25 +189,25 @@ func NewFindAnimeModel(db *database.Database, opts ...FindAnimeOption) *FindAnim
 		key.WithHelp("s", "close synopsis"),
 	)
 
-	m.helpMap = FindAnimeHelp{
-		FindAnime_Query: {
-			ShortHelp: func(fam FindAnimeModel) []key.Binding {
+	m.helpMap = AnimeSearchHelp{
+		AnimeSearch_Query: {
+			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
 				if m.config.source == NoSource {
 					return []key.Binding{m.keys.tab, KeyMap.Submit}
 				}
 				return []key.Binding{KeyMap.Submit}
 			},
 		},
-		FindAnime_Results: {
-			ShortHelp: func(fam FindAnimeModel) []key.Binding {
+		AnimeSearch_Results: {
+			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
 				if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
 					return []key.Binding{KeyMap.EscBack}
 				}
 				return []key.Binding{}
 			},
 		},
-		FindAnime_Selected: {
-			ShortHelp: func(fam FindAnimeModel) []key.Binding {
+		AnimeSearch_Selected: {
+			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
 				synKey := m.keys.openSynopsis
 				if m.state.showSynopsis {
 					synKey = m.keys.closeSynopsis
@@ -220,7 +220,7 @@ func NewFindAnimeModel(db *database.Database, opts ...FindAnimeOption) *FindAnim
 	return m
 }
 
-func (m *FindAnimeModel) Update(msg tea.Msg) tea.Cmd {
+func (m *AnimeSearchModel) Update(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -236,13 +236,13 @@ func (m *FindAnimeModel) Update(msg tea.Msg) tea.Cmd {
 	}
 
 	switch m.state.view {
-	case FindAnime_Query:
+	case AnimeSearch_Query:
 		cmd = m.UpdateQuery(msg)
 		cmds = append(cmds, cmd)
-	case FindAnime_Results:
+	case AnimeSearch_Results:
 		cmd = m.UpdateResults(msg)
 		cmds = append(cmds, cmd)
-	case FindAnime_Selected:
+	case AnimeSearch_Selected:
 		cmd = m.UpdateSelection(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -250,27 +250,27 @@ func (m *FindAnimeModel) Update(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m FindAnimeModel) View() (string, *tea.Cursor) {
+func (m AnimeSearchModel) View() (string, *tea.Cursor) {
 	switch m.state.view {
-	case FindAnime_Query:
+	case AnimeSearch_Query:
 		return m.ViewQuery()
-	case FindAnime_Results:
+	case AnimeSearch_Results:
 		return m.ViewResults()
-	case FindAnime_Selected:
+	case AnimeSearch_Selected:
 		return m.ViewSelection()
 	}
 	return "", nil
 }
 
-func (m FindAnimeModel) ShortHelp() []key.Binding {
+func (m AnimeSearchModel) ShortHelp() []key.Binding {
 	return m.helpMap[m.state.view].ShortHelp(m)
 }
 
-func (m FindAnimeModel) FullHelp() [][]key.Binding {
+func (m AnimeSearchModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m *FindAnimeModel) UpdateQuery(msg tea.Msg) tea.Cmd {
+func (m *AnimeSearchModel) UpdateQuery(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -285,7 +285,7 @@ func (m *FindAnimeModel) UpdateQuery(msg tea.Msg) tea.Cmd {
 			}
 
 			m.ui.loader, cmd = m.ui.loader.Start(m.config.header)
-			m.state.view = FindAnime_Results
+			m.state.view = AnimeSearch_Results
 			return tea.Batch(cmd, m.findAnime(m.ui.input.Value()))
 
 		case key.Matches(msg, m.keys.tab):
@@ -306,7 +306,7 @@ func (m *FindAnimeModel) UpdateQuery(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m FindAnimeModel) ViewQuery() (string, *tea.Cursor) {
+func (m AnimeSearchModel) ViewQuery() (string, *tea.Cursor) {
 	c := m.ui.input.Cursor()
 	c.Shape = tea.CursorBar
 
@@ -370,7 +370,7 @@ It only contains anime that you're currently watching.`,
 	return view, c
 }
 
-func (m *FindAnimeModel) UpdateResults(msg tea.Msg) tea.Cmd {
+func (m *AnimeSearchModel) UpdateResults(msg tea.Msg) tea.Cmd {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -400,7 +400,7 @@ func (m *FindAnimeModel) UpdateResults(msg tea.Msg) tea.Cmd {
 			if len(m.state.results) > 0 {
 				item := m.ui.list.SelectedItem().(ListItem)
 				m.state.selectedAnime = m.state.results[item.Index()]
-				m.state.view = FindAnime_Selected
+				m.state.view = AnimeSearch_Selected
 			}
 
 		}
@@ -425,7 +425,7 @@ func (m *FindAnimeModel) UpdateResults(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m FindAnimeModel) ViewResults() (string, *tea.Cursor) {
+func (m AnimeSearchModel) ViewResults() (string, *tea.Cursor) {
 	if m.ui.loader.IsLoading() {
 		return Style.MarginTop(1).Render(m.ui.loader.View()), nil
 	}
@@ -462,12 +462,12 @@ func (m FindAnimeModel) ViewResults() (string, *tea.Cursor) {
 	return lipgloss.JoinVertical(lipgloss.Left, h, m.ui.list.View()), c
 }
 
-func (m *FindAnimeModel) UpdateSelection(msg tea.Msg) tea.Cmd {
+func (m *AnimeSearchModel) UpdateSelection(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, KeyMap.EscBack, KeyMap.Back):
-			m.state.view = FindAnime_Results
+			m.state.view = AnimeSearch_Results
 
 		case key.Matches(msg, m.keys.openSynopsis):
 			m.state.showSynopsis = !m.state.showSynopsis
@@ -479,7 +479,7 @@ func (m *FindAnimeModel) UpdateSelection(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-func (m FindAnimeModel) ViewSelection() (string, *tea.Cursor) {
+func (m AnimeSearchModel) ViewSelection() (string, *tea.Cursor) {
 	if m.state.results != nil {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -492,14 +492,14 @@ func (m FindAnimeModel) ViewSelection() (string, *tea.Cursor) {
 	return fmt.Sprintf("missing [%s] results to display", m.state.source), nil
 }
 
-func (m *FindAnimeModel) reset() {
+func (m *AnimeSearchModel) reset() {
 	source := m.state.source
-	m.state = FindAnimeState{}
+	m.state = AnimeSearchState{}
 	m.state.source = source
 	m.ui.input.Reset()
 }
 
-func (m *FindAnimeModel) findAnime(query string) tea.Cmd {
+func (m *AnimeSearchModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
 		var result AnimeFinderResult
 		var err error
