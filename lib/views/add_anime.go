@@ -69,6 +69,7 @@ func newAddAnimeModel(db *database.Database) AddAnime_Model {
 	m.ui.animeSearch = ui.NewAnimeSearchModel(
 		db,
 		ui.WithHeader("Add Anime"),
+		ui.WithExit(),
 		ui.WithMinInputLen(4),
 		ui.WithItemsPerPage(5),
 		ui.WithMaxResults(10),

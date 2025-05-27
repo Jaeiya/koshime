@@ -51,6 +51,7 @@ func newDelAnimeModel(db *database.Database) DelAnime_Model {
 	m.ui.animeSearch = ui.NewAnimeSearchModel(
 		db,
 		ui.WithHeader("Delete Anime"),
+		ui.WithExit(),
 		ui.WithMaxResults(5),
 		ui.WithItemsPerPage(5),
 		ui.WithMinInputLen(3),
