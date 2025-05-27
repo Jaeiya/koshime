@@ -31,18 +31,28 @@ type (
 )
 
 type AnimeSearchConfig struct {
-	header       string
-	inputWidth   int
-	minInputLen  int
-	itemsPerPage int
-	maxResults   int
-	source       AnimeFinderSource
-	kitsuStatus  []kitsu.AnimeStatus
+	header            string
+	inputWidth        int
+	minInputLen       int
+	itemsPerPage      int
+	maxResults        int
+	source            AnimeFinderSource
+	kitsuStatus       []kitsu.AnimeStatus
+	useAnimeSelection bool
 }
 
 func WithHeader(h string) AnimeSearchOption {
 	return func(fac *AnimeSearchConfig) {
 		fac.header = h
+	}
+}
+
+// WithAnimeSelection enables a 3rd view that allows
+// a user to review the anime selection, toggle the
+// synopsis, and submit the anime for selection.
+func WithAnimeSelection() AnimeSearchOption {
+	return func(asc *AnimeSearchConfig) {
+		asc.useAnimeSelection = true
 	}
 }
 
@@ -95,12 +105,13 @@ type AnimeSearchModel struct {
 		height int
 	}
 	config struct {
-		header       string
-		inputWidth   int
-		minInputLen  int
-		itemsPerPage int
-		maxResults   int
-		source       AnimeFinderSource
+		header            string
+		inputWidth        int
+		minInputLen       int
+		itemsPerPage      int
+		maxResults        int
+		source            AnimeFinderSource
+		useAnimeSelection bool
 	}
 	ui struct {
 		list   list.Model
@@ -142,6 +153,8 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 	m.ui.input.Focus()
 	m.ui.input.Placeholder = "Enter your query"
 	m.ui.input.SetWidth(20)
+
+	m.config.useAnimeSelection = cfg.useAnimeSelection
 
 	if cfg.inputWidth > 0 {
 		m.ui.input.SetWidth(cfg.inputWidth)
@@ -209,6 +222,9 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 		},
 		AnimeSearch_Selected: {
 			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
+				if !fam.config.useAnimeSelection {
+					return []key.Binding{}
+				}
 				synKey := m.keys.openSynopsis
 				if m.state.showSynopsis {
 					synKey = m.keys.closeSynopsis
@@ -391,12 +407,12 @@ func (m *AnimeSearchModel) UpdateResults(msg tea.Msg) tea.Cmd {
 			if m.ui.list.FilterState() > list.Unfiltered {
 				break
 			}
-			m.reset()
+			m.Reset()
 
 		// Go back to query-entry-view from results-view
 		case key.Matches(msg, KeyMap.Back):
 			if m.ui.list.FilterState() != list.Filtering {
-				m.reset()
+				m.Reset()
 			}
 
 		// Select Anime
@@ -408,7 +424,11 @@ func (m *AnimeSearchModel) UpdateResults(msg tea.Msg) tea.Cmd {
 			if len(m.state.results) > 0 {
 				item := m.ui.list.SelectedItem().(ListItem)
 				m.state.selectedAnime = m.state.results[item.Index()]
-				m.state.view = AnimeSearch_Selected
+				if m.config.useAnimeSelection {
+					m.state.view = AnimeSearch_Selected
+				} else {
+					return func() tea.Msg { return SelectedAnimeMsg(m.state.selectedAnime) }
+				}
 			}
 
 		}
@@ -500,7 +520,7 @@ func (m AnimeSearchModel) ViewSelection() (string, *tea.Cursor) {
 	return fmt.Sprintf("missing [%s] results to display", m.state.source), nil
 }
 
-func (m *AnimeSearchModel) reset() {
+func (m *AnimeSearchModel) Reset() {
 	source := m.state.source
 	m.state = AnimeSearchState{}
 	m.state.source = source
