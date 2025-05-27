@@ -356,12 +356,6 @@ func (m AnimeSearchModel) ViewQuery() (string, *tea.Cursor) {
 	c := m.ui.input.Cursor()
 	c.Shape = tea.CursorBar
 
-	search := ""
-	if m.config.source == NoSource {
-		search = TextStyle.Foreground(ansi.BrightBlack).
-			Render(utils.ColorText(fmt.Sprintf(";bk;Source: ;dgu;%s", m.state.source)))
-	}
-
 	desc := Style.MarginTop(1).Render(DisplayText([]string{
 		`Lookup an anime by any ;b;word ;x;or ;b;phrase;x;. Try to use
 words that might be in the ;dc;title ;x;or ;dc;description;x;, for
@@ -400,6 +394,12 @@ It only contains anime that you're currently watching.`,
 
 	view := header
 	if m.config.source == NoSource {
+		sourceStr := m.state.source.String()
+		sourceText := sourceStr[:utils.RuneCount(sourceStr)-1]
+		sourceEmoji := sourceStr[utils.RuneCount(sourceText):]
+		search := TextStyle.Foreground(ansi.BrightBlack).
+			Render(utils.ColorText(fmt.Sprintf(";bk;Source: ;dgu;%s;x;%s", sourceText, sourceEmoji)))
+
 		view = lipgloss.JoinVertical(
 			lipgloss.Left,
 			view,

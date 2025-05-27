@@ -22,9 +22,9 @@ const (
 func (s AnimeFinderSource) String() string {
 	switch s {
 	case Kitsu:
-		return "Kitsu"
+		return "Kitsu🌐"
 	case Local:
-		return "Local"
+		return "Local📁"
 	default:
 		return "Unknown"
 	}
