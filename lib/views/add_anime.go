@@ -392,7 +392,25 @@ func (m *AddAnime_Model) reset() {
 func (m AddAnime_Model) addAnime(animeID string) tea.Cmd {
 	return func() tea.Msg {
 		p := m.db.GetProfile()
-		_, err := kitsu.AddAnime(animeID, p.ID, p.AccessToken, kitsu.LibAnimeWatching)
+		libID, err := kitsu.AddAnime(animeID, p.ID, p.AccessToken, kitsu.LibAnimeWatching)
+		if err != nil {
+			return FetchErrorMsg(err)
+		}
+
+		anime := m.state.selectedAnime
+		err = m.db.AddAnime(kitsu.LibraryEntry{
+			ID:        animeID,
+			LibID:     libID,
+			JPN_Title: anime.JpnTitle,
+			ENG_Title: anime.EngTitle,
+			AltTitles: anime.AltTitles,
+			Episodes:  anime.Episodes,
+			Type:      anime.ShowType,
+			Status:    anime.Status,
+			Progress:  anime.Progress,
+			Synopsis:  anime.Synopsis,
+			Slug:      anime.Slug,
+		})
 		if err != nil {
 			return FetchErrorMsg(err)
 		}
