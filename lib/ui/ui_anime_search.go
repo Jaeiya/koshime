@@ -14,6 +14,112 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+type AnimeSearch interface {
+	Search(query string) (AnimeSearchResult, error)
+}
+
+type AnimeSearchSource int
+
+const (
+	NoSource = AnimeSearchSource(iota)
+	Kitsu
+	Local
+)
+
+func (s AnimeSearchSource) String() string {
+	switch s {
+	case Kitsu:
+		return "Kitsu🌐"
+	case Local:
+		return "Local📁"
+	default:
+		return "Unknown"
+	}
+}
+
+type AnimeSearchResult struct {
+	ListItems []list.Item
+	InfoItems []AnimeInfo
+}
+
+type KitsuAnimeSearch struct {
+	maxResults int
+	status     []kitsu.AnimeStatus
+}
+
+func NewKitsuAnimeFinder(maxResults int, status []kitsu.AnimeStatus) KitsuAnimeSearch {
+	return KitsuAnimeSearch{maxResults, status}
+}
+
+func (af KitsuAnimeSearch) Search(query string) (AnimeSearchResult, error) {
+	anime, err := kitsu.FindAnime(query, af.status, af.maxResults)
+	if err != nil {
+		return AnimeSearchResult{}, err
+	}
+	info := make([]AnimeInfo, len(anime))
+	items := make([]list.Item, len(anime))
+	for i, item := range anime {
+		items[i] = NewListItem(
+			item.Attributes.CanonicalTitle,
+			item.Attributes.Titles.English,
+			i,
+		)
+		info[i] = AnimeInfo{
+			ID:        item.ID,
+			JpnTitle:  item.Attributes.CanonicalTitle,
+			EngTitle:  item.Attributes.Titles.English,
+			AltTitles: item.Attributes.AltTitles,
+			ShowType:  item.Attributes.Type,
+			Status:    item.Attributes.Status,
+			Synopsis:  item.Attributes.Synopsis,
+			Progress:  -1,
+			Episodes:  item.Attributes.EpCount,
+			Slug:      item.Attributes.Slug,
+		}
+	}
+
+	return AnimeSearchResult{items, info}, nil
+}
+
+type LocalAnimeSearch struct {
+	db         *database.Database
+	maxResults int
+}
+
+func NewLocalAnimeFinder(maxResults int, db *database.Database) LocalAnimeSearch {
+	return LocalAnimeSearch{db, maxResults}
+}
+
+func (af LocalAnimeSearch) Search(query string) (AnimeSearchResult, error) {
+	anime, err := af.db.FindAnime(query)
+	if err != nil {
+		return AnimeSearchResult{}, err
+	}
+
+	anime = anime[:min(af.maxResults, len(anime))]
+
+	info := make([]AnimeInfo, len(anime))
+	items := make([]list.Item, len(anime))
+	for i, item := range anime {
+		items[i] = NewListItem(item.JPN_Title, item.ENG_Title, i)
+		info[i] = AnimeInfo{
+			ID:        item.ID,
+			LibID:     item.LibID,
+			JpnTitle:  item.JPN_Title,
+			EngTitle:  item.ENG_Title,
+			AltTitles: item.AltTitles,
+			ShowType:  string(item.Type),
+			Status:    item.Status,
+			Synopsis:  item.Synopsis,
+			Progress:  item.Progress,
+			Episodes:  item.Episodes,
+			Slug:      item.Slug,
+		}
+	}
+
+	return AnimeSearchResult{items, info}, nil
+}
+
 type AnimeSearchView int
 
 const (
@@ -36,7 +142,7 @@ type AnimeSearchConfig struct {
 	minInputLen       int
 	itemsPerPage      int
 	maxResults        int
-	source            AnimeFinderSource
+	source            AnimeSearchSource
 	kitsuStatus       []kitsu.AnimeStatus
 	useAnimeSelection bool
 	escSendsExit      bool
@@ -114,7 +220,7 @@ type AnimeSearchModel struct {
 		height int
 	}
 	config struct {
-		source            AnimeFinderSource
+		source            AnimeSearchSource
 		header            string
 		consentHeader     string
 		inputWidth        int
@@ -137,13 +243,13 @@ type AnimeSearchModel struct {
 	helpMap        AnimeSearchHelp
 	db             *database.Database
 	state          AnimeSearchState
-	animeFinderMap map[AnimeFinderSource]AnimeFinder
+	animeFinderMap map[AnimeSearchSource]AnimeSearch
 }
 
 type AnimeSearchState struct {
 	fetchErr      error
 	view          AnimeSearchView
-	source        AnimeFinderSource
+	source        AnimeSearchSource
 	results       []AnimeInfo
 	selectedAnime AnimeInfo
 }
@@ -205,7 +311,7 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 		cfg.kitsuStatus = []kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished}
 	}
 
-	m.animeFinderMap = map[AnimeFinderSource]AnimeFinder{
+	m.animeFinderMap = map[AnimeSearchSource]AnimeSearch{
 		Kitsu: NewKitsuAnimeFinder(m.config.maxResults, cfg.kitsuStatus),
 		Local: NewLocalAnimeFinder(m.config.maxResults, db),
 	}
@@ -455,7 +561,7 @@ func (m *AnimeSearchModel) UpdateResults(msg tea.Msg) tea.Cmd {
 
 		}
 
-	case AnimeFinderResult:
+	case AnimeSearchResult:
 		m.ui.loader.Stop()
 		m.state.results = msg.InfoItems
 
@@ -574,7 +680,7 @@ func (m *AnimeSearchModel) Reset() {
 
 func (m *AnimeSearchModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
-		var result AnimeFinderResult
+		var result AnimeSearchResult
 		var err error
 
 		switch m.state.source {
