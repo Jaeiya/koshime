@@ -26,14 +26,16 @@ const (
 	Local
 )
 
-func (s AnimeSearchSource) String() string {
+// Name returns the stringified version of the source, as well
+// as its associated emoji.
+func (s AnimeSearchSource) Name() (string, string) {
 	switch s {
 	case Kitsu:
-		return "Kitsu🌐"
+		return "Kitsu", "🌐"
 	case Local:
-		return "Local📁"
+		return "Local", "📁"
 	default:
-		return "Unknown"
+		return "Unknown", ""
 	}
 }
 
@@ -325,11 +327,11 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 				if m.config.source == NoSource {
 					keys = append(keys, fam.keys.tab, KeyMap.Submit)
 				}
-				if m.config.escSendsExit {
-					keys = append(keys, KeyMap.MainMenu)
-				}
 				if m.config.source != NoSource {
 					keys = append(keys, KeyMap.Submit)
+				}
+				if m.config.escSendsExit {
+					keys = append(keys, KeyMap.MainMenu)
 				}
 				return keys
 			},
@@ -500,11 +502,9 @@ It only contains anime that you're currently watching.`,
 
 	view := header
 	if m.config.source == NoSource {
-		sourceStr := m.state.source.String()
-		sourceText := sourceStr[:utils.RuneCount(sourceStr)-1]
-		sourceEmoji := sourceStr[utils.RuneCount(sourceText):]
+		sourceName, sourceEmoji := m.state.source.Name()
 		search := TextStyle.Foreground(ansi.BrightBlack).
-			Render(utils.ColorText(fmt.Sprintf(";bk;Source: ;dgu;%s;x;%s", sourceText, sourceEmoji)))
+			Render(utils.ColorText(fmt.Sprintf(";bk;Source: ;dgu;%s;x;%s", sourceName, sourceEmoji)))
 
 		view = lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -591,13 +591,14 @@ func (m AnimeSearchModel) ViewResults() (string, *tea.Cursor) {
 	}
 
 	if len(m.ui.list.Items()) == 0 {
+		sourceName, _ := m.state.source.Name()
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			DisplaySubTitle(m.config.header, "Results"),
 			DisplayText([]string{
 				fmt.Sprintf(
 					";x;No ;dgu;%s;x; results found for: ;y;%s",
-					m.state.source,
+					sourceName,
 					m.ui.input.Value(),
 				),
 			}, 0, 1),
