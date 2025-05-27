@@ -153,16 +153,22 @@ func (db *Database) AddAnime(entry kitsu.LibraryEntry) error {
 	return db.Save()
 }
 
-func (db *Database) RemoveAnimeById(id string) error {
+func (db *Database) DeleteAnimeById(libID string) error {
+	var deleted bool
 	for i, entry := range db.data.Library {
-		if entry.ID == id {
+		if entry.LibID == libID {
 			db.data.Library = slices.Delete(db.data.Library, i, i+1)
+			deleted = true
+			break
 		}
+	}
+	if !deleted {
+		return fmt.Errorf("could not find anime-library id [%s]", libID)
 	}
 	return db.Save()
 }
 
-func (db *Database) RemoveAnimeByIndex(index LibraryIndex) error {
+func (db *Database) DeleteAnimeByIndex(index LibraryIndex) error {
 	db.data.Library = slices.Delete(db.data.Library, int(index), int(index)+1)
 	return db.Save()
 }
