@@ -114,14 +114,14 @@ type AnimeSearchModel struct {
 		height int
 	}
 	config struct {
+		source            AnimeFinderSource
 		header            string
+		consentHeader     string
 		inputWidth        int
 		minInputLen       int
 		itemsPerPage      int
 		maxResults        int
-		source            AnimeFinderSource
 		useAnimeSelection bool
-		consentHeader     string
 		escSendsExit      bool
 	}
 	ui struct {
@@ -166,15 +166,13 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 	m.ui.input.SetWidth(20)
 
 	m.config.useAnimeSelection = cfg.useAnimeSelection
+	m.config.escSendsExit = cfg.escSendsExit
 
 	if cfg.inputWidth > 0 {
 		m.ui.input.SetWidth(cfg.inputWidth)
 	}
 
-	m.config.consentHeader = "Are you sure?"
-	if cfg.consentHeader != "" {
-		m.config.consentHeader = cfg.consentHeader
-	}
+	m.config.consentHeader = cfg.consentHeader
 
 	m.config.header = "Find Anime"
 	if cfg.header != "" {
@@ -242,6 +240,12 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
 				if !fam.config.useAnimeSelection {
 					return []key.Binding{}
+				}
+				if fam.config.consentHeader == "" {
+					return []key.Binding{
+						NewAnimeDisplayModel().ShortHelp()[0],
+						KeyMap.EscBack,
+					}
 				}
 				return []key.Binding{
 					m.ui.animeDisplay.ShortHelp()[0],
@@ -509,12 +513,17 @@ func (m AnimeSearchModel) ViewResults() (string, *tea.Cursor) {
 }
 
 func (m *AnimeSearchModel) UpdateSelection(msg tea.Msg) tea.Cmd {
-	m.ui.consent = m.ui.consent.Update(msg)
+	if m.config.consentHeader != "" {
+		m.ui.consent = m.ui.consent.Update(msg)
+	}
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, KeyMap.Submit):
+			if m.config.consentHeader == "" {
+				break
+			}
 			if m.ui.consent.Select() == No {
 				m.state.view = AnimeSearch_Results
 				return nil
@@ -533,14 +542,24 @@ func (m *AnimeSearchModel) UpdateSelection(msg tea.Msg) tea.Cmd {
 func (m AnimeSearchModel) ViewSelection() (string, *tea.Cursor) {
 	if m.state.results != nil {
 		consentStyle := TextStyle.Foreground(ansi.BrightBlue)
-		return lipgloss.JoinVertical(
+
+		body := lipgloss.JoinVertical(
 			lipgloss.Left,
 			DisplaySubTitle(m.config.header, "Entry Info"),
 			"",
 			m.ui.animeDisplay.View(m.state.selectedAnime),
-			"",
-			m.ui.consent.View(consentStyle.Render(m.config.consentHeader)),
-		), nil
+		)
+
+		if m.config.consentHeader != "" {
+			return lipgloss.JoinVertical(
+				lipgloss.Left,
+				body,
+				"",
+				m.ui.consent.View(consentStyle.Render(m.config.consentHeader)),
+			), nil
+		}
+
+		return body, nil
 	}
 
 	return fmt.Sprintf("missing [%s] results to display", m.state.source), nil
