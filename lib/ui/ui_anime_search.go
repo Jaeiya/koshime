@@ -31,6 +31,7 @@ type (
 
 type AnimeSearchConfig struct {
 	header            string
+	consentHeader     string
 	inputWidth        int
 	minInputLen       int
 	itemsPerPage      int
@@ -48,10 +49,12 @@ func WithHeader(h string) AnimeSearchOption {
 
 // WithAnimeSelection enables a 3rd view that allows
 // a user to review the anime selection, toggle the
-// synopsis, and submit the anime for selection.
-func WithAnimeSelection() AnimeSearchOption {
+// synopsis, and consent to submitting the anime
+// for selection.
+func WithAnimeSelection(consent string) AnimeSearchOption {
 	return func(asc *AnimeSearchConfig) {
 		asc.useAnimeSelection = true
+		asc.consentHeader = consent
 	}
 }
 
@@ -111,12 +114,14 @@ type AnimeSearchModel struct {
 		maxResults        int
 		source            AnimeFinderSource
 		useAnimeSelection bool
+		consentHeader     string
 	}
 	ui struct {
 		list         list.Model
 		input        textinput.Model
 		loader       LoaderModel
 		animeDisplay *AnimeDisplayModel
+		consent      ConsentModel
 	}
 	keys struct {
 		tab key.Binding
@@ -156,6 +161,11 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 
 	if cfg.inputWidth > 0 {
 		m.ui.input.SetWidth(cfg.inputWidth)
+	}
+
+	m.config.consentHeader = "Are you sure?"
+	if cfg.consentHeader != "" {
+		m.config.consentHeader = cfg.consentHeader
 	}
 
 	m.config.header = "Find Anime"
@@ -484,14 +494,20 @@ func (m AnimeSearchModel) ViewResults() (string, *tea.Cursor) {
 }
 
 func (m *AnimeSearchModel) UpdateSelection(msg tea.Msg) tea.Cmd {
+	m.ui.consent = m.ui.consent.Update(msg)
+
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
+		case key.Matches(msg, KeyMap.Submit):
+			if m.ui.consent.Select() == No {
+				m.state.view = AnimeSearch_Results
+				return nil
+			}
+			return func() tea.Msg { return SelectedAnimeMsg(m.state.selectedAnime) }
+
 		case key.Matches(msg, KeyMap.EscBack, KeyMap.Back):
 			m.state.view = AnimeSearch_Results
-
-		case key.Matches(msg, KeyMap.Submit):
-			return func() tea.Msg { return SelectedAnimeMsg(m.state.selectedAnime) }
 		}
 	}
 
@@ -501,11 +517,14 @@ func (m *AnimeSearchModel) UpdateSelection(msg tea.Msg) tea.Cmd {
 
 func (m AnimeSearchModel) ViewSelection() (string, *tea.Cursor) {
 	if m.state.results != nil {
+		consentStyle := TextStyle.Foreground(ansi.BrightBlue)
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			DisplaySubTitle(m.config.header, "Entry Info"),
 			"",
 			m.ui.animeDisplay.View(m.state.selectedAnime),
+			"",
+			m.ui.consent.View(consentStyle.Render(m.config.consentHeader)),
 		), nil
 	}
 
