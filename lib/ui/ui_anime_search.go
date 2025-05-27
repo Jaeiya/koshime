@@ -39,11 +39,18 @@ type AnimeSearchConfig struct {
 	source            AnimeFinderSource
 	kitsuStatus       []kitsu.AnimeStatus
 	useAnimeSelection bool
+	escSendsExit      bool
 }
 
 func WithHeader(h string) AnimeSearchOption {
 	return func(fac *AnimeSearchConfig) {
 		fac.header = h
+	}
+}
+
+func WithExit() AnimeSearchOption {
+	return func(asc *AnimeSearchConfig) {
+		asc.escSendsExit = true
 	}
 }
 
@@ -115,6 +122,7 @@ type AnimeSearchModel struct {
 		source            AnimeFinderSource
 		useAnimeSelection bool
 		consentHeader     string
+		escSendsExit      bool
 	}
 	ui struct {
 		list         list.Model
@@ -209,10 +217,17 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 	m.helpMap = AnimeSearchHelp{
 		AnimeSearch_Query: {
 			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
+				keys := make([]key.Binding, 0, 4)
 				if m.config.source == NoSource {
-					return []key.Binding{m.keys.tab, KeyMap.Submit}
+					keys = append(keys, fam.keys.tab, KeyMap.Submit)
 				}
-				return []key.Binding{KeyMap.Submit}
+				if m.config.escSendsExit {
+					keys = append(keys, KeyMap.MainMenu)
+				}
+				if m.config.source != NoSource {
+					keys = append(keys, KeyMap.Submit)
+				}
+				return keys
 			},
 		},
 		AnimeSearch_Results: {
@@ -251,7 +266,7 @@ func (m *AnimeSearchModel) Update(msg tea.Msg) tea.Cmd {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, KeyMap.Abort):
-			if m.state.view == AnimeSearch_Query {
+			if m.state.view == AnimeSearch_Query && m.config.escSendsExit {
 				return func() tea.Msg { return AnimeSearchExitMsg{} }
 			}
 		}
