@@ -133,3 +133,38 @@ func DisplayError(err error) string {
 		TextStyle.PaddingLeft(2).Foreground(ansi.BrightYellow).Render(err.Error()),
 	)
 }
+
+func DisplayTitle(s string) string {
+	return DisplayText([]string{
+		fmt.Sprintf(";g;... ;b;%s ;g;...", s),
+	}, 0, 1)
+}
+
+func DisplaySubTitle(title string, subtitle string) string {
+	return DisplayText([]string{
+		fmt.Sprintf(";g;... ;b;%s;g; ⟶ ;w;%s ;g;...", title, subtitle),
+	}, 0, 1)
+}
+
+func DisplayText(lines []string, margins ...int) string {
+	marginLen := len(margins)
+	for i, para := range lines {
+		s := TextStyle
+		if marginLen > 0 && margins[0] > 0 {
+			s = s.Margin().MarginBottom(margins[0])
+		}
+
+		if marginLen > 1 && margins[1] > 0 {
+			s = s.MarginTop(margins[1])
+		}
+
+		para = strings.ReplaceAll(para, "\n", " ")
+		lines[i] = s.Render(utils.ColorText(para))
+	}
+
+	text := lipgloss.JoinVertical(lipgloss.Left, lines...)
+	if marginLen > 2 && margins[2] > 0 {
+		text = Style.MarginBottom(margins[2]).Render(text)
+	}
+	return text
+}

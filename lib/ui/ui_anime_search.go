@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
@@ -340,14 +339,14 @@ func (m AnimeSearchModel) ViewQuery() (string, *tea.Cursor) {
 			Render(utils.ColorText(fmt.Sprintf(";bk;Source: ;dgu;%s", m.state.source)))
 	}
 
-	desc := Style.MarginTop(1).Render(newText([]string{
+	desc := Style.MarginTop(1).Render(DisplayText([]string{
 		`Lookup an anime by any ;b;word ;x;or ;b;phrase;x;. Try to use
 words that might be in the ;dc;title ;x;or ;dc;description;x;, for
 better results.`,
 	}, 0))
 
 	if m.config.source == NoSource {
-		desc = newText(
+		desc = DisplayText(
 			[]string{
 				`;x;You can search for a ;b;full title;x;, ;b;phrase;x;, or just a ;b;single
 word;x;. You can even search for ;b;part ;x;of a word. Your query will be applied to all
@@ -363,7 +362,7 @@ It only contains anime that you're currently watching.`,
 
 	header := lipgloss.JoinVertical(
 		lipgloss.Left,
-		newHeader(m.config.header),
+		DisplayTitle(m.config.header),
 		desc,
 	)
 
@@ -465,8 +464,8 @@ func (m AnimeSearchModel) ViewResults() (string, *tea.Cursor) {
 	if len(m.ui.list.Items()) == 0 {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
-			newViewHeader(m.config.header)("Results"),
-			newText([]string{
+			DisplaySubTitle(m.config.header, "Results"),
+			DisplayText([]string{
 				fmt.Sprintf(
 					";x;No ;dgu;%s;x; results found for: ;y;%s",
 					m.state.source,
@@ -476,7 +475,7 @@ func (m AnimeSearchModel) ViewResults() (string, *tea.Cursor) {
 		), nil
 	}
 
-	h := newViewHeader(m.config.header)("Results")
+	h := DisplaySubTitle(m.config.header, "Results")
 	var c *tea.Cursor
 	// The filter has no margin, so we enforce
 	if m.ui.list.FilterState() == list.Filtering {
@@ -511,7 +510,7 @@ func (m AnimeSearchModel) ViewSelection() (string, *tea.Cursor) {
 	if m.state.results != nil {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
-			newViewHeader(m.config.header)("Entry Info"),
+			DisplaySubTitle(m.config.header, "Entry Info"),
 			"",
 			DisplayAnimeInfo(m.state.selectedAnime, m.state.showSynopsis),
 		), nil
@@ -550,42 +549,3 @@ func (m *AnimeSearchModel) findAnime(query string) tea.Cmd {
 		return result
 	}
 }
-
-func newHeader(s string) string {
-	return newText([]string{
-		fmt.Sprintf(";g;... ;b;%s ;g;...", s),
-	}, 0, 1)
-}
-
-func newText(lines []string, margins ...int) string {
-	marginLen := len(margins)
-	for i, para := range lines {
-		s := TextStyle
-		if marginLen > 0 && margins[0] > 0 {
-			s = s.Margin().MarginBottom(margins[0])
-		}
-
-		if marginLen > 1 && margins[1] > 0 {
-			s = s.MarginTop(margins[1])
-		}
-
-		para = strings.ReplaceAll(para, "\n", " ")
-		lines[i] = s.Render(utils.ColorText(para))
-	}
-
-	text := lipgloss.JoinVertical(lipgloss.Left, lines...)
-	if marginLen > 2 && margins[2] > 0 {
-		text = Style.MarginBottom(margins[2]).Render(text)
-	}
-	return text
-}
-
-func newViewHeader(s string) viewHeader {
-	return func(view string) string {
-		return newText([]string{
-			fmt.Sprintf(";g;... ;b;%s;g; ⟶ ;w;%s ;g;...", s, view),
-		}, 0, 1)
-	}
-}
-
-type viewHeader func(view string) string
