@@ -43,7 +43,7 @@ func (m ConsentModel) View(msg ...string) string {
 		no = TextStyle.Render("  No")
 	}
 
-	msg = append(msg, no, yes)
+	msg = append(msg, "", no, yes)
 	return lipgloss.JoinVertical(lipgloss.Left, msg...)
 }
 
