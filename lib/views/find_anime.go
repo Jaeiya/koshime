@@ -228,7 +228,7 @@ func (m Find_AnimeModel) ViewQueryEntry() (string, *tea.Cursor) {
 
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		findAnimeMsgs.header,
+		ui.DisplayTitle("Find Anime"),
 		findAnimeMsgs.title,
 		search,
 		ui.Style.MarginTop(1).Render(lipgloss.JoinHorizontal(
@@ -308,7 +308,7 @@ func (m Find_AnimeModel) ViewResults() (string, *tea.Cursor) {
 	if len(m.ui.list.Items()) == 0 {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
-			findAnimeMsgs.viewHeader("Results"),
+			ui.DisplaySubTitle("Find Anime", "Results"),
 			findAnimeMsgs.notFound(
 				m.ui.input.Value(),
 				m.state.source.String(),
@@ -316,7 +316,7 @@ func (m Find_AnimeModel) ViewResults() (string, *tea.Cursor) {
 		), nil
 	}
 
-	h := findAnimeMsgs.viewHeader("Results")
+	h := ui.DisplaySubTitle("Find Anime", "Results")
 	var c *tea.Cursor
 	// The filter has no margin, so we enforce
 	if m.ui.list.FilterState() == list.Filtering {
@@ -348,7 +348,7 @@ func (m Find_AnimeModel) ViewAnime() string {
 	if m.state.results != nil {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
-			findAnimeMsgs.viewHeader("Entry Info"),
+			ui.DisplaySubTitle("Find Anime", "Entry Info"),
 			"",
 			ui.DisplayAnimeInfo(m.state.selectedAnime, m.state.showSynopsis),
 		)

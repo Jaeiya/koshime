@@ -146,6 +146,12 @@ func DisplaySubTitle(title string, subtitle string) string {
 	}, 0, 1)
 }
 
+// DisplayText creates a string from multiple lines
+// separated by specified margins.
+//
+//	1st margin sets size of bottom margin
+//	2nd margin sets size of top margin
+//	3rd margin sets size of text-block bottom margin
 func DisplayText(lines []string, margins ...int) string {
 	marginLen := len(margins)
 	for i, para := range lines {
@@ -167,4 +173,40 @@ func DisplayText(lines []string, margins ...int) string {
 		text = Style.MarginBottom(margins[2]).Render(text)
 	}
 	return text
+}
+
+// DisplayPropVal converts a slice of properties and values
+// into a displayable string.
+//
+// 🔴 Panics with inconsistent value/property lengths
+func DisplayPropVal(props []string, values []string) string {
+	if len(props) != len(values) {
+		panic("number of properties do not match number of values")
+	}
+
+	var propWidth int
+	for _, p := range props {
+		if propWidth < lipgloss.Width(p) {
+			propWidth = lipgloss.Width(p)
+		}
+	}
+
+	propStyle := Style.Width(propWidth + 1).
+		Align(lipgloss.Right).
+		Foreground(lipgloss.BrightWhite)
+
+	valStyle := Style.Width(60)
+
+	var sb strings.Builder
+	for i, prop := range props {
+		sb.WriteString(
+			lipgloss.JoinHorizontal(
+				lipgloss.Left,
+				propStyle.Render(prop+":")+" ",
+				valStyle.Render(utils.ColorText(values[i])),
+			) + "\n",
+		)
+	}
+
+	return Style.MarginLeft(5).Render(strings.TrimRight(sb.String(), "\n"))
 }

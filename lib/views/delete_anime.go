@@ -198,7 +198,7 @@ func (m DelAnime_Model) ViewConsent() (string, *tea.Cursor) {
 
 	str := lipgloss.JoinVertical(
 		lipgloss.Left,
-		newViewHeader("Delete Anime")("Consent"),
+		ui.DisplaySubTitle("Delete Anime", "Consent"),
 		ui.Style.MarginTop(1).Render(ui.DisplayAnimeInfo(m.state.selectedAnime, false)),
 		m.ui.consent.View(
 			"",
@@ -226,7 +226,7 @@ func (m DelAnime_Model) UpdateSuccess(msg tea.Msg) (DelAnime_Model, tea.Cmd) {
 func (m DelAnime_Model) ViewSuccess() (string, *tea.Cursor) {
 	str := lipgloss.JoinVertical(
 		lipgloss.Left,
-		newViewHeader("Delete Anime")("Success"),
+		ui.DisplaySubTitle("Delete Anime", "Success"),
 		ui.TextStyle.MarginTop(1).Render(utils.ColorText("Anime Successfully Deleted")),
 		ui.TextStyle.MarginTop(1).Foreground(ansi.BrightGreen).Render("> Continue"),
 	)

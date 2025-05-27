@@ -266,7 +266,7 @@ func (m Model) View() (string, *tea.Cursor) {
 			expStyle = expStyle.Foreground(ansi.BrightGreen)
 		}
 
-		d := newPropValDisplay([]string{
+		d := ui.DisplayPropVal([]string{
 			utils.ColorText(";dc;Completed Anime"),
 			utils.ColorText(";dc;Time Watched"),
 			utils.ColorText(";dc;Token Expiration"),

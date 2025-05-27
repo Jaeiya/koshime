@@ -214,7 +214,7 @@ func (m AddAnime_Model) ViewQueryAnime() (string, *tea.Cursor) {
 	c := m.ui.input.Cursor()
 	c.Shape = tea.CursorBar
 
-	header := ui.Style.MarginBottom(1).Render(addAnimeMsgs.header)
+	header := ui.Style.MarginBottom(1).Render(ui.DisplayTitle("Add Anime"))
 	body := lipgloss.JoinVertical(lipgloss.Left, header, addAnimeMsgs.queryDesc)
 
 	c.Y += lipgloss.Height(body)
@@ -288,7 +288,7 @@ func (m AddAnime_Model) ViewAnimeResults() (string, *tea.Cursor) {
 	if len(m.state.results) == 0 {
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
-			findAnimeMsgs.viewHeader("Results"),
+			ui.DisplaySubTitle("Add Anime", "Results"),
 			ui.TextStyle.MarginTop(1).Render(
 				utils.ColorText(
 					fmt.Sprintf("No results found for: ;y;%s", m.ui.input.Value()),
@@ -301,7 +301,7 @@ func (m AddAnime_Model) ViewAnimeResults() (string, *tea.Cursor) {
 		return ui.DisplayError(m.state.fetchErr), nil
 	}
 
-	h := addAnimeMsgs.viewHeader("Results")
+	h := ui.DisplaySubTitle("Add Anime", "Results")
 	var c *tea.Cursor
 	// The filter has no margin, so we enforce
 	if m.ui.list.FilterState() == list.Filtering {
@@ -373,7 +373,7 @@ func (m AddAnime_Model) ViewAnimeReview() (string, *tea.Cursor) {
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
-		findAnimeMsgs.viewHeader("Entry Info"),
+		ui.DisplaySubTitle("Add Anime", "Entry Info"),
 		"",
 		ui.DisplayAnimeInfo(m.state.selectedAnime, m.state.showSynopsis),
 		ui.TextStyle.MarginTop(1).Render(

@@ -233,7 +233,7 @@ func (m userSetupModel) ViewUsername() (string, *tea.Cursor) {
 			panic(err)
 		}
 
-		profileStr := newPropValDisplay([]string{
+		profileStr := ui.DisplayPropVal([]string{
 			"Name", "About", "Gender", "BirthDay", "Location", "Created", "Profile",
 		}, []string{
 			fmt.Sprintf(";g;%s", p.Username), p.About, p.Gender, p.Birthday, p.Location,
@@ -320,7 +320,7 @@ func (m userSetupModel) ViewPassword() (string, *tea.Cursor) {
 	}
 
 	if m.state.password.passed {
-		tokensStr := newText([]string{
+		tokensStr := ui.DisplayText([]string{
 			";c;Access Token",
 			";bk;" + m.state.data.Profile.AccessToken,
 			"",
