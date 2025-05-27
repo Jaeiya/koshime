@@ -115,10 +115,6 @@ func (m DelAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 }
 
 func (m DelAnime_Model) View() (string, *tea.Cursor) {
-	if m.state.err != nil {
-		return ui.DisplayError(m.state.err), nil
-	}
-
 	switch m.state.view {
 	case DelAnime_Query:
 		return m.ui.animeSearch.View()
