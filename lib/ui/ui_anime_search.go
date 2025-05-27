@@ -24,9 +24,10 @@ const (
 )
 
 type (
-	SelectedAnimeMsg  = AnimeInfo
-	AnimeSearchOption func(*AnimeSearchConfig)
-	AnimeSearchHelp   map[AnimeSearchView]KeyHelpInfo[AnimeSearchModel]
+	SelectedAnimeMsg   = AnimeInfo
+	AnimeSearchExitMsg struct{}
+	AnimeSearchOption  func(*AnimeSearchConfig)
+	AnimeSearchHelp    map[AnimeSearchView]KeyHelpInfo[AnimeSearchModel]
 )
 
 type AnimeSearchConfig struct {
@@ -228,6 +229,13 @@ func (m *AnimeSearchModel) Update(msg tea.Msg) tea.Cmd {
 	case tea.WindowSizeMsg:
 		m.windowSize.width = msg.Width
 		m.windowSize.height = msg.Height
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, KeyMap.Abort):
+			if m.state.view == AnimeSearch_Query {
+				return func() tea.Msg { return AnimeSearchExitMsg{} }
+			}
+		}
 	}
 
 	if m.ui.loader.IsLoading() {
