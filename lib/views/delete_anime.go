@@ -17,8 +17,7 @@ type (
 
 const (
 	DelAnime_Query = DelAnime_View(iota)
-	DelAnime_Consent
-	DelAnime_Success
+	DelAnime_Deleted
 )
 
 type (
@@ -35,7 +34,6 @@ type DelAnime_Model struct {
 	ui struct {
 		animeSearch *ui.AnimeSearchModel
 		loader      ui.LoaderModel
-		consent     ui.ConsentModel
 	}
 	db      *database.Database
 	helpMap DelAnime_Help
@@ -50,7 +48,6 @@ type DelAnime_State struct {
 
 func newDelAnimeModel(db *database.Database) DelAnime_Model {
 	m := DelAnime_Model{db: db}
-	m.ui.loader = ui.NewLoader()
 	m.ui.animeSearch = ui.NewAnimeSearchModel(
 		db,
 		ui.WithHeader("Delete Anime"),
@@ -58,21 +55,14 @@ func newDelAnimeModel(db *database.Database) DelAnime_Model {
 		ui.WithItemsPerPage(5),
 		ui.WithMinInputLen(3),
 		ui.WithInputWidth(30),
+		ui.WithAnimeSelection("Are you sure you want to delete the above Anime?"),
 		ui.WithLocalSource(),
 	)
 
+	m.ui.loader = ui.NewLoader()
+
 	m.helpMap = DelAnime_Help{
-		DelAnime_Consent: {
-			ShortHelp: func(da DelAnime_Model) []key.Binding {
-				return []key.Binding{
-					ui.KeyMap.Up,
-					ui.KeyMap.Down,
-					ui.KeyMap.Select,
-					ui.KeyMap.EscBack,
-				}
-			},
-		},
-		DelAnime_Success: {
+		DelAnime_Deleted: {
 			ShortHelp: func(da DelAnime_Model) []key.Binding {
 				return []key.Binding{ui.KeyMap.Select}
 			},
@@ -104,33 +94,19 @@ func (m DelAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		return m, abort
 
 	case ui.SelectedAnimeMsg:
-		m.state.view = DelAnime_Consent
+		m.ui.loader, cmd = m.ui.loader.Start("Deleting Anime")
 		m.state.selectedAnime = msg
+		m.state.view = DelAnime_Deleted
+		return m, tea.Batch(cmd, m.deleteAnime)
 
-	case DelAnimeErrorMsg:
-		m.ui.loader.Stop()
-		m.state.err = msg
-
-	case DelAnimeSuccessMsg:
-		m.ui.loader.Stop()
-		m.state.view = DelAnime_Success
-
-	}
-
-	if m.ui.loader.IsLoading() {
-		m.ui.loader, cmd = m.ui.loader.Update(msg)
-		cmds = append(cmds, cmd)
 	}
 
 	switch m.state.view {
 	case DelAnime_Query:
 		cmd = m.ui.animeSearch.Update(msg)
 		cmds = append(cmds, cmd)
-	case DelAnime_Consent:
-		m, cmd = m.UpdateConsent(msg)
-		cmds = append(cmds, cmd)
-	case DelAnime_Success:
-		m, cmd = m.UpdateSuccess(msg)
+	case DelAnime_Deleted:
+		m, cmd = m.UpdateDeleted(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -145,10 +121,8 @@ func (m DelAnime_Model) View() (string, *tea.Cursor) {
 	switch m.state.view {
 	case DelAnime_Query:
 		return m.ui.animeSearch.View()
-	case DelAnime_Consent:
-		return m.ViewConsent()
-	case DelAnime_Success:
-		return m.ViewSuccess()
+	case DelAnime_Deleted:
+		return m.ViewDeleted()
 	}
 	return "DelAnime::missing view", nil
 }
@@ -169,61 +143,41 @@ func (m DelAnime_Model) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m DelAnime_Model) UpdateConsent(msg tea.Msg) (DelAnime_Model, tea.Cmd) {
-	var cmd tea.Cmd
-	m.ui.consent = m.ui.consent.Update(msg)
-
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch {
-		case key.Matches(msg, ui.KeyMap.Submit):
-			if m.ui.consent.Select() == ui.No {
-				m.state.view = DelAnime_Query
-				return m, nil
-			}
-			m.ui.loader, cmd = m.ui.loader.Start("Deleting Anime")
-			return m, tea.Batch(cmd, m.deleteAnime)
-
-		case key.Matches(msg, ui.KeyMap.EscBack):
-			m.state.view = DelAnime_Query
-		}
-	}
-	return m, nil
-}
-
-func (m DelAnime_Model) ViewConsent() (string, *tea.Cursor) {
-	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
-	}
-
-	str := lipgloss.JoinVertical(
-		lipgloss.Left,
-		ui.DisplaySubTitle("Delete Anime", "Consent"),
-		ui.Style.MarginTop(1).Render(ui.DisplayAnimeInfo(m.state.selectedAnime, false)),
-		m.ui.consent.View(
-			"",
-			ui.TextStyle.Render(
-				utils.ColorText(";b;Are you sure you want to delete the above Anime?"),
-			),
-			"",
-		),
-	)
-
-	return str, nil
-}
-
-func (m DelAnime_Model) UpdateSuccess(msg tea.Msg) (DelAnime_Model, tea.Cmd) {
+func (m DelAnime_Model) UpdateDeleted(msg tea.Msg) (DelAnime_Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
-			return m, abort
+			if m.state.err == nil {
+				m.reset()
+				return m, abort
+			}
+
+		case key.Matches(msg, ui.KeyMap.EscBack):
+			if m.state.err != nil {
+				m.reset()
+			}
 		}
+
+	case DelAnimeSuccessMsg:
+		m.ui.loader.Stop()
+
+	case DelAnimeErrorMsg:
+		m.ui.loader.Stop()
+		m.state.err = msg
 	}
 	return m, nil
 }
 
-func (m DelAnime_Model) ViewSuccess() (string, *tea.Cursor) {
+func (m DelAnime_Model) ViewDeleted() (string, *tea.Cursor) {
+	if m.ui.loader.IsLoading() {
+		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+	}
+
+	if m.state.err != nil {
+		return ui.DisplayError(m.state.err), nil
+	}
+
 	str := lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Delete Anime", "Success"),
