@@ -113,14 +113,13 @@ type AnimeSearchModel struct {
 		useAnimeSelection bool
 	}
 	ui struct {
-		list   list.Model
-		input  textinput.Model
-		loader LoaderModel
+		list         list.Model
+		input        textinput.Model
+		loader       LoaderModel
+		animeDisplay *AnimeDisplayModel
 	}
 	keys struct {
-		tab           key.Binding
-		openSynopsis  key.Binding
-		closeSynopsis key.Binding
+		tab key.Binding
 	}
 	helpMap        AnimeSearchHelp
 	db             *database.Database
@@ -134,7 +133,6 @@ type AnimeSearchState struct {
 	source        AnimeFinderSource
 	results       []AnimeInfo
 	selectedAnime AnimeInfo
-	showSynopsis  bool
 }
 
 func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *AnimeSearchModel {
@@ -147,6 +145,7 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 
 	m.ui.loader = NewLoader()
 	m.ui.list = NewList(ListOptions{})
+	m.ui.animeDisplay = NewAnimeDisplayModel()
 
 	m.ui.input = NewTextInput()
 	m.ui.input.Focus()
@@ -196,11 +195,6 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 	}
 
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
-	m.keys.openSynopsis = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "open synopsis"))
-	m.keys.closeSynopsis = key.NewBinding(
-		key.WithKeys("s"),
-		key.WithHelp("s", "close synopsis"),
-	)
 
 	m.helpMap = AnimeSearchHelp{
 		AnimeSearch_Query: {
@@ -224,11 +218,11 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 				if !fam.config.useAnimeSelection {
 					return []key.Binding{}
 				}
-				synKey := m.keys.openSynopsis
-				if m.state.showSynopsis {
-					synKey = m.keys.closeSynopsis
+				return []key.Binding{
+					m.ui.animeDisplay.ShortHelp()[0],
+					KeyMap.Submit,
+					KeyMap.EscBack,
 				}
-				return []key.Binding{synKey, KeyMap.Submit, KeyMap.EscBack}
 			},
 		},
 	}
@@ -496,13 +490,12 @@ func (m *AnimeSearchModel) UpdateSelection(msg tea.Msg) tea.Cmd {
 		case key.Matches(msg, KeyMap.EscBack, KeyMap.Back):
 			m.state.view = AnimeSearch_Results
 
-		case key.Matches(msg, m.keys.openSynopsis):
-			m.state.showSynopsis = !m.state.showSynopsis
-
 		case key.Matches(msg, KeyMap.Submit):
 			return func() tea.Msg { return SelectedAnimeMsg(m.state.selectedAnime) }
 		}
 	}
+
+	m.ui.animeDisplay.Update(msg)
 	return nil
 }
 
@@ -512,7 +505,7 @@ func (m AnimeSearchModel) ViewSelection() (string, *tea.Cursor) {
 			lipgloss.Left,
 			DisplaySubTitle(m.config.header, "Entry Info"),
 			"",
-			DisplayAnimeInfo(m.state.selectedAnime, m.state.showSynopsis),
+			m.ui.animeDisplay.View(m.state.selectedAnime),
 		), nil
 	}
 
