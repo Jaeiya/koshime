@@ -1,13 +1,8 @@
 package views
 
 import (
-	"fmt"
-
 	"github.com/Jaeiya/koshime/lib/ui"
-	"github.com/charmbracelet/x/ansi"
 )
-
-type viewHeader func(view string) string
 
 type userSetupText struct {
 	welcome  string
@@ -71,56 +66,4 @@ account. If not, sign-up here: ;y;https://kitsu.app`,
 	)
 
 	return v
-}()
-
-type findAnimeText struct {
-	title    string
-	kitsu    string
-	local    string
-	notFound func(query, source string) string
-}
-
-var findAnimeMsgs = func() findAnimeText {
-	txt := findAnimeText{}
-
-	txt.title = ui.DisplayText(
-		[]string{
-			`;x;You can search for a ;b;full title;x;, ;b;phrase;x;, or just a ;b;single
-word;x;. You can even search for ;b;part ;x;of a word. Your query will be applied to all
-available titles, as well as the synopsis.`,
-			`The ;dgu;Kitsu;x; source searches ;b;all ;x;of Kitsu (not just your Kitsu
-library) for any matches.`,
-			`The ;dgu;Local;x; source searches your ;b;Koshime ;x;database for any matches.
-It only contains anime that you're currently watching.`,
-		},
-		0, 1, 1,
-	)
-
-	activeStyle := ui.Style.Foreground(ansi.Green).Underline(true)
-	txt.kitsu = activeStyle.Render("Kitsu") + "🌐"
-	txt.local = activeStyle.Render("Local") + "📁"
-
-	txt.notFound = func(query, source string) string {
-		return ui.DisplayText([]string{
-			fmt.Sprintf(";x;No ;dgu;%s;x; results found for: ;y;%s", source, query),
-		}, 0, 1)
-	}
-
-	return txt
-}()
-
-type addAnimeText struct {
-	queryDesc string
-}
-
-var addAnimeMsgs = func() addAnimeText {
-	txt := addAnimeText{}
-
-	txt.queryDesc = ui.DisplayText([]string{
-		`Lookup an anime by any ;b;word ;x;or ;b;phrase;x;. Try to use
-words that might be in the ;dc;title ;x;or ;dc;description;x;, for
-better results.`,
-	}, 1)
-
-	return txt
 }()
