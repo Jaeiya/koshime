@@ -38,12 +38,11 @@ func ColorText(text string) string {
 
 func renderStyledTokens(input string, tokenMap map[string]lipgloss.Style) string {
 	var sb strings.Builder
-	currentStyle := lipgloss.NewStyle().Foreground(ansi.White)
+	currentStyle := style.Foreground(ansi.White)
 	start := 0
 
 StringLoop:
 	for i := 0; i < len(input); {
-		// Try to match a token at the current position
 		for t, style := range tokenMap {
 			if strings.HasPrefix(input[i:], t) {
 				sb.WriteString(currentStyle.Render(input[start:i]))
