@@ -14,6 +14,21 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+type AnimeSearchView int
+
+const (
+	AnimeSearch_Query = AnimeSearchView(iota)
+	AnimeSearch_Results
+	AnimeSearch_Selected
+)
+
+type (
+	SelectedAnimeMsg   = AnimeInfo
+	AnimeSearchExitMsg struct{}
+	AnimeSearchOption  func(*AnimeSearchConfig)
+	AnimeSearchHelp    map[AnimeSearchView]KeyHelpInfo[AnimeSearchModel]
+)
+
 type AnimeSearch interface {
 	Search(query string) (AnimeSearchResult, error)
 }
@@ -121,21 +136,6 @@ func (af LocalAnimeSearch) Search(query string) (AnimeSearchResult, error) {
 
 	return AnimeSearchResult{items, info}, nil
 }
-
-type AnimeSearchView int
-
-const (
-	AnimeSearch_Query = AnimeSearchView(iota)
-	AnimeSearch_Results
-	AnimeSearch_Selected
-)
-
-type (
-	SelectedAnimeMsg   = AnimeInfo
-	AnimeSearchExitMsg struct{}
-	AnimeSearchOption  func(*AnimeSearchConfig)
-	AnimeSearchHelp    map[AnimeSearchView]KeyHelpInfo[AnimeSearchModel]
-)
 
 type AnimeSearchConfig struct {
 	header            string
