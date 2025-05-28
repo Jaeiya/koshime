@@ -200,7 +200,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case AbortMsg:
-		// Do not abort application when inside of sub-menu
+		// Do not abort application when inside a menu view
 		switch m.state.view {
 		case FindAnime, AddAnime, DelAnime:
 			m.SetViewState(Menu)
