@@ -16,6 +16,7 @@ var (
 	HelpDescStyle  = Style.Foreground(lipgloss.Color("#56566B"))
 	HelpKeyStyle   = Style.Foreground(lipgloss.Color("#787897"))
 	AbortStyle     = Style.MarginTop(1).MarginLeft(2)
+	ConsentStyle   = TextStyle.Foreground(ansi.BrightBlue)
 
 	inputPromptStyle = Style.Foreground(ansi.BrightGreen)
 	inputTextStyle   = Style.Foreground(ansi.BrightWhite)
