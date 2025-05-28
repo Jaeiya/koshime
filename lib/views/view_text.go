@@ -5,9 +5,9 @@ import (
 )
 
 type userSetupText struct {
-	header   string
-	welcome  string
-	username struct {
+	header    string
+	subHeader func(title string) string
+	username  struct {
 		enter          string
 		confirmHeader  string
 		confirmConsent string
@@ -27,23 +27,21 @@ var userSetupMsgs = func() userSetupText {
 
 	v.header = ui.DisplayTitle("User Setup")
 
-	v.welcome = ui.DisplayText([]string{
-		`Welcome to ;g;Koshime;x;!`,
-		`Before you continue, make sure you already have a Kitsu
-account. If not, sign-up here: ;dc;https://kitsu.app`,
-	}, 1, 1)
+	v.subHeader = func(title string) string {
+		return ui.DisplaySubTitle("User Setup", title)
+	}
 
 	// Username Msgs
 	v.username.enter = ui.DisplayText([]string{`Enter your ;g;Kitsu;x; user name.`}, 1)
 	v.username.confirmHeader = ui.DisplayText(
 		[]string{`;b;This is the first profile to pop up for that user name:;x;`},
-		1,
+		1, 1,
 	)
 	v.username.confirmConsent = ui.DisplayText(
 		[]string{`;b;Does that look like your profile?;x;`},
-		1,
+		0,
 	)
-	v.username.failed = ui.DisplayText([]string{`;y;User name not found; ;g;try again?;x;`}, 1)
+	v.username.failed = ui.DisplayText([]string{`;y;User name not found; ;g;try again?;x;`}, 0)
 
 	// Password Msgs
 	v.password.enter = ui.DisplayText(
