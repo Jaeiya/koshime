@@ -568,7 +568,7 @@ func (m *AnimeSearchModel) UpdateResults(msg tea.Msg) tea.Cmd {
 		m.ui.list = NewList(
 			ListOptions{
 				Items:         msg.ListItems,
-				ShortHelpKeys: []key.Binding{KeyMap.Back},
+				ShortHelpKeys: []key.Binding{KeyMap.Select, KeyMap.Back},
 				Width:         m.windowSize.width,
 				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
 				ItemsPerPage:  m.config.itemsPerPage,
