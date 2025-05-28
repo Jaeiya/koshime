@@ -669,7 +669,8 @@ func (m AnimeSearchModel) ViewSelection() (string, *tea.Cursor) {
 		return body, nil
 	}
 
-	return fmt.Sprintf("missing [%s] results to display", m.state.source), nil
+	sourceName, _ := m.state.source.Name()
+	return fmt.Sprintf("missing [%s] results to display", sourceName), nil
 }
 
 func (m *AnimeSearchModel) Reset() {
