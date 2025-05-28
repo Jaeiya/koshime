@@ -157,10 +157,10 @@ func DisplayText(lines []string, margins ...int) string {
 	for i, para := range lines {
 		s := TextStyle
 		if marginLen > 0 && margins[0] > 0 {
-			s = s.Margin().MarginBottom(margins[0])
+			s = s.MarginBottom(margins[0])
 		}
 
-		if marginLen > 1 && margins[1] > 0 {
+		if marginLen > 1 && margins[1] > 0 && i == 0 {
 			s = s.MarginTop(margins[1])
 		}
 
