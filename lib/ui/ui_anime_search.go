@@ -351,7 +351,7 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 				}
 				if fam.config.consentHeader == "" {
 					return []key.Binding{
-						NewAnimeDisplayModel().ShortHelp()[0],
+						m.ui.animeDisplay.ShortHelp()[0],
 						KeyMap.EscBack,
 					}
 				}
