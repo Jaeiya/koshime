@@ -103,7 +103,14 @@ func (m UserSetupModel) View() (string, *tea.Cursor) {
 
 	switch m.state.view {
 	case SetupConsentView:
-		view = m.consent.View(userSetupMsgs.welcome)
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			userSetupMsgs.header,
+			userSetupMsgs.welcome,
+			m.consent.View(
+				ui.ConsentStyle.Render("Would you like to setup in this directory?"),
+			),
+		), nil
 	case SetupUsernameView:
 		view, c = m.ViewUsername()
 	case SetupPasswordView:

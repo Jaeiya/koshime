@@ -5,6 +5,7 @@ import (
 )
 
 type userSetupText struct {
+	header   string
 	welcome  string
 	username struct {
 		enter          string
@@ -24,12 +25,13 @@ type userSetupText struct {
 var userSetupMsgs = func() userSetupText {
 	v := userSetupText{}
 
+	v.header = ui.DisplayTitle("User Setup")
+
 	v.welcome = ui.DisplayText([]string{
-		`;b;Welcome to ;g;Koshime;b;!`,
-		`;b;Before you continue, make sure you already have a Kitsu
-account. If not, sign-up here: ;y;https://kitsu.app`,
-		`;w;Would you like to setup ;g;Koshime ;w;in this directory?`,
-	}, 1)
+		`Welcome to ;g;Koshime;x;!`,
+		`Before you continue, make sure you already have a Kitsu
+account. If not, sign-up here: ;dc;https://kitsu.app`,
+	}, 1, 1)
 
 	// Username Msgs
 	v.username.enter = ui.DisplayText([]string{`Enter your ;g;Kitsu;x; user name.`}, 1)
