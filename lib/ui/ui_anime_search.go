@@ -639,6 +639,7 @@ func (m *AnimeSearchModel) UpdateSelection(msg tea.Msg) tea.Cmd {
 
 		case key.Matches(msg, KeyMap.EscBack, KeyMap.Back):
 			m.state.view = AnimeSearch_Results
+			m.ui.consent.Reset()
 		}
 	}
 
@@ -678,6 +679,7 @@ func (m *AnimeSearchModel) Reset() {
 	m.state = AnimeSearchState{}
 	m.state.source = source
 	m.ui.input.Reset()
+	m.ui.consent.Reset()
 }
 
 func (m *AnimeSearchModel) findAnime(query string) tea.Cmd {
