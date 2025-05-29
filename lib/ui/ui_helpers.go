@@ -169,6 +169,13 @@ func DisplayText(lines []string, margins ...int) string {
 	}
 
 	text := lipgloss.JoinVertical(lipgloss.Left, lines...)
+
+	// If bottom margin is set to 0
+	if marginLen > 2 && margins[2] == 0 {
+		text = strings.TrimRight(text, "\n ")
+	}
+
+	// Set bottom margin > 0
 	if marginLen > 2 && margins[2] > 0 {
 		text = Style.MarginBottom(margins[2]).Render(text)
 	}
