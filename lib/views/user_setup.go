@@ -267,6 +267,8 @@ func (m UserSetupModel) UpdateUsername(msg tea.Msg) (UserSetupModel, tea.Cmd) {
 				m.ui.input.EchoMode = textinput.EchoPassword
 				m.ui.input.Placeholder = "<password>"
 				m.state.view = SetupPasswordView
+				// User will likely want to retry bad password
+				m.ui.consent.SetConsentPos(ui.Yes)
 				return m, nil
 			}
 
