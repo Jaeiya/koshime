@@ -158,7 +158,7 @@ func (m UserSetupModel) View() (string, *tea.Cursor) {
 	case SetupConsentView:
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
-			userSetupMsgs.header,
+			ui.DisplayTitle("User Setup"),
 			ui.DisplayText([]string{
 				`Welcome to ;g;Koshime;x;!`,
 				`You'll be able to easily ;dc;add;x;, ;dc;update;x;, and ;dc;watch;x;
@@ -303,7 +303,9 @@ func (m UserSetupModel) ViewUsername() (string, *tea.Cursor) {
 	}
 
 	if m.state.username.notFound {
-		return m.ui.consent.View(userSetupMsgs.username.failed), nil
+		return m.ui.consent.View(
+			ui.DisplayText([]string{`;y;User name not found; ;g;try again?`}, 0, 1),
+		), nil
 	}
 
 	if m.state.err != nil {
@@ -333,9 +335,12 @@ func (m UserSetupModel) ViewUsername() (string, *tea.Cursor) {
 		})
 
 		return m.ui.consent.View(
-			userSetupMsgs.username.confirmHeader,
+			ui.DisplayText(
+				[]string{`;b;This is the first profile to pop up for that user name:`},
+				1, 1,
+			),
 			profileStr,
-			ui.Style.PaddingTop(1).Render(userSetupMsgs.username.confirmConsent),
+			ui.DisplayText([]string{`;b;Does that look like your profile?`}, 0, 1),
 		), nil
 	}
 
@@ -343,7 +348,7 @@ func (m UserSetupModel) ViewUsername() (string, *tea.Cursor) {
 	c.Shape = tea.CursorBar
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		userSetupMsgs.subHeader("Username"),
+		ui.DisplaySubTitle("User Setup", "Username"),
 		ui.DisplayText([]string{
 			`A ;g;Kitsu;x; account is required. So make sure you've
 created one at ;dc;http://kitsu.app;x;.`,
@@ -416,7 +421,17 @@ func (m UserSetupModel) ViewPassword() (string, *tea.Cursor) {
 	}
 
 	if m.state.password.failed {
-		return m.ui.consent.View(userSetupMsgs.password.failed), nil
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplaySubTitle("User Setup", "Password"),
+			ui.DisplayText(
+				[]string{
+					`;r;Authorization Failed. ;x;You must have entered your password incorrectly.`,
+				},
+				1, 1,
+			),
+			m.ui.consent.View(ui.DisplayText([]string{";b;Would you like to try again?"}, 0)),
+		), nil
 	}
 
 	if m.state.password.success {
@@ -429,7 +444,7 @@ func (m UserSetupModel) ViewPassword() (string, *tea.Cursor) {
 		})
 
 		return lipgloss.JoinVertical(lipgloss.Left,
-			userSetupMsgs.subHeader("Credentials"),
+			ui.DisplaySubTitle("User Setup", "Credentials"),
 			"",
 			ui.DisplayText([]string{
 				`By continuing, you acknowledge that ;g;Koshime;x; has the right to
@@ -450,7 +465,7 @@ transparency purposes only.`,
 	c.Shape = tea.CursorBar
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		userSetupMsgs.subHeader("Password"),
+		ui.DisplaySubTitle("User Setup", "Password"),
 		ui.DisplayText([]string{
 			`This process allows Koshime to gain an access token to your ;g;Kitsu;x; account.`,
 			`;m;We do not save your password;x;. The token lasts for ;w;30 days;x; and can be
@@ -513,8 +528,10 @@ func (m UserSetupModel) ViewLibAnime() string {
 	}
 
 	if m.state.libAnime.failed {
-		s := ui.TextStyle.MarginTop(1).Width(60).Render(m.state.err.Error())
-		return m.ui.consent.View(s, userSetupMsgs.libAnime.failed)
+		return m.ui.consent.View(
+			ui.DisplayError(m.state.err),
+			ui.DisplayText([]string{`;b;Would you like to try again?`}, 1, 1, 0),
+		)
 	}
 
 	if m.state.libAnime.passed {
@@ -534,7 +551,7 @@ func (m UserSetupModel) ViewLibAnime() string {
 
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
-			userSetupMsgs.subHeader("Success"),
+			ui.DisplaySubTitle("User Setup", "Success"),
 			"",
 			loadedStr,
 			"",
