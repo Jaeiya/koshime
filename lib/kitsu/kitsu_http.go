@@ -37,16 +37,6 @@ const (
 	jsonContent   = kitsuContentType("application/json")
 )
 
-// TODO  Use this to create better HTTP error messages
-// type BadRequestResp struct {
-// 	Errors []struct {
-// 		Title  string
-// 		Detail string
-// 		Code   string
-// 		Status string
-// 	}
-// }
-
 func newAPIRequest[T any](options APIReqOptions, data *T) (int, error) {
 	method := string(options.method)
 	url := string(options.url)
