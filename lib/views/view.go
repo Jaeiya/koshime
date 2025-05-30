@@ -70,6 +70,7 @@ var MenuItemMap = map[MenuItem]string{
 
 type (
 	AbortMsg      struct{}
+	GotoMenuMsg   struct{}
 	WindowSizeMsg struct {
 		Width  int
 		Height int
@@ -177,13 +178,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			panic(err)
 		}
 
+	case GotoMenuMsg:
+		m.SetViewState(Menu)
+		return m, nil
+
 	case AbortMsg:
-		// Do not abort application when inside a menu view
-		switch m.state.view {
-		case FindAnime, AddAnime, DelAnime:
-			m.SetViewState(Menu)
-			return m, nil
-		}
 		m.SetViewState(Abort)
 		return m, tea.Quit
 
@@ -357,4 +356,8 @@ func (m Model) FullHelp() [][]key.Binding {
 
 func abort() tea.Msg {
 	return AbortMsg{}
+}
+
+func exitToMenu() tea.Msg {
+	return GotoMenuMsg{}
 }

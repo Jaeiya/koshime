@@ -66,7 +66,7 @@ func (m Find_AnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 	case AnimeSearchExitMsg:
 		m.reset()
-		return m, abort
+		return m, exitToMenu
 	}
 
 	switch m.state.view {

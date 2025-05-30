@@ -92,7 +92,7 @@ func (m DelAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 	case AnimeSearchExitMsg:
 		m.reset()
-		return m, abort
+		return m, exitToMenu
 
 	case SelectedAnimeMsg:
 		m.ui.loader, cmd = m.ui.loader.Start("Deleting Anime")
@@ -147,7 +147,7 @@ func (m DelAnime_Model) UpdateDeleted(msg tea.Msg) (DelAnime_Model, tea.Cmd) {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.state.err == nil {
 				m.reset()
-				return m, abort
+				return m, exitToMenu
 			}
 
 		case key.Matches(msg, ui.KeyMap.EscBack):

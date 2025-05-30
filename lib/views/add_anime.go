@@ -105,7 +105,7 @@ func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 	case AnimeSearchExitMsg:
 		m.reset()
-		return m, abort
+		return m, exitToMenu
 
 	case SelectedAnimeMsg:
 		m.ui.loader, cmd = m.ui.loader.Start("Adding Anime")
@@ -168,7 +168,7 @@ func (m AddAnime_Model) UpdateReview(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.state.fetchErr == nil {
 				m.reset()
-				return m, abort
+				return m, exitToMenu
 			}
 
 		case key.Matches(msg, ui.KeyMap.EscBack):
