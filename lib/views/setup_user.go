@@ -72,13 +72,7 @@ func newSetupUserModel() SetupUserModel {
 					ui.KeyMap.Up,
 					ui.KeyMap.Down,
 					ui.KeyMap.Select,
-					ui.KeyMap.HelpMore,
-				}
-			},
-			FullHelp: func(usm SetupUserModel) [][]key.Binding {
-				return [][]key.Binding{
-					{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select},
-					{ui.KeyMap.Abort, ui.KeyMap.HelpLess},
+					ui.KeyMap.Abort,
 				}
 			},
 		},
