@@ -200,7 +200,7 @@ func DisplayPropVal(props []string, values []string) string {
 
 	propStyle := Style.Width(propWidth + 1).
 		Align(lipgloss.Right).
-		Foreground(lipgloss.BrightWhite)
+		Foreground(lipgloss.Cyan)
 
 	valStyle := Style.Width(60)
 
