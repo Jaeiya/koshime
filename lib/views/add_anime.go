@@ -46,7 +46,7 @@ type AddAnime_Model struct {
 		input       textinput.Model
 		list        list.Model
 		consent     ui.ConsentModel
-		animeSearch *ui.AnimeSearchModel
+		animeSearch *AnimeSearchModel
 	}
 	helpMap AddAnime_Help
 	db      *database.Database
@@ -66,16 +66,16 @@ func newAddAnimeModel(db *database.Database) AddAnime_Model {
 	m.config.itemsPerPage = 5
 	m.config.maxAnimeResults = 10
 
-	m.ui.animeSearch = ui.NewAnimeSearchModel(
+	m.ui.animeSearch = NewAnimeSearchModel(
 		db,
-		ui.WithHeader("Add Anime"),
-		ui.WithExit(),
-		ui.WithMinInputLen(4),
-		ui.WithItemsPerPage(5),
-		ui.WithMaxResults(10),
-		ui.WithInputWidth(30),
-		ui.WithAnimeSelection("Do you want to add the above anime to your library?"),
-		ui.WithKitsuSource([]kitsu.AnimeStatus{kitsu.AnimeNew}),
+		WithHeader("Add Anime"),
+		WithExit(),
+		WithMinInputLen(4),
+		WithItemsPerPage(5),
+		WithMaxResults(10),
+		WithInputWidth(30),
+		WithAnimeSelection("Do you want to add the above anime to your library?"),
+		WithKitsuSource([]kitsu.AnimeStatus{kitsu.AnimeNew}),
 	)
 
 	m.ui.list = ui.NewList(ui.ListOptions{})
@@ -103,11 +103,11 @@ func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m.windowSize.width = msg.Width
 		m.windowSize.height = msg.Height
 
-	case ui.AnimeSearchExitMsg:
+	case AnimeSearchExitMsg:
 		m.reset()
 		return m, abort
 
-	case ui.SelectedAnimeMsg:
+	case SelectedAnimeMsg:
 		m.ui.loader, cmd = m.ui.loader.Start("Adding Anime")
 		m.state.view = AddAnime_Review
 		m.state.selectedAnime = msg

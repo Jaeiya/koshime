@@ -32,7 +32,7 @@ type DelAnime_Model struct {
 		height int
 	}
 	ui struct {
-		animeSearch *ui.AnimeSearchModel
+		animeSearch *AnimeSearchModel
 		loader      ui.LoaderModel
 	}
 	db      *database.Database
@@ -48,16 +48,16 @@ type DelAnime_State struct {
 
 func newDelAnimeModel(db *database.Database) DelAnime_Model {
 	m := DelAnime_Model{db: db}
-	m.ui.animeSearch = ui.NewAnimeSearchModel(
+	m.ui.animeSearch = NewAnimeSearchModel(
 		db,
-		ui.WithHeader("Delete Anime"),
-		ui.WithExit(),
-		ui.WithMaxResults(5),
-		ui.WithItemsPerPage(5),
-		ui.WithMinInputLen(3),
-		ui.WithInputWidth(30),
-		ui.WithAnimeSelection("Are you sure you want to delete the above Anime?"),
-		ui.WithLocalSource(),
+		WithHeader("Delete Anime"),
+		WithExit(),
+		WithMaxResults(5),
+		WithItemsPerPage(5),
+		WithMinInputLen(3),
+		WithInputWidth(30),
+		WithAnimeSelection("Are you sure you want to delete the above Anime?"),
+		WithLocalSource(),
 	)
 
 	m.ui.loader = ui.NewLoader()
@@ -90,11 +90,11 @@ func (m DelAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			}
 		}
 
-	case ui.AnimeSearchExitMsg:
+	case AnimeSearchExitMsg:
 		m.reset()
 		return m, abort
 
-	case ui.SelectedAnimeMsg:
+	case SelectedAnimeMsg:
 		m.ui.loader, cmd = m.ui.loader.Start("Deleting Anime")
 		m.state.selectedAnime = msg
 		m.state.view = DelAnime_Deleted

@@ -1,6 +1,7 @@
-package ui
+package views
 
 import (
+	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/charmbracelet/bubbles/v2/key"
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
@@ -33,8 +34,8 @@ func (m *AnimeDisplayModel) Update(msg tea.Msg) {
 	}
 }
 
-func (m AnimeDisplayModel) View(ai AnimeInfo) string {
-	return DisplayAnimeInfo(ai, m.showSynopsis)
+func (m AnimeDisplayModel) View(ai ui.AnimeInfo) string {
+	return ui.DisplayAnimeInfo(ai, m.showSynopsis)
 }
 
 func (m AnimeDisplayModel) ShortHelp() []key.Binding {

@@ -24,8 +24,8 @@ type Find_AnimeModel struct {
 		height int
 	}
 	ui struct {
-		animeSearch  *ui.AnimeSearchModel
-		animeDisplay *ui.AnimeDisplayModel
+		animeSearch  *AnimeSearchModel
+		animeDisplay *AnimeDisplayModel
 	}
 	db    *database.Database
 	state Find_AnimeState
@@ -39,14 +39,14 @@ type Find_AnimeState struct {
 func newFindAnimeModel(db *database.Database) Find_AnimeModel {
 	m := Find_AnimeModel{db: db}
 
-	m.ui.animeSearch = ui.NewAnimeSearchModel(db,
-		ui.WithHeader("Find Anime"),
-		ui.WithExit(),
-		ui.WithMinInputLen(4),
-		ui.WithItemsPerPage(5),
-		ui.WithMaxResults(15),
-		ui.WithInputWidth(25),
-		ui.WithAnimeSelection(""),
+	m.ui.animeSearch = NewAnimeSearchModel(db,
+		WithHeader("Find Anime"),
+		WithExit(),
+		WithMinInputLen(4),
+		WithItemsPerPage(5),
+		WithMaxResults(15),
+		WithInputWidth(25),
+		WithAnimeSelection(""),
 	)
 
 	return m
@@ -61,10 +61,10 @@ func (m Find_AnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m.windowSize.width = msg.Width
 		m.windowSize.height = msg.Height
 
-	case ui.SelectedAnimeMsg:
+	case SelectedAnimeMsg:
 		m.state.view = Find_SelectedAnime
 
-	case ui.AnimeSearchExitMsg:
+	case AnimeSearchExitMsg:
 		m.reset()
 		return m, abort
 	}
