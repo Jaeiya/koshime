@@ -105,7 +105,7 @@ func newSetupUserModel() SetupUserModel {
 	return m
 }
 
-func (m SetupUserModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m SetupUserModel) Update(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -329,10 +329,8 @@ func (m SetupUserModel) ViewUsername() (string, *tea.Cursor) {
 		})
 
 		return m.ui.consent.View(
-			ui.DisplayText(
-				[]string{`;b;This is the first profile to pop up for that user name:`},
-				1, 1,
-			),
+			ui.DisplaySubTitle("Setup User", "Select User"),
+			"",
 			profileStr,
 			ui.DisplayText([]string{`;b;Does that look like your profile?`}, 0, 1),
 		), nil
