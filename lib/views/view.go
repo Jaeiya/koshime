@@ -10,7 +10,6 @@ import (
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/help"
 	"github.com/charmbracelet/bubbles/v2/key"
-	"github.com/charmbracelet/bubbles/v2/spinner"
 	"github.com/charmbracelet/bubbles/v2/textinput"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
@@ -82,42 +81,23 @@ type Model struct {
 	menuItems   []MenuItem
 	menuViewMap map[UIView]ViewModel
 	help        help.Model
-	input       textinput.Model
-	spinner     spinner.Model
 	state       struct {
-		view       UIView
-		consentPos ui.Consent
-		menuPos    int
-		height     int
-		width      int
-		loading    struct {
-			active bool
-			text   string
-		}
+		view    UIView
+		menuPos int
 	}
 }
 
 func New(dbPath string) (Model, error) {
-	h := help.New()
-	h.Styles.ShortKey = ui.HelpKeyStyle
-	h.Styles.FullKey = h.Styles.ShortKey
+	m := Model{}
 
-	h.Styles.ShortDesc = ui.HelpDescStyle
-	h.Styles.FullDesc = h.Styles.ShortDesc
+	m.help = help.New()
+	m.help.Styles.ShortKey = ui.HelpKeyStyle
+	m.help.Styles.FullKey = m.help.Styles.ShortKey
+	m.help.Styles.ShortDesc = ui.HelpDescStyle
+	m.help.Styles.FullDesc = m.help.Styles.ShortDesc
 
-	input := ui.NewTextInput()
-	input.SetWidth(20)
-	input.Focus()
-
-	s := spinner.New(spinner.WithSpinner(spinner.Spinner{
-		Frames: []string{"⠋", "⠙", "⠚", "⠞", "⠖", "⠦", "⠴", "⠲", "⠳", "⠓"},
-		FPS:    time.Second / 10,
-	}))
-
-	model := Model{help: h, input: input, spinner: s}
-
-	model.menuItems = append(
-		model.menuItems,
+	m.menuItems = append(
+		m.menuItems,
 		Find,
 		Add,
 		Delete,
@@ -125,9 +105,9 @@ func New(dbPath string) (Model, error) {
 
 	// Initialize empty database
 	db, _ := database.NewDatabase(nil)
-	model.db = db
+	m.db = db
 
-	model.menuViewMap = map[UIView]ViewModel{
+	m.menuViewMap = map[UIView]ViewModel{
 		SetupUser: newSetupUserModel(),
 		FindAnime: newFindAnimeModel(db),
 		AddAnime:  newAddAnimeModel(db),
@@ -135,18 +115,18 @@ func New(dbPath string) (Model, error) {
 	}
 
 	if !utils.FileExists(dbPath) {
-		model.SetViewState(SetupUser)
-		return model, nil
+		m.SetViewState(SetupUser)
+		return m, nil
 	}
 
 	err := db.Load()
 	if err != nil {
-		return model, err
+		return m, err
 	}
 
-	model.SetViewState(Menu)
+	m.SetViewState(Menu)
 
-	return model, nil
+	return m, nil
 }
 
 func (ui Model) Init() tea.Cmd {
@@ -164,8 +144,6 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.state.width = msg.Width
-		m.state.height = msg.Height
 		// Send size to all menu view models
 		for key, model := range m.menuViewMap {
 			m.menuViewMap[key], _ = model.Update(msg)
