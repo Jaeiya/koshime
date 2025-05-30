@@ -56,12 +56,6 @@ func New(dbPath string) (Model, error) {
 	db, _ := database.NewDatabase(nil)
 	m.db = db
 
-	m.menu = NewMenuModel([]MenuView{
-		{Name: "Find", Model: newFindAnimeModel(db), Desc: "Finds an anime anime"},
-		{Name: "Add", Model: newAddAnimeModel(db), Desc: "Adds an anime"},
-		{Name: "Delete", Model: newDelAnimeModel(db), Desc: "Deletes an anime"},
-	}, db)
-
 	if !utils.FileExists(dbPath) {
 		m.setupUser = newSetupUserModel()
 		return m, nil
@@ -72,6 +66,7 @@ func New(dbPath string) (Model, error) {
 		return m, err
 	}
 
+	m.CreateMenuItems()
 	m.view = Menu
 	return m, nil
 }
@@ -96,12 +91,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case SetupUserFinishedMsg:
-		m.view = Menu
 		err := m.db.LoadData(msg)
 		if err != nil {
 			// This should never happen
 			panic(fmt.Errorf("failed to load new user data: %w", err))
 		}
+		m.CreateMenuItems()
+		m.view = Menu
 
 	case AbortMsg:
 		m.view = Abort
@@ -149,6 +145,14 @@ func (m Model) View() (string, *tea.Cursor) {
 		return "missing view", nil
 
 	}
+}
+
+func (m *Model) CreateMenuItems() {
+	m.menu = NewMenuModel([]MenuView{
+		{Name: "Find", Model: newFindAnimeModel(m.db), Desc: "Finds an anime anime"},
+		{Name: "Add", Model: newAddAnimeModel(m.db), Desc: "Adds an anime"},
+		{Name: "Delete", Model: newDelAnimeModel(m.db), Desc: "Deletes an anime"},
+	}, m.db.GetProfile())
 }
 
 func abort() tea.Msg {

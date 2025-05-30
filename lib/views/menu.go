@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Jaeiya/koshime/lib/database"
+	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/help"
@@ -28,12 +28,12 @@ type MenuModel struct {
 	selectedModel ViewModel
 	help          help.Model
 	menuPos       int
-	db            *database.Database
+	profile       kitsu.Profile
 }
 
-func NewMenuModel(views []MenuView, db *database.Database) MenuModel {
+func NewMenuModel(views []MenuView, p kitsu.Profile) MenuModel {
 	m := MenuModel{}
-	m.db = db
+	m.profile = p
 
 	m.help = help.New()
 	m.help.Styles.ShortKey = ui.HelpKeyStyle
@@ -152,14 +152,14 @@ func (m MenuModel) DisplayMenu() string {
 }
 
 func (m MenuModel) DisplayProfile() string {
-	profile := m.db.GetProfile()
+	p := m.profile
 	header := ui.TextStyle.
 		MarginTop(1).
 		MarginBottom(1).
-		Render(utils.ColorText(fmt.Sprintf(";dy;%s's;b; profile stats:", profile.Username)))
+		Render(utils.ColorText(fmt.Sprintf(";dy;%s's;b; profile stats:", p.Username)))
 
 	expStyle := ui.Style
-	tokenExpiration := utils.NewRelativeTimeUnits(profile.TokenExpirationSec)
+	tokenExpiration := utils.NewRelativeTimeUnits(p.TokenExpirationSec)
 	switch {
 	case tokenExpiration.Weeks < 1:
 		expStyle = expStyle.Foreground(ansi.BrightRed)
@@ -175,11 +175,11 @@ func (m MenuModel) DisplayProfile() string {
 		utils.ColorText(";dc;Token Expiration"),
 		utils.ColorText(";dc;Last Updated"),
 	}, []string{
-		strconv.Itoa(profile.CompletedSeries),
-		utils.NewDurationUnits(time.Second * time.Duration(profile.SecondsWatched)).
+		strconv.Itoa(p.CompletedSeries),
+		utils.NewDurationUnits(time.Second * time.Duration(p.SecondsWatched)).
 			ToShortString(),
 		expStyle.Render(tokenExpiration.ToPrecisionString(utils.Days)),
-		utils.NewRelativeTimeUnits(profile.LastUpdateSec).String(),
+		utils.NewRelativeTimeUnits(p.LastUpdateSec).String(),
 	})
 
 	return lipgloss.JoinVertical(
