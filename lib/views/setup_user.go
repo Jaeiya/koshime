@@ -23,27 +23,27 @@ type (
 	SetupUserFinishedMsg = database.Data
 )
 
-type UserSetupHelpMap map[UserSetupView]ui.KeyHelpInfo[UserSetupModel]
+type SetupUserHelpMap map[SetupUserView]ui.KeyHelpInfo[SetupUserModel]
 
-type UserSetupView int
+type SetupUserView int
 
 const (
-	SetupConsentView = UserSetupView(iota)
+	SetupConsentView = SetupUserView(iota)
 	SetupUsernameView
 	SetupPasswordView
 	SetupLibraryView
 )
 
-type UserSetupModel struct {
+type SetupUserModel struct {
 	ui struct {
 		consent ui.ConsentModel
 		loader  ui.LoaderModel
 		input   textinput.Model
 	}
-	helpMap UserSetupHelpMap
+	helpMap SetupUserHelpMap
 	state   struct {
 		data     database.Data
-		view     UserSetupView
+		view     SetupUserView
 		err      error
 		username struct {
 			notFound bool
@@ -60,14 +60,14 @@ type UserSetupModel struct {
 	}
 }
 
-func newUserSetupModel() UserSetupModel {
-	m := UserSetupModel{}
+func newSetupUserModel() SetupUserModel {
+	m := SetupUserModel{}
 	m.ui.loader = ui.NewLoader()
 	m.ui.input = ui.NewTextInput()
 
-	m.helpMap = UserSetupHelpMap{
+	m.helpMap = SetupUserHelpMap{
 		SetupConsentView: {
-			ShortHelp: func(usm UserSetupModel) []key.Binding {
+			ShortHelp: func(usm SetupUserModel) []key.Binding {
 				return []key.Binding{
 					ui.KeyMap.Up,
 					ui.KeyMap.Down,
@@ -75,7 +75,7 @@ func newUserSetupModel() UserSetupModel {
 					ui.KeyMap.HelpMore,
 				}
 			},
-			FullHelp: func(usm UserSetupModel) [][]key.Binding {
+			FullHelp: func(usm SetupUserModel) [][]key.Binding {
 				return [][]key.Binding{
 					{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select},
 					{ui.KeyMap.Abort, ui.KeyMap.HelpLess},
@@ -83,7 +83,7 @@ func newUserSetupModel() UserSetupModel {
 			},
 		},
 		SetupUsernameView: {
-			ShortHelp: func(usm UserSetupModel) []key.Binding {
+			ShortHelp: func(usm SetupUserModel) []key.Binding {
 				if m.state.username.notFound || m.state.username.found {
 					return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select}
 				}
@@ -91,7 +91,7 @@ func newUserSetupModel() UserSetupModel {
 			},
 		},
 		SetupPasswordView: {
-			ShortHelp: func(usm UserSetupModel) []key.Binding {
+			ShortHelp: func(usm SetupUserModel) []key.Binding {
 				if m.state.password.failed {
 					return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select}
 				}
@@ -99,7 +99,7 @@ func newUserSetupModel() UserSetupModel {
 			},
 		},
 		SetupLibraryView: {
-			ShortHelp: func(usm UserSetupModel) []key.Binding {
+			ShortHelp: func(usm SetupUserModel) []key.Binding {
 				if m.state.libAnime.passed {
 					return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.Abort}
 				}
@@ -111,7 +111,7 @@ func newUserSetupModel() UserSetupModel {
 	return m
 }
 
-func (m UserSetupModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m SetupUserModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -150,7 +150,7 @@ func (m UserSetupModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m UserSetupModel) View() (string, *tea.Cursor) {
+func (m SetupUserModel) View() (string, *tea.Cursor) {
 	var view string
 	var c *tea.Cursor
 
@@ -187,7 +187,7 @@ your anime, from the command line.`,
 	return view, c
 }
 
-func (m UserSetupModel) ShortHelp() []key.Binding {
+func (m SetupUserModel) ShortHelp() []key.Binding {
 	if m.ui.loader.IsLoading() {
 		return []key.Binding{}
 	}
@@ -199,14 +199,14 @@ func (m UserSetupModel) ShortHelp() []key.Binding {
 	return m.helpMap[m.state.view].ShortHelp(m)
 }
 
-func (m UserSetupModel) FullHelp() [][]key.Binding {
+func (m SetupUserModel) FullHelp() [][]key.Binding {
 	if h, exists := m.helpMap[m.state.view]; exists && h.FullHelp != nil {
 		return h.FullHelp(m)
 	}
 	return [][]key.Binding{}
 }
 
-func (m UserSetupModel) UpdateConsent(msg tea.Msg) (UserSetupModel, tea.Cmd) {
+func (m SetupUserModel) UpdateConsent(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 	m.ui.consent = m.ui.consent.Update(msg)
 
 	switch msg := msg.(type) {
@@ -225,7 +225,7 @@ func (m UserSetupModel) UpdateConsent(msg tea.Msg) (UserSetupModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m UserSetupModel) UpdateUsername(msg tea.Msg) (UserSetupModel, tea.Cmd) {
+func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 	var cmd tea.Cmd
 	state := &m.state.username
 
@@ -297,7 +297,7 @@ func (m UserSetupModel) UpdateUsername(msg tea.Msg) (UserSetupModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m UserSetupModel) ViewUsername() (string, *tea.Cursor) {
+func (m SetupUserModel) ViewUsername() (string, *tea.Cursor) {
 	if m.ui.loader.IsLoading() {
 		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
 	}
@@ -359,7 +359,7 @@ created one at ;dc;http://kitsu.app;x;.`,
 	return view, c
 }
 
-func (m UserSetupModel) UpdatePassword(msg tea.Msg) (UserSetupModel, tea.Cmd) {
+func (m SetupUserModel) UpdatePassword(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 	var cmd tea.Cmd
 	state := &m.state.password
 	if state.failed {
@@ -415,7 +415,7 @@ func (m UserSetupModel) UpdatePassword(msg tea.Msg) (UserSetupModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m UserSetupModel) ViewPassword() (string, *tea.Cursor) {
+func (m SetupUserModel) ViewPassword() (string, *tea.Cursor) {
 	if m.ui.loader.IsLoading() {
 		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
 	}
@@ -479,7 +479,7 @@ to renew it.`,
 	return view, c
 }
 
-func (m UserSetupModel) UpdateLibAnime(msg tea.Msg) (UserSetupModel, tea.Cmd) {
+func (m SetupUserModel) UpdateLibAnime(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 	state := &m.state.libAnime
 
 	if state.failed {
@@ -522,7 +522,7 @@ func (m UserSetupModel) UpdateLibAnime(msg tea.Msg) (UserSetupModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m UserSetupModel) ViewLibAnime() string {
+func (m SetupUserModel) ViewLibAnime() string {
 	if m.ui.loader.IsLoading() {
 		return ui.Style.MarginTop(1).Render(m.ui.loader.View())
 	}
@@ -562,7 +562,7 @@ func (m UserSetupModel) ViewLibAnime() string {
 	return ""
 }
 
-func (m UserSetupModel) getProfile(username string) tea.Cmd {
+func (m SetupUserModel) getProfile(username string) tea.Cmd {
 	return func() tea.Msg {
 		p, err := kitsu.GetProfile(username)
 		if err != nil {
@@ -572,7 +572,7 @@ func (m UserSetupModel) getProfile(username string) tea.Cmd {
 	}
 }
 
-func (m UserSetupModel) getAnimeLibrary(userID string) func() tea.Msg {
+func (m SetupUserModel) getAnimeLibrary(userID string) func() tea.Msg {
 	return func() tea.Msg {
 		data, err := kitsu.GetLibraryAnime(userID, kitsu.LibAnimeWatching)
 		if err != nil {
@@ -582,7 +582,7 @@ func (m UserSetupModel) getAnimeLibrary(userID string) func() tea.Msg {
 	}
 }
 
-func (m UserSetupModel) getAuthToken() tea.Msg {
+func (m SetupUserModel) getAuthToken() tea.Msg {
 	tokenData, err := kitsu.GetAuthToken(
 		m.state.data.Profile.Username,
 		m.ui.input.Value(),
