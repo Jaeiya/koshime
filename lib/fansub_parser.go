@@ -118,6 +118,14 @@ type FansubInfo struct {
 
 type Fansub struct{}
 
+// IsSupported returns whether or not the provided file name
+// has a supported extension. Files without extensions
+// are treated as having an unsupported extension.
+func (Fansub) IsSupported(fileName string) bool {
+	_, exists := fansubExtMap[filepath.Ext(fileName)]
+	return exists
+}
+
 func (fansub Fansub) Parse(fileName string) (FansubInfo, error) {
 	ext := filepath.Ext(fileName)
 	if _, hasExt := fansubExtMap[ext]; hasExt {
