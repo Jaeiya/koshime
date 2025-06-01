@@ -43,3 +43,15 @@ func RemoveBrackets(s string) string {
 	}
 	return s
 }
+
+func ReplaceCutset(s, cutset, replacement string) string {
+	var sb strings.Builder
+	for _, r := range s {
+		if strings.ContainsRune(cutset, r) {
+			sb.WriteString(replacement)
+		} else {
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
+}
