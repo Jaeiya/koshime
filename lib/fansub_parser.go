@@ -116,17 +116,17 @@ type FansubInfo struct {
 	Source   string
 }
 
-type Fansub struct{}
+type FansubParser struct{}
 
 // IsSupported returns whether or not the provided file name
 // has a supported extension. Files without extensions
 // are treated as having an unsupported extension.
-func (Fansub) IsSupported(fileName string) bool {
+func (FansubParser) IsSupported(fileName string) bool {
 	_, exists := fansubExtMap[filepath.Ext(fileName)]
 	return exists
 }
 
-func (fansub Fansub) Parse(fileName string) (FansubInfo, error) {
+func (fp FansubParser) Parse(fileName string) (FansubInfo, error) {
 	ext := filepath.Ext(fileName)
 	if _, hasExt := fansubExtMap[ext]; hasExt {
 		fileName = strings.TrimSuffix(fileName, ext)
@@ -139,7 +139,7 @@ func (fansub Fansub) Parse(fileName string) (FansubInfo, error) {
 	var fansubName, episode, season string
 	var encoding, source, title strings.Builder
 
-	tokens, err := fansub.getTokens(fileName)
+	tokens, err := fp.getTokens(fileName)
 	if err != nil {
 		return FansubInfo{}, err
 	}
@@ -162,14 +162,14 @@ func (fansub Fansub) Parse(fileName string) (FansubInfo, error) {
 		}
 
 		token := t
-		normalizedToken := fansub.normalizeToken(t)
+		normalizedToken := fp.normalizeToken(t)
 
-		enc, multiEnc := fansub.getEncoding(normalizedToken, i, tokens)
+		enc, multiEnc := fp.getEncoding(normalizedToken, i, tokens)
 		tryWriteEncoding(enc)
 
 		if len(multiEnc) > 0 {
 			for i, enc = range multiEnc {
-				enc, _ = fansub.getEncoding(enc, i, multiEnc)
+				enc, _ = fp.getEncoding(enc, i, multiEnc)
 				tryWriteEncoding(enc)
 			}
 		}
@@ -178,11 +178,11 @@ func (fansub Fansub) Parse(fileName string) (FansubInfo, error) {
 			return encoding.Len() > 0 || source.Len() > 0 || episode != "" || season != ""
 		}
 
-		source.WriteString(fansub.getSource(normalizedToken))
+		source.WriteString(fp.getSource(normalizedToken))
 
 		// Assume episode format is always at beginning of file name
 		if season == "" && episode == "" && !hasMetaData() {
-			season, episode = fansub.getEpisode(token, i, tokens)
+			season, episode = fp.getEpisode(token, i, tokens)
 		}
 
 		// Assume "batch" always comes after some meta data
@@ -208,7 +208,7 @@ func (fansub Fansub) Parse(fileName string) (FansubInfo, error) {
 	return info, nil
 }
 
-func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, []string) {
+func (fp FansubParser) getEncoding(s string, index int, tokens []string) (string, []string) {
 	// Catch "<enc>.<enc>" where multiple encodings can be separated by ellipses
 	var possibleEncodings []string
 	if strings.Contains(s, ".") {
@@ -220,7 +220,7 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 	if val, exists := fansubEncodingMap[s]; exists {
 		// Catch "AAC.2.0" formatting
 		if s == "aac" && hasNextToken {
-			nextToken := fansub.normalizeToken(tokens[index+1])
+			nextToken := fp.normalizeToken(tokens[index+1])
 			if nextToken == "2" {
 				return val + " 2.0 ", possibleEncodings
 			}
@@ -228,7 +228,7 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 
 		// Catch "TrueHD.7.1" formatting
 		if s == "truehd" && hasNextToken {
-			nextToken := fansub.normalizeToken(tokens[index+1])
+			nextToken := fp.normalizeToken(tokens[index+1])
 			if nextToken == "7" {
 				return val + " 7.1 ", possibleEncodings
 			}
@@ -238,7 +238,7 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 
 	// Catch "H 264" formatting
 	if s == "264" {
-		lastToken := fansub.normalizeToken(tokens[index-1])
+		lastToken := fp.normalizeToken(tokens[index-1])
 		if lastToken == "h" {
 			return "H.264 ", possibleEncodings
 		}
@@ -246,7 +246,7 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 
 	// Catch "H 265" formatting
 	if s == "265" {
-		lastToken := fansub.normalizeToken(tokens[index-1])
+		lastToken := fp.normalizeToken(tokens[index-1])
 		if lastToken == "h" {
 			return fansubEncodingMap["x265"] + " ", possibleEncodings
 		}
@@ -254,7 +254,7 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 
 	// Catch "AAC2 0" formatting
 	if s == "aac2" && hasNextToken {
-		nextToken := fansub.normalizeToken(tokens[index+1])
+		nextToken := fp.normalizeToken(tokens[index+1])
 		if nextToken == "0" {
 			return fansubEncodingMap["aac2.0"] + " ", possibleEncodings
 		}
@@ -263,7 +263,7 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 
 	// Catch "DDP5 1" formatting
 	if s == "ddp5" && hasNextToken {
-		nextToken := fansub.normalizeToken(tokens[index+1])
+		nextToken := fp.normalizeToken(tokens[index+1])
 		if nextToken == "1" {
 			return fansubEncodingMap["ddp5.1"] + " ", possibleEncodings
 		}
@@ -271,7 +271,7 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 
 	// Catch "DDP2 0" formatting
 	if s == "ddp2" && hasNextToken {
-		nextToken := fansub.normalizeToken(tokens[index+1])
+		nextToken := fp.normalizeToken(tokens[index+1])
 		if nextToken == "0" {
 			return fansubEncodingMap["ddp2.0"] + " ", possibleEncodings
 		}
@@ -290,14 +290,18 @@ func (fansub Fansub) getEncoding(s string, index int, tokens []string) (string, 
 	return "", possibleEncodings
 }
 
-func (Fansub) getSource(s string) string {
+func (FansubParser) getSource(s string) string {
 	if source, exists := fansubSourceMap[s]; exists {
 		return source + " "
 	}
 	return ""
 }
 
-func (Fansub) getEpisode(s string, index int, tokens []string) (season string, episode string) {
+func (FansubParser) getEpisode(
+	s string,
+	index int,
+	tokens []string,
+) (season string, episode string) {
 	if strings.TrimSpace(s) == "" {
 		return
 	}
@@ -372,7 +376,7 @@ func (Fansub) getEpisode(s string, index int, tokens []string) (season string, e
 	return
 }
 
-func (fansub Fansub) getTokens(fileName string) ([]string, error) {
+func (fp FansubParser) getTokens(fileName string) ([]string, error) {
 	spaceCount := strings.Count(fileName, " ")
 	ellipsesCount := strings.Count(fileName, ".")
 	underscoreCount := strings.Count(fileName, "_")
@@ -404,7 +408,7 @@ func (fansub Fansub) getTokens(fileName string) ([]string, error) {
 	}
 
 	if spaceCount > ellipsesCount && spaceCount > underscoreCount {
-		fileName = utils.ReplaceAll(fileName, fansub.newBracketReplaceMap(" "))
+		fileName = utils.ReplaceAll(fileName, fp.newBracketReplaceMap(" "))
 		tokens := strings.Split(fileName, " ")
 		tokens = append([]string{fansubName}, tokens...)
 		return tokens, nil
@@ -420,19 +424,19 @@ func (fansub Fansub) getTokens(fileName string) ([]string, error) {
 			if len(lastTokens) != 2 {
 				return []string{}, fmt.Errorf("unsupported end-token format")
 			}
-			tokens = append([]string{fmt.Sprintf("%s", lastTokens[1])}, tokens...)
+			tokens = append([]string{lastTokens[1]}, tokens...)
 			tokens = append(tokens, lastTokens[0])
 		}
 		return tokens, nil
 	}
 
-	fileName = utils.ReplaceAll(fileName, fansub.newBracketReplaceMap("_"))
+	fileName = utils.ReplaceAll(fileName, fp.newBracketReplaceMap("_"))
 	tokens := strings.Split(fileName, "_")
 	tokens = append([]string{fansubName}, tokens...)
 	return tokens, nil
 }
 
-func (Fansub) newBracketReplaceMap(replacement string) map[string]string {
+func (FansubParser) newBracketReplaceMap(replacement string) map[string]string {
 	return map[string]string{
 		"][": replacement,
 		")(": replacement,
@@ -441,6 +445,6 @@ func (Fansub) newBracketReplaceMap(replacement string) map[string]string {
 	}
 }
 
-func (Fansub) normalizeToken(token string) string {
+func (FansubParser) normalizeToken(token string) string {
 	return utils.RemoveBrackets(strings.ToLower(token))
 }

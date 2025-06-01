@@ -351,7 +351,7 @@ func TestFansubParser(t *testing.T) {
 	for _, mock := range mocks {
 		t.Run("should "+mock.should, func(t *testing.T) {
 			a := assert.New(t)
-			var fs Fansub
+			var fs FansubParser
 			info, err := fs.Parse(mock.actual)
 			if mock.err != nil {
 				a.ErrorContains(err, mock.err.Error())
