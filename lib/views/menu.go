@@ -18,16 +18,19 @@ import (
 type ExitToMenuMsg struct{}
 
 type MenuView struct {
-	Name  string
-	Model ViewModel
-	Desc  string
+	Name     string
+	Model    ViewModel
+	Desc     string
+	SubViews []MenuView
 }
 
 type MenuModel struct {
 	menuItems     []MenuView
+	subItems      []MenuView
 	selectedModel ViewModel
 	help          help.Model
 	menuPos       int
+	subMenuPos    int
 	profile       kitsu.Profile
 }
 
@@ -52,6 +55,8 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 		m.menuItems[m.menuPos].Model, cmd = m.selectedModel.Update(msg)
 		switch msg.(type) {
 		case ExitToMenuMsg:
+			// Display main menu
+			m.subItems = nil
 			m.selectedModel = nil
 		}
 		return m, cmd
@@ -62,16 +67,44 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		for _, v := range m.menuItems {
-			v.Model, _ = v.Model.Update(msg)
+			if v.Model != nil {
+				v.Model, _ = v.Model.Update(msg)
+			}
+			// Send window size to sub-menu views
+			if v.Model == nil {
+				for _, v := range v.SubViews {
+					if v.Model == nil {
+						continue
+					}
+					v.Model, _ = v.Model.Update(msg)
+				}
+			}
 		}
 
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Exit):
+			if m.subItems != nil {
+				m.subItems = nil
+				return m, nil
+			}
 			return m, exit
 
+		case key.Matches(msg, ui.KeyMap.Back):
+			if m.subItems != nil {
+				m.subItems = nil
+			}
+			return m, nil
+
 		case key.Matches(msg, ui.KeyMap.Select):
-			m.selectedModel = m.menuItems[m.menuPos].Model
+			menuItem := m.menuItems[m.menuPos]
+			if m.subItems == nil && menuItem.SubViews != nil {
+				m.subItems = menuItem.SubViews
+			} else if menuItem.SubViews != nil {
+				m.selectedModel = m.subItems[m.subMenuPos].Model
+			} else {
+				m.selectedModel = m.menuItems[m.menuPos].Model
+			}
 
 		case key.Matches(msg, ui.KeyMap.HelpMore):
 			if m.selectedModel == nil || len(m.selectedModel.FullHelp()) == 0 {
@@ -80,10 +113,18 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 			m.help.ShowAll = !m.help.ShowAll
 
 		case key.Matches(msg, ui.KeyMap.Up):
-			m.menuPos = (m.menuPos - 1 + itemLen) % itemLen
+			if m.subItems != nil {
+				m.subMenuPos = (m.subMenuPos - 1 + itemLen) % itemLen
+			} else {
+				m.menuPos = (m.menuPos - 1 + itemLen) % itemLen
+			}
 
 		case key.Matches(msg, ui.KeyMap.Down):
-			m.menuPos = (m.menuPos + 1) % itemLen
+			if m.subItems != nil {
+				m.subMenuPos = (m.subMenuPos + 1) % itemLen
+			} else {
+				m.menuPos = (m.menuPos + 1) % itemLen
+			}
 
 		}
 	}
@@ -101,9 +142,16 @@ func (m MenuModel) View() (string, *tea.Cursor) {
 		), c
 	}
 
+	title := ui.DisplayTitle("Koshime Menu")
+	if m.subItems != nil {
+		title = ui.DisplaySubTitle("Koshime Menu", m.menuItems[m.menuPos].Name)
+	}
+
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
 		m.DisplayProfile(),
+		title,
+		"",
 		m.DisplayMenu(),
 		ui.HelpStyle.Render(m.help.View(m)),
 	), nil
@@ -126,23 +174,30 @@ func (m MenuModel) FullHelp() [][]key.Binding {
 }
 
 func (m MenuModel) DisplayMenu() string {
-	items := make([]string, len(m.menuItems)+1)
-	menuStyle := ui.TextStyle.MarginLeft(5).Width(12).PaddingLeft(1).PaddingRight(3)
+	var items []string
+	if m.subItems != nil {
+		items = make([]string, len(m.subItems))
+	} else {
+		items = make([]string, len(m.menuItems))
+	}
 
-	// Header
-	items[0] = ui.TextStyle.
-		MarginTop(1).
-		MarginBottom(1).
-		Render(utils.ColorText(";b;What would you like to do?"))
+	menuStyle := ui.TextStyle.MarginLeft(5).Width(17).PaddingLeft(1).PaddingRight(3)
 
-	for i, v := range m.menuItems {
-		if m.menuPos == i {
-			items[i+1] = menuStyle.Foreground(ansi.BrightGreen).
+	menuItems := m.menuItems
+	menuPos := m.menuPos
+	if m.subItems != nil {
+		menuItems = m.subItems
+		menuPos = m.subMenuPos
+	}
+
+	for i, v := range menuItems {
+		if menuPos == i {
+			items[i] = menuStyle.Foreground(ansi.BrightGreen).
 				Background(ansi.Black).
 				Render("> " + v.Name)
 			continue
 		}
-		items[i+1] = menuStyle.Render("  " + v.Name)
+		items[i] = menuStyle.Render("  " + v.Name)
 	}
 
 	return lipgloss.JoinVertical(
