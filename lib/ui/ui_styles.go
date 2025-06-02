@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
@@ -21,3 +22,16 @@ var (
 	inputPromptStyle = Style.Foreground(ansi.BrightGreen)
 	inputTextStyle   = Style.Foreground(ansi.BrightWhite)
 )
+
+func ExpireStyle(relativeTime utils.RelativeUnits) lipgloss.Style {
+	expStyle := Style
+	switch {
+	case relativeTime.Weeks < 1:
+		expStyle = expStyle.Foreground(ansi.BrightRed)
+	case relativeTime.Weeks < 2:
+		expStyle = expStyle.Foreground(ansi.BrightYellow)
+	default:
+		expStyle = expStyle.Foreground(ansi.BrightGreen)
+	}
+	return expStyle
+}
