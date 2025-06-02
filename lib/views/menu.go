@@ -63,6 +63,9 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 	}
 
 	itemLen := len(m.menuItems)
+	if m.subItems != nil {
+		itemLen = len(m.subItems)
+	}
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
