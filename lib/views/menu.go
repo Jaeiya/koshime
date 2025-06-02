@@ -216,16 +216,8 @@ func (m MenuModel) DisplayProfile() string {
 		MarginBottom(1).
 		Render(utils.ColorText(fmt.Sprintf(";dy;%s's;b; profile stats:", p.Username)))
 
-	expStyle := ui.Style
 	tokenExpiration := utils.NewRelativeTimeUnits(p.TokenExpirationSec)
-	switch {
-	case tokenExpiration.Weeks < 1:
-		expStyle = expStyle.Foreground(ansi.BrightRed)
-	case tokenExpiration.Weeks < 2:
-		expStyle = expStyle.Foreground(ansi.BrightYellow)
-	default:
-		expStyle = expStyle.Foreground(ansi.BrightGreen)
-	}
+	expStyle := ui.ExpireStyle(tokenExpiration)
 
 	d := ui.DisplayPropVal([]string{
 		utils.ColorText(";dc;Completed Anime"),
