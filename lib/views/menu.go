@@ -153,9 +153,6 @@ func (m MenuModel) ShortHelp() []key.Binding {
 }
 
 func (m MenuModel) FullHelp() [][]key.Binding {
-	if m.selectedModel != nil {
-		return m.menuItems[m.menuIndex].Model.FullHelp()
-	}
 	return [][]key.Binding{}
 }
 
