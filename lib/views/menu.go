@@ -52,7 +52,11 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 	var cmd tea.Cmd
 
 	if m.selectedModel != nil {
-		m.menuItems[m.menuPos].Model, cmd = m.selectedModel.Update(msg)
+		item := &m.menuItems[m.menuPos]
+		if m.subItems != nil {
+			item = &m.subItems[m.subMenuPos]
+		}
+		item.Model, cmd = item.Model.Update(msg)
 		switch msg.(type) {
 		case ExitToMenuMsg:
 			// Display main menu
@@ -137,11 +141,15 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 
 func (m MenuModel) View() (string, *tea.Cursor) {
 	if m.selectedModel != nil {
-		v, c := m.selectedModel.View()
+		item := m.menuItems[m.menuPos]
+		if m.subItems != nil {
+			item = m.subItems[m.subMenuPos]
+		}
+		v, c := item.Model.View()
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			v,
-			ui.HelpStyle.Render(m.help.View(m.selectedModel)),
+			ui.HelpStyle.Render(m.help.View(item.Model)),
 		), c
 	}
 
