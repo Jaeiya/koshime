@@ -152,6 +152,13 @@ func (m *Model) CreateMenuItems() {
 		{Name: "Find", Model: newFindAnimeModel(m.db), Desc: "Finds an anime anime"},
 		{Name: "Add", Model: newAddAnimeModel(m.db), Desc: "Adds an anime"},
 		{Name: "Delete", Model: newDelAnimeModel(m.db), Desc: "Deletes an anime"},
+		{Name: "Maintenance", SubViews: []MenuView{
+			{
+				Name:  "Token",
+				Model: NewTokenModel(m.db),
+				Desc:  "Manage your access token: create, renew, & view.",
+			},
+		}, Desc: "This is a test"},
 	}, m.db.GetProfile())
 }
 
