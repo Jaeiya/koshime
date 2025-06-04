@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/utils"
@@ -176,6 +177,15 @@ func (db *Database) DeleteAnimeByIndex(index LibraryIndex) error {
 func (db *Database) UpdateAnime(i LibraryIndex, entry kitsu.LibraryEntry) error {
 	db.data.Library[i] = entry
 	return db.Save()
+}
+
+func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) error {
+	db.data.Profile.AccessToken = token
+	db.data.Profile.RefreshToken = refreshToken
+	// Because this is a duration and not a time stamp, we stamp
+	// it ourselves by adding the unix time.
+	db.data.Profile.TokenExpirationSec = int64(expiresIn) + time.Now().Unix()
+	return db.SaveProfile(db.data.Profile)
 }
 
 func (db Database) Save() error {
