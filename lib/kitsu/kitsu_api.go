@@ -33,6 +33,32 @@ func GetAuthToken(userName, password string) (AuthTokenData, error) {
 	return data, nil
 }
 
+func RefreshToken(token string) (AuthTokenData, error) {
+	credentials := map[string]string{
+		"grant_type":    "refresh_token",
+		"refresh_token": token,
+	}
+
+	payload, err := json.Marshal(credentials)
+	if err != nil {
+		return AuthTokenData{}, err
+	}
+
+	var data AuthTokenData
+	opts := APIReqOptions{
+		method:      apiPost,
+		url:         apiAuthTokenURL,
+		payload:     payload,
+		contentType: jsonContent,
+	}
+
+	if _, err = newAPIRequest(opts, &data); err != nil {
+		return AuthTokenData{}, err
+	}
+
+	return data, nil
+}
+
 func FindAnime(q string, status []AnimeStatus, maxItems int) ([]AnimeData, error) {
 	normalizedStatus := AnimeStatus{}
 	for _, s := range status {
