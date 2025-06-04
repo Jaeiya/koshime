@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 
 	"github.com/Jaeiya/koshime/lib/utils"
 )
@@ -92,13 +91,18 @@ func validateResponse(resp utils.HttpResponse) error {
 	}
 
 	if resp.StatusCode >= 400 && resp.StatusCode < 500 {
-		if strings.Contains(body, "invalid_grant") {
-			return fmt.Errorf("invalid username or password")
-		}
-		var errData ErrorData
+		var errData APIErrorData
 		err := json.Unmarshal(resp.Body, &errData)
 		if err == nil {
-			return fmt.Errorf("%s", errData)
+			if len(errData.Errors) > 0 {
+				return fmt.Errorf("%s", errData)
+			}
+		}
+
+		var authErrData AuthErrorData
+		err = json.Unmarshal(resp.Body, &authErrData)
+		if err == nil {
+			return fmt.Errorf("%s", authErrData)
 		}
 
 		return fmt.Errorf(

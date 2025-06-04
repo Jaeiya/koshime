@@ -111,14 +111,14 @@ type LibraryAnimeData struct {
 	Included []AnimeData `json:"included"`
 }
 
-type ErrorData struct {
+type APIErrorData struct {
 	Errors []struct {
 		Status string `json:"status"`
 		Title  string `json:"title"`
 	} `json:"errors"`
 }
 
-func (ed ErrorData) String() string {
+func (ed APIErrorData) String() string {
 	var sb strings.Builder
 	for _, err := range ed.Errors {
 		status, _ := strconv.Atoi(err.Status)
@@ -132,6 +132,15 @@ func (ed ErrorData) String() string {
 		return sb.String()
 	}
 	return "no error data"
+}
+
+type AuthErrorData struct {
+	Type        string `json:"error"`
+	Description string `json:"error_description"`
+}
+
+func (aed AuthErrorData) String() string {
+	return fmt.Sprintf("%s: %s", aed.Type, aed.Description)
 }
 
 func newAddAnimePayload(animeID, userID string, status LibAnimeStatus) ([]byte, error) {
