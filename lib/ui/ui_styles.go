@@ -26,9 +26,9 @@ var (
 func ExpireStyle(relativeTime utils.RelativeUnits) lipgloss.Style {
 	expStyle := Style
 	switch {
-	case relativeTime.Weeks < 1:
+	case relativeTime.Weeks < 1 && relativeTime.Months == 0:
 		expStyle = expStyle.Foreground(ansi.BrightRed)
-	case relativeTime.Weeks < 2:
+	case relativeTime.Weeks < 2 && relativeTime.Months == 0:
 		expStyle = expStyle.Foreground(ansi.BrightYellow)
 	default:
 		expStyle = expStyle.Foreground(ansi.BrightGreen)
