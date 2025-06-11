@@ -144,11 +144,15 @@ func (m MenuModel) View() (string, *tea.Cursor) {
 }
 
 func (m MenuModel) ShortHelp() []key.Binding {
+	exitKey := ui.KeyMap.Exit
+	if m.inSubMenu {
+		exitKey = ui.KeyMap.MainMenu
+	}
 	return []key.Binding{
 		ui.KeyMap.Up,
 		ui.KeyMap.Down,
 		ui.KeyMap.Select,
-		ui.KeyMap.Exit,
+		exitKey,
 	}
 }
 
