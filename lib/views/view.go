@@ -36,11 +36,12 @@ type (
 )
 
 type Model struct {
-	db        *database.Database
-	menu      MenuModel
-	help      help.Model
-	setupUser SetupUserModel
-	view      UIView
+	db         *database.Database
+	windowSize tea.WindowSizeMsg
+	menu       MenuModel
+	help       help.Model
+	setupUser  SetupUserModel
+	view       UIView
 }
 
 func New(dbPath string) (Model, error) {
@@ -82,7 +83,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		// Send size to all menu view models
-		m.menu, _ = m.menu.Update(msg)
+		m.windowSize = msg
+		m.menu, _ = m.menu.Update(m.windowSize)
 
 	case tea.KeyPressMsg:
 		if msg.String() == "ctrl+c" {
@@ -97,6 +99,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			panic(fmt.Errorf("failed to load new user data: %w", err))
 		}
 		m.CreateMenuItems()
+		m.menu, _ = m.menu.Update(m.windowSize)
 		m.view = Menu
 
 	case AbortMsg:
