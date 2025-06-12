@@ -125,9 +125,11 @@ func calcRating(r string) string {
 	if r == "" {
 		return ""
 	}
+
 	rawRating, err := strconv.ParseFloat(r, 64)
 	if err != nil {
 		panic(fmt.Errorf("could not calc avg rating: %w", err))
 	}
+
 	return fmt.Sprintf("%.2f", rawRating/10)
 }
