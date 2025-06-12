@@ -86,16 +86,19 @@ type AnimeData struct {
 			English string `json:"en"` // Can be empty
 			Romaji  string `json:"en_jp"`
 		} `json:"titles"`
-		AltTitles []string `json:"abbreviatedTitles"` // Can be empty
-		AvgRating string   `json:"averageRating"`     // Is a float-percentage of favor (ex: 72.34)
-		AgeRating string   `json:"ageRating"`         // Can be empty
-		EpCount   int      `json:"episodeCount"`
-		StartDate string   `json:"startDate"`
-		EndDate   string   `json:"endDate"`
-		Type      string   `json:"subtype"`
-		Status    string   `json:"status"`
-		Slug      string   `json:"slug"`
-		Synopsis  string   `json:"synopsis"`
+		// Can be empty
+		AltTitles []string `json:"abbreviatedTitles"`
+		// Is a float-percentage of favor (ex: 72.34) and can be empty
+		AvgRating string `json:"averageRating"`
+		// Can be empty
+		AgeRating string `json:"ageRating"`
+		EpCount   int    `json:"episodeCount"`
+		StartDate string `json:"startDate"`
+		EndDate   string `json:"endDate"`
+		Type      string `json:"subtype"`
+		Status    string `json:"status"`
+		Slug      string `json:"slug"`
+		Synopsis  string `json:"synopsis"`
 	} `json:"attributes"`
 }
 
