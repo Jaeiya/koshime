@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"net/url"
-	"strconv"
 	"strings"
 
 	"github.com/Jaeiya/koshime/lib/kitsu"
@@ -67,25 +66,27 @@ func DisplayAnimeInfo(info AnimeInfo, showSynopsis bool) string {
 	headers = append(headers, utils.ColorText(";y;Type"))
 	items = append(items, utils.ColorText(";c;"+info.ShowType))
 
-	totalEpsStr := "Unknown"
+	totalEpsStr := utils.ColorText(";bk;Unknown")
 	if info.Episodes > 0 {
-		totalEpsStr = strconv.Itoa(info.Episodes)
+		totalEpsStr = fmt.Sprintf(";m;%d", info.Episodes)
 	}
 
 	if info.Progress > -1 {
 		headers = append(headers, utils.ColorText(";y;Progress"))
 		items = append(items, utils.ColorText(
-			fmt.Sprintf(";dg;%d ;y;/ ;m;%s", info.Progress, totalEpsStr),
+			fmt.Sprintf(";dg;%d ;y;/ %s", info.Progress, totalEpsStr),
 		))
 	} else {
 		headers = append(headers, utils.ColorText(";dc;Episodes"))
 		items = append(items, utils.ColorText(fmt.Sprintf(";m;%s", totalEpsStr)))
 	}
 
-	if info.AvgRating != "" {
-		headers = append(headers, utils.ColorText(";dc;AvgRating"))
-		items = append(items, info.AvgRating)
+	avgRating := utils.ColorText(fmt.Sprintf(";w;%s", info.AvgRating))
+	if info.AvgRating == "" {
+		avgRating = utils.ColorText(";bk;Not Calculated")
 	}
+	headers = append(headers, utils.ColorText(";dc;AvgRating"))
+	items = append(items, avgRating)
 
 	link, _ := url.JoinPath(kitsu.KitsuDomain, info.Slug)
 	if showSynopsis {
@@ -93,7 +94,7 @@ func DisplayAnimeInfo(info AnimeInfo, showSynopsis bool) string {
 		items = append(items, info.Synopsis, utils.ColorText(";bk;"+link))
 	} else {
 		headers = append(headers, utils.ColorText(";x;Link"))
-		items = append(items, utils.ColorText(";bk;"+link))
+		items = append(items, utils.ColorText(";dy;"+link))
 	}
 
 	return DisplayPropValue(headers, items)
