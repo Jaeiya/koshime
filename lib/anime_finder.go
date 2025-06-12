@@ -1,6 +1,9 @@
 package lib
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
@@ -59,6 +62,7 @@ func (af KitsuAnimeSearch) Search(query string) (AnimeFinderResult, error) {
 			item.Attributes.Titles.English,
 			i,
 		)
+
 		info[i] = ui.AnimeInfo{
 			ID:        item.ID,
 			JpnTitle:  item.Attributes.CanonicalTitle,
@@ -68,6 +72,7 @@ func (af KitsuAnimeSearch) Search(query string) (AnimeFinderResult, error) {
 			Status:    item.Attributes.Status,
 			Synopsis:  item.Attributes.Synopsis,
 			Progress:  -1,
+			AvgRating: calcRating(item.Attributes.AvgRating),
 			Episodes:  item.Attributes.EpCount,
 			Slug:      item.Attributes.Slug,
 		}
@@ -107,10 +112,20 @@ func (af LocalAnimeSearch) Search(query string) (AnimeFinderResult, error) {
 			Status:    item.Status,
 			Synopsis:  item.Synopsis,
 			Progress:  item.Progress,
+			AvgRating: calcRating(item.AvgRating),
 			Episodes:  item.Episodes,
 			Slug:      item.Slug,
 		}
 	}
 
 	return AnimeFinderResult{items, info}, nil
+}
+
+func calcRating(r string) string {
+	rawRating, err := strconv.ParseFloat(r, 64)
+	if err != nil {
+		panic(fmt.Errorf("could not calc avg rating: %w", err))
+	}
+	rating := 10 * (rawRating / 100)
+	return fmt.Sprintf("%.2f", rating)
 }

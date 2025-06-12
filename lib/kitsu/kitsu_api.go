@@ -115,6 +115,7 @@ func GetLibraryAnime(userID string, status LibAnimeStatus) ([]LibraryEntry, erro
 			Episodes:  anime.Attributes.EpCount,
 			Progress:  item.Attributes.Progress,
 			Synopsis:  anime.Attributes.Synopsis,
+			AvgRating: anime.Attributes.AvgRating,
 			Type:      AnimeType(anime.Attributes.Type),
 			Status:    anime.Attributes.Status,
 			Slug:      anime.Attributes.Slug,

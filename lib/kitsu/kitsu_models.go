@@ -19,6 +19,7 @@ type LibraryEntry struct {
 	Type      AnimeType
 	Status    string
 	Progress  int
+	AvgRating string
 	Synopsis  string
 	Slug      string
 }

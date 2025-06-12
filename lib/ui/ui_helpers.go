@@ -22,6 +22,7 @@ type AnimeInfo struct {
 	Synopsis  string
 	Status    string
 	Progress  int
+	AvgRating string
 	Episodes  int
 	Slug      string
 }
@@ -79,6 +80,11 @@ func DisplayAnimeInfo(info AnimeInfo, showSynopsis bool) string {
 	} else {
 		headers = append(headers, utils.ColorText(";dc;Episodes"))
 		items = append(items, utils.ColorText(fmt.Sprintf(";m;%s", totalEpsStr)))
+	}
+
+	if info.AvgRating != "" {
+		headers = append(headers, utils.ColorText(";dc;AvgRating"))
+		items = append(items, info.AvgRating)
 	}
 
 	link, _ := url.JoinPath(kitsu.KitsuDomain, info.Slug)
