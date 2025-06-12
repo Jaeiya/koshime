@@ -87,8 +87,8 @@ type AnimeData struct {
 			Romaji  string `json:"en_jp"`
 		} `json:"titles"`
 		AltTitles []string `json:"abbreviatedTitles"` // Can be empty
-		AvgRating string   `json:"averageRating"`
-		AgeRating string   `json:"ageRating"` // Can be empty
+		AvgRating string   `json:"averageRating"`     // Is a float-percentage of favor (ex: 72.34)
+		AgeRating string   `json:"ageRating"`         // Can be empty
 		EpCount   int      `json:"episodeCount"`
 		StartDate string   `json:"startDate"`
 		EndDate   string   `json:"endDate"`
