@@ -1,7 +1,6 @@
 package views
 
 import (
-	"fmt"
 	"strconv"
 	"time"
 
@@ -128,13 +127,15 @@ func (m MenuModel) View() (string, *tea.Cursor) {
 		), c
 	}
 
-	title := ui.DisplayTitle("Koshime Menu")
+	title := ui.DisplayTitle("Menu")
 	if m.inSubMenu {
-		title = ui.DisplaySubTitle("Koshime Menu", m.menuItems[m.menuIndex].Name)
+		title = ui.DisplaySubTitle("Menu", m.menuItems[m.menuIndex].Name)
 	}
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
+		ui.DisplayTitle("Koshime Profile"),
+		"",
 		m.DisplayProfile(),
 		title,
 		"",
@@ -188,21 +189,19 @@ func (m MenuModel) DisplayMenu() string {
 
 func (m MenuModel) DisplayProfile() string {
 	p := m.profile
-	header := ui.TextStyle.
-		MarginTop(1).
-		MarginBottom(1).
-		Render(utils.ColorText(fmt.Sprintf(";dy;%s's;b; profile stats:", p.Username)))
 
 	tokenExpiration := utils.NewRelativeTimeUnits(p.TokenExpirationSec)
 	expStyle := ui.ExpireStyle(tokenExpiration)
 
 	props := []string{
+		utils.ColorText(";dy;Name"),
 		utils.ColorText(";dc;Completed Anime"),
 		utils.ColorText(";dc;Time Watched"),
 		utils.ColorText(";dc;Token Expiration"),
 		utils.ColorText(";dc;Last Updated"),
 	}
 	values := []string{
+		ui.Style.Foreground(ansi.BrightWhite).Render(p.Username),
 		strconv.Itoa(p.CompletedSeries),
 		utils.NewDurationUnits(time.Second * time.Duration(p.SecondsWatched)).
 			ToShortString(),
@@ -212,7 +211,6 @@ func (m MenuModel) DisplayProfile() string {
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
-		header,
 		ui.DisplayPropVal(props, values),
 	)
 }
