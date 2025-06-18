@@ -163,9 +163,12 @@ func (m MenuModel) FullHelp() [][]key.Binding {
 func (m MenuModel) DisplayMenu() string {
 	lines := make([]string, len(m.activeItems))
 	menuStyle := ui.TextStyle.MarginLeft(5).Width(17).PaddingLeft(1).PaddingRight(3)
+	descStyle := ui.Style.Width(30).MarginLeft(3)
+	activeDesc := ""
 
 	for i, item := range m.activeItems {
 		if m.activeIndex == i {
+			activeDesc = item.Desc
 			lines[i] = menuStyle.Foreground(ansi.BrightGreen).
 				Background(ansi.Black).
 				Render("> " + item.Name)
@@ -174,7 +177,13 @@ func (m MenuModel) DisplayMenu() string {
 		lines[i] = menuStyle.Render("  " + item.Name)
 	}
 
-	return lipgloss.JoinVertical(lipgloss.Left, lines...)
+	menu := lipgloss.JoinVertical(lipgloss.Left, lines...)
+
+	return lipgloss.JoinHorizontal(
+		lipgloss.Left,
+		menu,
+		descStyle.Render(activeDesc),
+	)
 }
 
 func (m MenuModel) DisplayProfile() string {
