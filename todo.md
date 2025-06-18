@@ -1,21 +1,3 @@
-## Simple Menu Design
-
-Each function will have its own menu and keyboard shortcuts associated
-with it, that can be learned, in order to make navigation simpler. For instance
-using 'a' on the main menu will immediately jump to adding an anime and
-'w' for what to watch, etc...
-
-Menu items should display a description as you cycle through them.
-
-### Profile
-
-Display profile stats on every execution in the header of the main menu
-section. Seeing your profile makes your habits more obvious and may
-motivate one to watch less or more.
-
-Should also include token expiration information, that way it doesn't
-need to be built into the watching of anime.
-
 ### What to Watch
 
 Should allow the user to watch anime that can be found in their anime directory, which
@@ -41,9 +23,6 @@ Should allow users to interactively add a movie or anime series to their
 library. Wakitsu was limited to just adding anime, but Koshime should also
 ask if the user wants to look for an RSS feed for the anime series.
 
-1. Lookup anime from airing or completed states.
-1. Choice to select from list of anime
-1. Allow the user to try again with a different query.
 1. Once an anime has been selected, start the RSS query process.
 1. Allow the user to specify an optional fansub & resolution.
 1. If they entered an invalid resolution, give them a verbose description of what a resolution should look like.
@@ -69,13 +48,6 @@ without a little help. (after this port, that should be very rare)
 1. Lookup an anime saved in cache
 1. Confirmation to drop anime
 
-### Find Anime
-
-1. Choice between cache lookup or Kitsu lookup
-1. Choice between anime series or movie, regardless of its status
-1. Return results in a scrollable list
-1. Allow selection for more details (or on hover)
-
 ### RSS Lookup
 
 1. Choose optional Fansub and Resolution.
@@ -92,13 +64,6 @@ reflected in Koshime.
 
 - Viewing the cache should display all stored information about the anime in a users library
 - Rebuilding the cache should replace the users currently stored anime library with the one from Kitsu. Incremental updates don't make sense on such a small amount of data.
-
-**Token**
-Should allow users to view and manage their token data.
-
-- Choice to view token information
-- Choice to refresh the token
-- Choice to reset the token (requires password)
 
 **Directory**
 Should allow users to manage their watch directory. The watch directory will get
