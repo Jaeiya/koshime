@@ -163,7 +163,7 @@ func (m MenuModel) FullHelp() [][]key.Binding {
 func (m MenuModel) DisplayMenu() string {
 	lines := make([]string, len(m.activeItems))
 	menuStyle := ui.TextStyle.MarginLeft(5).Width(17).PaddingLeft(1).PaddingRight(3)
-	descStyle := ui.Style.Width(30).MarginLeft(3)
+	descStyle := ui.Style.Width(30).MarginLeft(3).Foreground(ansi.Magenta)
 	activeDesc := ""
 
 	for i, item := range m.activeItems {
