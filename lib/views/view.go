@@ -153,6 +153,11 @@ func (m Model) View() (string, *tea.Cursor) {
 func (m *Model) CreateMenuItems() {
 	m.menu = NewMenuModel([]MenuView{
 		{
+			Name:  "Watch",
+			Model: newWatchAnimeModel(m.db),
+			Desc:  "Finds downloaded anime and coordinates with your watch list to execute the file.",
+		},
+		{
 			Name:  "Find",
 			Model: newFindAnimeModel(m.db),
 			Desc:  "Lookup an anime from Kitsu or your local watch list.",
