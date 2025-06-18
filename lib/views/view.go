@@ -160,7 +160,7 @@ func (m *Model) CreateMenuItems() {
 		{
 			Name:  "Add",
 			Model: newAddAnimeModel(m.db),
-			Desc:  "Add an airing anime to your watch list.",
+			Desc:  "Add an airing or completed anime to your watch list.",
 		},
 		{
 			Name:  "Delete",

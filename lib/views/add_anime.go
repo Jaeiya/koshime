@@ -13,12 +13,11 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-type (
-	Add_AnimeView int
-)
+type Add_AnimeView int
 
 const (
-	AddAnime_Query = Add_AnimeView(iota)
+	AddAnime_Selection = Add_AnimeView(iota)
+	AddAnime_Query
 	AddAnime_Review
 	AddAnime_Rss
 	AddAnime_RssResults
@@ -31,11 +30,8 @@ type (
 )
 
 type AddAnime_Model struct {
-	windowSize struct {
-		width  int
-		height int
-	}
-	config struct {
+	windowSize tea.WindowSizeMsg
+	config     struct {
 		maxInputWidth   int
 		minInputLen     int // Min required chars to submit input
 		itemsPerPage    int // How many list items per page
@@ -57,6 +53,7 @@ type Add_AnimeModelState struct {
 	view          Add_AnimeView
 	fetchErr      error
 	selectedAnime ui.AnimeInfo
+	menuIndex     int
 }
 
 func newAddAnimeModel(db *database.Database) AddAnime_Model {
@@ -65,18 +62,6 @@ func newAddAnimeModel(db *database.Database) AddAnime_Model {
 	m.config.maxInputWidth = 30
 	m.config.itemsPerPage = 5
 	m.config.maxAnimeResults = 10
-
-	m.ui.animeSearch = NewAnimeSearchModel(
-		db,
-		WithHeader("Add Anime"),
-		WithExit(),
-		WithMinInputLen(4),
-		WithItemsPerPage(5),
-		WithMaxResults(10),
-		WithInputWidth(30),
-		WithAnimeSelection("Do you want to add the above anime to your library?"),
-		WithKitsuSource([]kitsu.AnimeStatus{kitsu.AnimeNew}),
-	)
 
 	m.ui.list = ui.NewList(ui.ListOptions{})
 	m.ui.input = ui.NewTextInput()
@@ -100,8 +85,7 @@ func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.windowSize.width = msg.Width
-		m.windowSize.height = msg.Height
+		m.windowSize = msg
 
 	case AnimeSearchExitMsg:
 		m.reset()
@@ -120,6 +104,9 @@ func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	}
 
 	switch m.state.view {
+	case AddAnime_Selection:
+		m, cmd = m.UpdateSelection(msg)
+		cmds = append(cmds, cmd)
 	case AddAnime_Query:
 		cmd = m.ui.animeSearch.Update(msg)
 		cmds = append(cmds, cmd)
@@ -133,6 +120,8 @@ func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 func (m AddAnime_Model) View() (string, *tea.Cursor) {
 	switch m.state.view {
+	case AddAnime_Selection:
+		return m.ViewSelection()
 	case AddAnime_Query:
 		return m.ui.animeSearch.View()
 	case AddAnime_Review:
@@ -144,6 +133,10 @@ func (m AddAnime_Model) View() (string, *tea.Cursor) {
 func (m AddAnime_Model) ShortHelp() []key.Binding {
 	if m.state.fetchErr != nil {
 		return []key.Binding{ui.KeyMap.EscBack}
+	}
+
+	if m.state.view == AddAnime_Selection {
+		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
 	}
 
 	if m.state.view == AddAnime_Query {
@@ -159,6 +152,79 @@ func (m AddAnime_Model) ShortHelp() []key.Binding {
 
 func (m AddAnime_Model) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
+}
+
+func (m AddAnime_Model) UpdateSelection(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.EscBack):
+			return m, exitToMenu
+
+		case key.Matches(msg, ui.KeyMap.Up):
+			if m.state.menuIndex == 0 {
+				return m, nil
+			}
+			m.state.menuIndex -= 1
+			return m, nil
+
+		case key.Matches(msg, ui.KeyMap.Down):
+			if m.state.menuIndex == 1 {
+				return m, nil
+			}
+			m.state.menuIndex += 1
+			return m, nil
+
+		case key.Matches(msg, ui.KeyMap.Select):
+			switch m.state.menuIndex {
+			// Airing or Upcoming anime
+			case 0:
+				m.InitAnimeSearch([]kitsu.AnimeStatus{kitsu.AnimeNew})
+			// Completed anime
+			case 1:
+				m.InitAnimeSearch([]kitsu.AnimeStatus{kitsu.AnimeFinished})
+			}
+			m.ui.animeSearch.Update(m.windowSize)
+			m.state.view = AddAnime_Query
+		}
+	}
+	return m, nil
+}
+
+func (m AddAnime_Model) ViewSelection() (string, *tea.Cursor) {
+	menu := ""
+	menuStyle := ui.Style.MarginLeft(3).
+		Width(15).
+		Background(ansi.Black).
+		Foreground(ansi.BrightGreen)
+
+	if m.state.menuIndex == 0 {
+		menu = lipgloss.JoinVertical(
+			lipgloss.Left,
+			menuStyle.Render(" > Airing"),
+			ui.TextStyle.Render("   Completed"),
+		)
+	} else {
+		menu = lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.TextStyle.Render("   Airing"),
+			menuStyle.Render(" > Completed"),
+		)
+	}
+
+	view := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplayTitle("Add Anime"),
+		"",
+		ui.DisplayText([]string{
+			`If the anime you want to add is ;m;not;x; currently airing, but
+;g;will;x; air in the future, then select ;dc;airing;x;.`,
+			`If you know the anime has already been out for several months or more,
+then it's probably ;dc;completed;x;.`,
+		}, 1),
+		menu,
+	)
+	return view, nil
 }
 
 func (m AddAnime_Model) UpdateReview(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
@@ -205,9 +271,23 @@ func (m AddAnime_Model) ViewReview() (string, *tea.Cursor) {
 	return str, nil
 }
 
+func (m *AddAnime_Model) InitAnimeSearch(animeStatus []kitsu.AnimeStatus) {
+	m.ui.animeSearch = NewAnimeSearchModel(
+		m.db,
+		WithHeader("Add Anime"),
+		WithExit(),
+		WithMinInputLen(4),
+		WithItemsPerPage(5),
+		WithMaxResults(10),
+		WithInputWidth(30),
+		WithAnimeSelection("Do you want to add the above anime to your library?"),
+		WithKitsuSource(animeStatus),
+	)
+}
+
 func (m *AddAnime_Model) reset() {
 	m.state = Add_AnimeModelState{
-		view: AddAnime_Query,
+		view: AddAnime_Selection,
 	}
 	m.ui.animeSearch.Reset()
 	m.ui.input.Reset()
