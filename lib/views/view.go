@@ -152,16 +152,32 @@ func (m Model) View() (string, *tea.Cursor) {
 
 func (m *Model) CreateMenuItems() {
 	m.menu = NewMenuModel([]MenuView{
-		{Name: "Find", Model: newFindAnimeModel(m.db), Desc: "Finds an anime anime"},
-		{Name: "Add", Model: newAddAnimeModel(m.db), Desc: "Adds an anime"},
-		{Name: "Delete", Model: newDelAnimeModel(m.db), Desc: "Deletes an anime"},
+		{
+			Name:  "Find",
+			Model: newFindAnimeModel(m.db),
+			Desc:  "Lookup an anime from Kitsu or your local watch list.",
+		},
+		{
+			Name:  "Add",
+			Model: newAddAnimeModel(m.db),
+			Desc:  "Add an airing anime to your watch list.",
+		},
+		{
+			Name:  "Delete",
+			Model: newDelAnimeModel(m.db),
+			Desc:  "Delete an anime from your watch list.",
+		},
 		{Name: "Maintenance", SubViews: []MenuView{
 			{
 				Name:  "Token",
 				Model: NewTokenModel(m.db),
-				Desc:  "Manage your access token: create, renew, & view.",
+				Desc:  "Refresh, reset, or view your Kitsu access token.",
 			},
-		}, Desc: "This is a test"},
+			{
+				Name: "Clean",
+				Desc: "View & manage your watched anime files.",
+			},
+		}, Desc: "Submenu for managing Koshime functionality."},
 	}, m.db.GetProfile())
 }
 
