@@ -114,6 +114,7 @@ type FansubInfo struct {
 	Season   string
 	Episode  string
 	Source   string
+	Filename string
 }
 
 type FansubParser struct{}
@@ -205,6 +206,7 @@ func (fp FansubParser) Parse(fileName string) (FansubInfo, error) {
 	info.Title = strings.TrimRight(title.String(), "- ~")
 	info.Encoding = strings.TrimSpace(encoding.String())
 	info.Source = strings.TrimSpace(source.String())
+	info.Filename = fileName + ext
 	return info, nil
 }
 
