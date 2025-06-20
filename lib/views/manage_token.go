@@ -35,7 +35,7 @@ type TokenModel struct {
 	triedRenew  bool
 }
 
-func NewTokenModel(db *database.Database) TokenModel {
+func newTokenModel(db *database.Database) TokenModel {
 	m := TokenModel{db: db}
 	m.ui.loader = ui.NewLoader()
 	m.ui.input = ui.NewTextInput()
