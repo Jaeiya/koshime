@@ -13,8 +13,11 @@ func NewTextInput() textinput.Model {
 	input.Focus()
 	input.Prompt = "   > "
 	input.EchoCharacter = '•'
-	input.Styles.Focused.Prompt = inputPromptStyle
-	input.Styles.Focused.Text = inputTextStyle
+	input.SetVirtualCursor(false)
+	styles := input.Styles()
+	styles.Focused.Prompt = inputPromptStyle
+	styles.Focused.Text = inputTextStyle
+	input.SetStyles(styles)
 	return input
 }
 
@@ -33,6 +36,9 @@ func (l ListItem) Description() string { return l.desc }
 func (l ListItem) FilterValue() string { return l.title + " " + l.desc }
 
 func NewListItem(title, desc string, index int) ListItem {
+	if desc == "" {
+		desc = "None"
+	}
 	return ListItem{index, title, desc}
 }
 
@@ -64,7 +70,8 @@ func NewList(o ListOptions) list.Model {
 	l := list.New(o.Items, d, o.Width, height)
 	l.SetShowTitle(false)
 	l.DisableQuitKeybindings()
-	l.FilterInput.VirtualCursor = false
+	l.FilterInput.SetVirtualCursor(false)
+	// l.FilterInput.VirtualCursor = false
 
 	l.Help.Styles.ShortDesc = HelpDescStyle
 	l.Help.Styles.FullDesc = HelpDescStyle
@@ -73,7 +80,9 @@ func NewList(o ListOptions) list.Model {
 	l.Styles.StatusBar = l.Styles.StatusBar.MarginLeft(3).
 		Foreground(HelpKeyStyle.GetForeground())
 	l.Styles.StatusBarFilterCount = HelpDescStyle
-	l.FilterInput.Styles.Focused.Prompt = l.Styles.Filter.Focused.Prompt.Foreground(ansi.Yellow)
+	styles := l.FilterInput.Styles()
+	styles.Focused.Prompt = styles.Focused.Prompt.Foreground(ansi.Yellow)
+	// l.FilterInput.Styles.Focused.Prompt = l.Styles.Filter.Focused.Prompt.Foreground(ansi.Yellow)
 
 	if o.ShortHelpKeys != nil {
 		l.AdditionalShortHelpKeys = func() []key.Binding {
