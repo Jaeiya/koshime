@@ -153,30 +153,30 @@ func (m Model) View() (string, *tea.Cursor) {
 func (m *Model) CreateMenuItems() {
 	m.menu = NewMenuModel([]MenuView{
 		{
-			Name:  "Watch",
-			Model: newWatchAnimeModel(m.db),
-			Desc:  "Finds downloaded anime and coordinates with your watch list to execute the file.",
+			Name:      "Watch",
+			ModelFunc: func() ViewModel { return newWatchAnimeModel(m.db) },
+			Desc:      "Finds downloaded anime and coordinates with your watch list to execute the file.",
 		},
 		{
-			Name:  "Find",
-			Model: newFindAnimeModel(m.db),
-			Desc:  "Lookup an anime from Kitsu or your local watch list.",
+			Name:      "Find",
+			ModelFunc: func() ViewModel { return newFindAnimeModel(m.db) },
+			Desc:      "Lookup an anime from Kitsu or your local watch list.",
 		},
 		{
-			Name:  "Add",
-			Model: newAddAnimeModel(m.db),
-			Desc:  "Add an airing or completed anime to your watch list.",
+			Name:      "Add",
+			ModelFunc: func() ViewModel { return newAddAnimeModel(m.db) },
+			Desc:      "Add an airing or completed anime to your watch list.",
 		},
 		{
-			Name:  "Delete",
-			Model: newDelAnimeModel(m.db),
-			Desc:  "Delete an anime from your watch list.",
+			Name:      "Delete",
+			ModelFunc: func() ViewModel { return newDelAnimeModel(m.db) },
+			Desc:      "Delete an anime from your watch list.",
 		},
 		{Name: "Maintenance", SubViews: []MenuView{
 			{
-				Name:  "Token",
-				Model: NewTokenModel(m.db),
-				Desc:  "Refresh, reset, or view your Kitsu access token.",
+				Name:      "Token",
+				ModelFunc: func() ViewModel { return newTokenModel(m.db) },
+				Desc:      "Refresh, reset, or view your Kitsu access token.",
 			},
 			{
 				Name: "Clean",

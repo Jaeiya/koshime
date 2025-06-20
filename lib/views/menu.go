@@ -17,10 +17,10 @@ import (
 type ExitToMenuMsg struct{}
 
 type MenuView struct {
-	Name     string
-	Model    ViewModel
-	Desc     string
-	SubViews []MenuView
+	Name      string
+	ModelFunc func() ViewModel
+	Desc      string
+	SubViews  []MenuView
 }
 
 type MenuModel struct {
@@ -93,8 +93,8 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 				m.activeItems = chosen.SubViews
 				m.activeIndex = 0
 			} else {
-				m.selectedModel = chosen.Model
-				m.selectedModel, _ = m.selectedModel.Update(m.windowSize)
+				m.selectedModel = chosen.ModelFunc()
+				m.selectedModel, cmd = m.selectedModel.Update(m.windowSize)
 			}
 
 		case key.Matches(msg, ui.KeyMap.HelpMore):
