@@ -2,9 +2,11 @@ package views
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/database"
+	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/key"
@@ -15,8 +17,10 @@ import (
 )
 
 type (
-	WatchAnimeCommandRunMsg  struct{}
-	WatchAnimeLoadedAnimeMsg = []lib.FilteredAnime
+	WatchAnimeCommandRunMsg struct{}
+	// Holds previous episode progress value
+	WatchAnimeUpdateSuccessMsg int
+	WatchAnimeLoadedAnimeMsg   = []lib.FilteredAnime
 )
 
 type WatchAnime_View int
@@ -35,6 +39,7 @@ type WatchAnime_Model struct {
 	}
 	keys struct {
 		reload key.Binding
+		enter  key.Binding
 	}
 	db    *database.Database
 	state WatchAnime_State
@@ -47,6 +52,8 @@ type WatchAnime_State struct {
 	selection     struct {
 		anime lib.FilteredAnime
 	}
+	isUpdated    bool
+	pastProgress int
 }
 
 func newWatchAnimeModel(db *database.Database) WatchAnime_Model {
@@ -85,6 +92,9 @@ func (m WatchAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m.state.view = WatchAnime_Progress
 
 	case error:
+		if m.ui.loader.IsLoading() {
+			m.ui.loader.Stop()
+		}
 		m.state.err = msg
 	}
 
@@ -133,6 +143,13 @@ func (m WatchAnime_Model) View() (string, *tea.Cursor) {
 }
 
 func (m WatchAnime_Model) ShortHelp() []key.Binding {
+	switch m.state.view {
+	case WatchAnime_Progress:
+		if m.state.isUpdated {
+			return []key.Binding{ui.KeyMap.Select}
+		}
+		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
+	}
 	return []key.Binding{}
 }
 
@@ -159,7 +176,7 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 			if m.ui.list.FilterState() != list.Filtering {
 				item := m.ui.list.SelectedItem().(ui.ListItem)
 				m.state.selection.anime = m.state.filteredAnime[item.Index()]
-				return m, m.ExecAnime
+				return m, m.PlayAnime
 			}
 
 		}
@@ -180,48 +197,91 @@ func (m WatchAnime_Model) ViewSelection() (string, *tea.Cursor) {
 }
 
 func (m WatchAnime_Model) UpdateProgress(msg tea.Msg) (WatchAnime_Model, tea.Cmd) {
+	var cmd tea.Cmd
 	m.ui.consent = m.ui.consent.Update(msg)
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
+		case key.Matches(msg, ui.KeyMap.EscBack):
+			m.reset()
+			return m, nil
+
 		case key.Matches(msg, ui.KeyMap.Select):
+			if m.state.isUpdated {
+				m.reset()
+				return m, nil
+			}
+
 			if m.ui.consent.Select() == ui.No {
 				m.reset()
 				return m, nil
 			}
+
+			m.ui.loader, cmd = m.ui.loader.Start("Updating Anime")
+			return m, tea.Batch(cmd, m.SaveProgress)
 		}
+
+	case WatchAnimeUpdateSuccessMsg:
+		m.state.isUpdated = true
+		m.state.pastProgress = int(msg)
+		m.ui.loader.Stop()
 	}
 	return m, nil
 }
 
 func (m WatchAnime_Model) ViewProgress() (string, *tea.Cursor) {
+	if m.state.isUpdated {
+		view := lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplaySubTitle("Watch Anime", "Progress"),
+			"",
+			ui.DisplayText([]string{
+				fmt.Sprintf(
+					"Episode ;w;updated ;x;from ;y;%d ;x;to ;g;%s",
+					m.state.pastProgress,
+					m.state.selection.anime.Fansub.Episode,
+				),
+			}),
+			"",
+			ui.TextStyle.MarginTop(1).Foreground(ansi.BrightGreen).Render("> Continue"),
+		)
+		return view, nil
+	}
+
 	engTitle := lipgloss.JoinHorizontal(
 		lipgloss.Left,
-		utils.ColorText(";dc;Title:  "),
+		utils.ColorText(";db;Title:  "),
 		ui.Style.Width(40).Render(m.state.selection.anime.Anime.ENG_Title),
 	)
-
-	jpnTitle := lipgloss.JoinHorizontal(
+	fileName := lipgloss.JoinHorizontal(
 		lipgloss.Left,
-		utils.ColorText(";dc;Cannon: "),
-		ui.Style.Width(40).Render(m.state.selection.anime.Anime.JPN_Title),
+		utils.ColorText(";db; File:  "),
+		ui.Style.Width(m.windowSize.Width-10).Render(
+			utils.ColorText(fmt.Sprintf(
+				";bk;[%s] ;x;%s - ;g;%s ;bk;[%s]",
+				m.state.selection.anime.Fansub.Fansub,
+				m.state.selection.anime.Fansub.Title,
+				m.state.selection.anime.Fansub.Episode,
+				m.state.selection.anime.Fansub.Encoding,
+			)),
+		),
 	)
 
-	episodeStr := lipgloss.JoinHorizontal(
-		lipgloss.Left,
-		utils.ColorText(";dc;Episode: "),
-		ui.Style.Foreground(ansi.BrightYellow).Render(m.state.selection.anime.Fansub.Episode),
-	)
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplaySubTitle("Watch Anime", "In-Progress"),
+		ui.DisplaySubTitle("Watch Anime", "Watching"),
+		"",
+		ui.DisplayText(
+			[]string{
+				`The following anime should now be ;c;playing ;x;in your default video player:`,
+			},
+			0,
+		),
 		"",
 		ui.TextStyle.Render(engTitle),
 		"",
-		ui.TextStyle.Render(jpnTitle),
-		"",
-		ui.TextStyle.Render(episodeStr),
+		ui.TextStyle.Render(fileName),
 		"",
 		"",
 		ui.TextStyle.Render(
@@ -271,7 +331,7 @@ func (m WatchAnime_Model) LoadAnime() tea.Msg {
 	return WatchAnimeLoadedAnimeMsg(items)
 }
 
-func (m WatchAnime_Model) ExecAnime() tea.Msg {
+func (m WatchAnime_Model) PlayAnime() tea.Msg {
 	// wd := utils.GetWorkingDir()
 	// // var cmd *exec.Cmd
 	// filePath := filepath.Join(wd, m.state.selection.anime.Fansub.Filename)
@@ -289,4 +349,34 @@ func (m WatchAnime_Model) ExecAnime() tea.Msg {
 	// 	return err
 	// }
 	return WatchAnimeCommandRunMsg{}
+}
+
+func (m *WatchAnime_Model) SaveProgress() tea.Msg {
+	anime := m.state.selection.anime
+	watchedEpisode, err := strconv.Atoi(anime.Fansub.Episode)
+	if err != nil {
+		return fmt.Errorf("failed to parse episode: %w", err)
+	}
+
+	progress := anime.Anime.Progress
+	if watchedEpisode < progress {
+		return fmt.Errorf("cannot update progress with past episode")
+	}
+
+	_, err = kitsu.UpdateProgress(
+		anime.Anime.LibID,
+		m.db.GetProfile().AccessToken,
+		watchedEpisode,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update Kitsu progress: %w", err)
+	}
+
+	anime.Anime.Progress = watchedEpisode
+	err = m.db.UpdateAnime(anime.Anime)
+	if err != nil {
+		return fmt.Errorf("failed to update database: %w", err)
+	}
+
+	return WatchAnimeUpdateSuccessMsg(progress)
 }
