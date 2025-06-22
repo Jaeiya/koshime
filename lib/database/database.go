@@ -179,14 +179,14 @@ func (db *Database) UpdateAnimeAtIndex(i LibraryIndex, entry kitsu.LibraryEntry)
 	return db.Save()
 }
 
-func (db *Database) UpdateAnime(newEntry kitsu.LibraryEntry) error {
+func (db *Database) UpdateAnime(updatedEntry kitsu.LibraryEntry) error {
 	for i, entry := range db.data.Library {
-		if entry.LibID == newEntry.LibID {
-			db.data.Library[i] = newEntry
+		if entry.LibID == updatedEntry.LibID {
+			db.data.Library[i] = updatedEntry
 			return db.Save()
 		}
 	}
-	return fmt.Errorf("library id not found for: %s", newEntry.ENG_Title)
+	return fmt.Errorf("library id not found for: %s", updatedEntry.ENG_Title)
 }
 
 func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) error {
