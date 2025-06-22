@@ -9,7 +9,7 @@ import (
 // GetWorkingDir gets the working directory without returning
 // an error.
 //
-// 🔴 Panics on error. We always expect file
+// 🔴 Panics on error. We always expect standard file
 // operations to succeed.
 func GetWorkingDir() string {
 	wd, err := os.Getwd()
@@ -22,7 +22,7 @@ func GetWorkingDir() string {
 // GetExecutableDirPath returns the directory where this
 // program is executed from.
 //
-// 🔴 Panics on error. We always expect file
+// 🔴 Panics on error. We always expect standard file
 // operations to succeed.
 func GetExecutableDirPath() string {
 	exePath, err := os.Executable()
@@ -39,7 +39,7 @@ func GetExecutableDirPath() string {
 // FileExists returns true if the specified file
 // path has been found.
 //
-// 🔴 Panics on error. We always expect file
+// 🔴 Panics on error. We always expect standard file
 // operations to succeed.
 func FileExists(path string) bool {
 	info, err := os.Stat(path)
