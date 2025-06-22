@@ -1,7 +1,10 @@
 package views
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -21,6 +24,7 @@ type (
 	KitsuProfileMsg      = kitsu.Profile
 	FetchedLibAnimeMsg   = []kitsu.LibraryEntry
 	SetupUserFinishedMsg = database.Data
+	SetupUserAbortMsg    struct{}
 )
 
 type SetupUserHelpMap map[SetupUserView]ui.KeyHelpInfo[SetupUserModel]
@@ -41,6 +45,7 @@ type SetupUserModel struct {
 		input   textinput.Model
 	}
 	helpMap SetupUserHelpMap
+	err     error
 	state   struct {
 		data     database.Data
 		view     SetupUserView
@@ -117,8 +122,16 @@ func (m SetupUserModel) Update(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 			if m.state.view == SetupLibraryView && m.state.libAnime.passed {
 				break
 			}
+			m.deleteWatchDir()
 			return m, abort
 		}
+
+	case SetupUserAbortMsg:
+		m.deleteWatchDir()
+		return m, abort
+
+	case error:
+		m.err = msg
 	}
 
 	if m.ui.loader.IsLoading() {
@@ -147,6 +160,16 @@ func (m SetupUserModel) Update(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 func (m SetupUserModel) View() (string, *tea.Cursor) {
 	var view string
 	var c *tea.Cursor
+
+	if m.err != nil {
+		view := lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplaySubTitle("User Setup", "Error"),
+			"",
+			ui.DisplayError(m.err),
+		)
+		return view, nil
+	}
 
 	switch m.state.view {
 	case SetupConsentView:
@@ -208,11 +231,11 @@ func (m SetupUserModel) UpdateConsent(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if ui.No == m.ui.consent.Select() {
-				return m, abort
+				return m, m.abort
 			}
 			m.state.view = SetupUsernameView
 			m.ui.input.Placeholder = "<username>"
-			return m, textinput.Blink
+			return m, tea.Batch(textinput.Blink, m.createWatchDir)
 		}
 	}
 
@@ -243,7 +266,7 @@ func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 			// User can abort or try again
 			if state.notFound {
 				if ui.No == m.ui.consent.Select() {
-					return m, abort
+					return m, m.abort
 				}
 				m.ui.input.Reset()
 				state.notFound = false
@@ -369,7 +392,7 @@ func (m SetupUserModel) UpdatePassword(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 			// Allow user to retry or abort
 			if state.failed {
 				if ui.No == m.ui.consent.Select() {
-					return m, abort
+					return m, m.abort
 				}
 				state.failed = false
 				m.ui.input.Reset()
@@ -487,7 +510,7 @@ func (m SetupUserModel) UpdateLibAnime(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 
 			if state.failed {
 				if ui.No == m.ui.consent.Select() {
-					return m, abort
+					return m, m.abort
 				}
 				var cmd tea.Cmd
 				m.ui.loader, cmd = m.ui.loader.Start("User Setup")
@@ -583,4 +606,28 @@ func (m SetupUserModel) getAuthToken() tea.Msg {
 		return FetchErrorMsg(err)
 	}
 	return tokenData
+}
+
+func (m SetupUserModel) createWatchDir() tea.Msg {
+	wd := utils.GetWorkingDir()
+	err := os.Mkdir(filepath.Join(wd, "(watched)"), 0o755)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m SetupUserModel) deleteWatchDir() {
+	wd := utils.GetWorkingDir()
+	err := os.Remove(filepath.Join(wd, "(watched)"))
+	if errors.Is(err, os.ErrNotExist) {
+		return
+	}
+	if err != nil {
+		panic(err)
+	}
+}
+
+func (m SetupUserModel) abort() tea.Msg {
+	return SetupUserAbortMsg{}
 }
