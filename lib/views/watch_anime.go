@@ -2,6 +2,10 @@ package views
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strconv"
 
 	"github.com/Jaeiya/koshime/lib"
@@ -83,6 +87,22 @@ func (m WatchAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		}
 		m.windowSize = msg
 
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.EscBack):
+			if m.state.err != nil {
+				m.state = WatchAnime_State{}
+				return m, func() tea.Msg { return "forceUpdateToReload" }
+			}
+
+		// Prevent accidental submissions when in error state
+		case key.Matches(msg, ui.KeyMap.Select, m.keys.reload):
+			if m.state.err != nil {
+				return m, nil
+			}
+
+		}
+
 	case WatchAnimeLoadedAnimeMsg:
 		m.state.filteredAnime = msg
 		m.PopulateAnimeList()
@@ -143,6 +163,10 @@ func (m WatchAnime_Model) View() (string, *tea.Cursor) {
 }
 
 func (m WatchAnime_Model) ShortHelp() []key.Binding {
+	if m.state.err != nil {
+		return []key.Binding{ui.KeyMap.EscBack}
+	}
+
 	switch m.state.view {
 	case WatchAnime_Progress:
 		if m.state.isUpdated {
@@ -169,8 +193,8 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 			}
 
 		case key.Matches(msg, m.keys.reload):
-			m.state.filteredAnime = nil
-			return m, func() tea.Msg { return "execUpdateFunc" }
+			m.state = WatchAnime_State{}
+			return m, func() tea.Msg { return "forceUpdateToReload" }
 
 		case key.Matches(msg, ui.KeyMap.Submit):
 			if m.ui.list.FilterState() != list.Filtering {
@@ -208,9 +232,10 @@ func (m WatchAnime_Model) UpdateProgress(msg tea.Msg) (WatchAnime_Model, tea.Cmd
 			return m, nil
 
 		case key.Matches(msg, ui.KeyMap.Select):
+			// Reload watch list
 			if m.state.isUpdated {
-				m.reset()
-				return m, nil
+				m.state = WatchAnime_State{}
+				return m, func() tea.Msg { return "forceUpdateToReload" }
 			}
 
 			if m.ui.consent.Select() == ui.No {
@@ -332,22 +357,22 @@ func (m WatchAnime_Model) LoadAnime() tea.Msg {
 }
 
 func (m WatchAnime_Model) PlayAnime() tea.Msg {
-	// wd := utils.GetWorkingDir()
-	// // var cmd *exec.Cmd
-	// filePath := filepath.Join(wd, m.state.selection.anime.Fansub.Filename)
+	wd := utils.GetWorkingDir()
+	var cmd *exec.Cmd
+	filePath := filepath.Join(wd, m.state.selection.anime.Fansub.Filename)
 
-	// switch runtime.GOOS {
-	// case "windows":
-	// 	cmd = exec.Command("cmd", "/C", "start", "", filePath)
-	// case "darwin":
-	// 	cmd = exec.Command("open", filePath)
-	// default:
-	// 	cmd = exec.Command("xdg-open", filePath)
-	// }
-	// err := cmd.Run()
-	// if err != nil {
-	// 	return err
-	// }
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/C", "start", "", filePath)
+	case "darwin":
+		cmd = exec.Command("open", filePath)
+	default:
+		cmd = exec.Command("xdg-open", filePath)
+	}
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
 	return WatchAnimeCommandRunMsg{}
 }
 
@@ -356,6 +381,12 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 	watchedEpisode, err := strconv.Atoi(anime.Fansub.Episode)
 	if err != nil {
 		return fmt.Errorf("failed to parse episode: %w", err)
+	}
+
+	wd := utils.GetWorkingDir()
+	fansubPath := filepath.Join(wd, anime.Fansub.Filename)
+	if !utils.FileExists(fansubPath) {
+		return fmt.Errorf("the fansub file has been moved or deleted")
 	}
 
 	progress := anime.Anime.Progress
@@ -376,6 +407,11 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 	err = m.db.UpdateAnime(anime.Anime)
 	if err != nil {
 		return fmt.Errorf("failed to update database: %w", err)
+	}
+
+	err = os.Rename(fansubPath, filepath.Join(wd, "(watched)", anime.Fansub.Filename))
+	if err != nil {
+		return fmt.Errorf("failed to move fansub file: %w", err)
 	}
 
 	return WatchAnimeUpdateSuccessMsg(progress)
