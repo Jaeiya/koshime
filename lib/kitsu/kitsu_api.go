@@ -202,6 +202,36 @@ func DeleteLibAnime(libID, token string) (int, error) {
 	return status, nil
 }
 
+func UpdateProgress(libID, token string, progress int) (int, error) {
+	payload, err := newAnimeProgressPayload(libID, progress)
+	if err != nil {
+		return 0, fmt.Errorf("failed to load progress payload: %w", err)
+	}
+
+	respData := struct {
+		Data struct {
+			Id         string
+			Attributes struct {
+				Progress int
+			}
+		}
+	}{}
+
+	opts := APIReqOptions{
+		method:      apiPatch,
+		url:         getLibEntryURL(libID),
+		contentType: vndAPIContent,
+		payload:     payload,
+		token:       token,
+	}
+	status, err := newAPIRequest(opts, &respData)
+	if err != nil {
+		return 0, err
+	}
+
+	return status, nil
+}
+
 func GetProfile(userName string) (Profile, error) {
 	qurl, err := getProfileQURL(userName)
 	if err != nil {
