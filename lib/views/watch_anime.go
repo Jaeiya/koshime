@@ -193,6 +193,9 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 			}
 
 		case key.Matches(msg, m.keys.reload):
+			if m.ui.list.FilterState() == list.Filtering {
+				return m, nil
+			}
 			m.state = WatchAnime_State{}
 			return m, func() tea.Msg { return "forceUpdateToReload" }
 
