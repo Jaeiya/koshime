@@ -21,7 +21,8 @@ import (
 )
 
 type (
-	WatchAnimeCommandRunMsg struct{}
+	WatchAnimeCommandRunMsg     struct{}
+	WatchAnimeCompletedAnimeMsg struct{}
 	// Holds previous episode progress value
 	WatchAnimeUpdateSuccessMsg int
 	WatchAnimeLoadedAnimeMsg   = []lib.FilteredAnime
@@ -57,6 +58,7 @@ type WatchAnime_State struct {
 		anime lib.FilteredAnime
 	}
 	isUpdated    bool
+	isCompleted  bool
 	pastProgress int
 }
 
@@ -254,23 +256,33 @@ func (m WatchAnime_Model) UpdateProgress(msg tea.Msg) (WatchAnime_Model, tea.Cmd
 		m.state.isUpdated = true
 		m.state.pastProgress = int(msg)
 		m.ui.loader.Stop()
+
+	case WatchAnimeCompletedAnimeMsg:
+		m.state.isUpdated = true
+		m.state.isCompleted = true
+		m.ui.loader.Stop()
+
 	}
 	return m, nil
 }
 
 func (m WatchAnime_Model) ViewProgress() (string, *tea.Cursor) {
 	if m.state.isUpdated {
+		progressStr := ui.DisplayText([]string{
+			fmt.Sprintf(
+				"Episode ;w;updated ;x;from ;y;%d ;x;to ;g;%s",
+				m.state.pastProgress,
+				m.state.selection.anime.Fansub.Episode,
+			),
+		})
+		if m.state.isCompleted {
+			progressStr = ui.DisplayText([]string{`Anime has been ;g;Completed;x;!`})
+		}
 		view := lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("Watch Anime", "Progress"),
 			"",
-			ui.DisplayText([]string{
-				fmt.Sprintf(
-					"Episode ;w;updated ;x;from ;y;%d ;x;to ;g;%s",
-					m.state.pastProgress,
-					m.state.selection.anime.Fansub.Episode,
-				),
-			}),
+			progressStr,
 			"",
 			ui.TextStyle.MarginTop(1).Foreground(ansi.BrightGreen).Render("> Continue"),
 		)
@@ -406,10 +418,22 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 		return fmt.Errorf("failed to update Kitsu progress: %w", err)
 	}
 
-	anime.Anime.Progress = watchedEpisode
-	err = m.db.UpdateAnime(anime.Anime)
-	if err != nil {
-		return fmt.Errorf("failed to update database: %w", err)
+	// When an anime is completed (progress updated to match total episodes), the
+	// anime status is automatically updated by Kitsu, unless the episode count
+	// is unknown (0).
+	isCompleted := false
+	if anime.Anime.Episodes == watchedEpisode {
+		err := m.db.DeleteAnimeById(anime.Anime.LibID)
+		if err != nil {
+			return fmt.Errorf("failed to delete completed anime: %w", err)
+		}
+		isCompleted = true
+	} else {
+		anime.Anime.Progress = watchedEpisode
+		err = m.db.UpdateAnime(anime.Anime)
+		if err != nil {
+			return fmt.Errorf("failed to update database: %w", err)
+		}
 	}
 
 	err = os.Rename(fansubPath, filepath.Join(wd, "(watched)", anime.Fansub.Filename))
@@ -417,5 +441,8 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 		return fmt.Errorf("failed to move fansub file: %w", err)
 	}
 
+	if isCompleted {
+		return WatchAnimeCompletedAnimeMsg{}
+	}
 	return WatchAnimeUpdateSuccessMsg(progress)
 }
