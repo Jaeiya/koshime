@@ -179,9 +179,14 @@ func (m *Model) CreateMenuItems() {
 				Desc:      "Refresh, reset, or view your Kitsu access token.",
 			},
 			{
-				Name: "Clean",
-				Desc: "View & manage your watched anime files.",
+				Name:      "Watch List",
+				ModelFunc: func() ViewModel { return newManageWatchModel(m.db) },
+				Desc:      "View or Reload your entire watch list.",
 			},
+			// {
+			// 	Name: "Clean",
+			// 	Desc: "View & manage your watched anime files.",
+			// },
 		}, Desc: "Submenu for managing Koshime functionality."},
 	}, m.db.GetProfile())
 }
