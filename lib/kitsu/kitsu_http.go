@@ -74,7 +74,7 @@ func newAPIRequest[T any](options APIReqOptions, data *T) (int, error) {
 	}
 
 	if data != nil {
-		err = json.NewDecoder(bytes.NewReader(resp.Body)).Decode(data)
+		err = json.Unmarshal(resp.Body, data)
 		if err != nil {
 			return resp.StatusCode, err
 		}
