@@ -217,6 +217,11 @@ func newQURL(uType URLType) (*KitsuURL, error) {
 	return &KitsuURL{u, u.Query()}, err
 }
 
+func (k *KitsuURL) JoinPath(p ...string) *KitsuURL {
+	k.url = k.url.JoinPath(p...)
+	return k
+}
+
 func (k *KitsuURL) QueryText(text string) *KitsuURL {
 	k.query.Add("filter[text]", text)
 	return k
