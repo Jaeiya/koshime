@@ -5,6 +5,8 @@ import "github.com/charmbracelet/bubbles/v2/key"
 type MainKeyMap struct {
 	Up       key.Binding
 	Down     key.Binding
+	Left     key.Binding
+	Right    key.Binding
 	Select   key.Binding
 	Submit   key.Binding
 	EscBack  key.Binding
@@ -19,6 +21,8 @@ type MainKeyMap struct {
 var KeyMap = MainKeyMap{
 	Up:       key.NewBinding(key.WithKeys("up", "k"), key.WithHelp("↑/k", "up")),
 	Down:     key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
+	Left:     key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←/h", "left")),
+	Right:    key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("→/l", "right")),
 	Select:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
 	Submit:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "submit")),
 	HelpMore: key.NewBinding(key.WithKeys("?"), key.WithHelp("?", "more help")),
