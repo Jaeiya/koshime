@@ -73,11 +73,20 @@ func (db *Database) Load() error {
 
 // LoadData overwrites existing data and saves it to file.
 //
-// 🔴 This is destructive and should only be used
+// 🟠 This is destructive and should only be used
 // to initialize an empty database.
 func (db *Database) LoadData(d Data) error {
 	db.data = d
 	db.isLoaded = true
+	return db.Save()
+}
+
+// LoadLibrary overwrites existing library with new entries.
+//
+// 🟠 This is destructive and should only be used
+// if the library is in an invalid state.
+func (db *Database) LoadLibrary(entries []kitsu.LibraryEntry) error {
+	db.data.Library = entries
 	return db.Save()
 }
 
