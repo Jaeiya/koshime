@@ -224,3 +224,24 @@ func DisplayPropVal(props []string, values []string) string {
 
 	return Style.MarginLeft(5).Render(strings.TrimRight(sb.String(), "\n"))
 }
+
+func ToAnimeInfo(entries []kitsu.LibraryEntry) []AnimeInfo {
+	infoEntries := make([]AnimeInfo, len(entries))
+	for i, entry := range entries {
+		infoEntries[i] = AnimeInfo{
+			ID:        entry.ID,
+			LibID:     entry.LibID,
+			JpnTitle:  entry.JPN_Title,
+			EngTitle:  entry.ENG_Title,
+			AltTitles: entry.AltTitles,
+			ShowType:  entry.Type,
+			Synopsis:  entry.Synopsis,
+			Status:    entry.Status,
+			Progress:  entry.Progress,
+			AvgRating: utils.CalcRating(entry.AvgRating),
+			Episodes:  entry.Episodes,
+			Slug:      entry.Slug,
+		}
+	}
+	return infoEntries
+}
