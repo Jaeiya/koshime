@@ -88,7 +88,7 @@ func DisplayAnimeInfo(info AnimeInfo, showSynopsis bool) string {
 	headers = append(headers, utils.ColorText(";dc;AvgRating"))
 	items = append(items, avgRating)
 
-	link, _ := url.JoinPath(kitsu.KitsuDomain, info.Slug)
+	link, _ := url.JoinPath(kitsu.KitsuDomain, "anime", info.Slug)
 	if showSynopsis {
 		headers = append(headers, utils.ColorText(";dc;Synopsis"), utils.ColorText(";x;Link"))
 		items = append(items, info.Synopsis, utils.ColorText(";bk;"+link))
