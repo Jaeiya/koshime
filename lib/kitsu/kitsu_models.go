@@ -3,7 +3,6 @@ package kitsu
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
@@ -117,7 +116,7 @@ type LibraryAnimeData struct {
 
 type APIErrorData struct {
 	Errors []struct {
-		Status string `json:"status"`
+		Status int    `json:"status"`
 		Title  string `json:"title"`
 	} `json:"errors"`
 }
@@ -125,12 +124,11 @@ type APIErrorData struct {
 func (ed APIErrorData) String() string {
 	var sb strings.Builder
 	for _, err := range ed.Errors {
-		status, _ := strconv.Atoi(err.Status)
 		errType := "ClientError"
-		if status >= 500 {
+		if err.Status >= 500 {
 			errType = "ServerError"
 		}
-		sb.WriteString(fmt.Sprintf("%s: [HTTP %s] %s\n", errType, err.Status, err.Title))
+		sb.WriteString(fmt.Sprintf("%s: [HTTP %d] %s\n", errType, err.Status, err.Title))
 	}
 	if sb.Len() > 0 {
 		return sb.String()
