@@ -5,7 +5,6 @@ import (
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/charmbracelet/bubbles/v2/key"
 	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 )
 
 type Find_AnimeView int
@@ -93,25 +92,6 @@ func (m Find_AnimeModel) ShortHelp() []key.Binding {
 
 func (m Find_AnimeModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
-}
-
-func (m Find_AnimeModel) UpdateSelected(msg tea.Msg) (Find_AnimeModel, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch {
-		case key.Matches(msg, ui.KeyMap.EscBack):
-		}
-	}
-	return m, nil
-}
-
-func (m Find_AnimeModel) ViewAnime() string {
-	return lipgloss.JoinVertical(
-		lipgloss.Left,
-		ui.DisplaySubTitle("Find Anime", "Entry Info"),
-		"",
-		m.ui.animeDisplay.View(m.state.selectedAnime),
-	)
 }
 
 func (m *Find_AnimeModel) reset() {
