@@ -31,8 +31,7 @@ type Find_AnimeModel struct {
 }
 
 type Find_AnimeState struct {
-	view          Find_AnimeView
-	selectedAnime ui.AnimeInfo
+	view Find_AnimeView
 }
 
 func newFindAnimeModel(db *database.Database) Find_AnimeModel {
