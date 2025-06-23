@@ -114,6 +114,20 @@ type LibraryAnimeData struct {
 	Included []AnimeData `json:"included"`
 }
 
+type ProgressRespData struct {
+	Data struct {
+		Attributes struct {
+			Progress int `json:"progress"`
+		} `json:"attributes"`
+	} `json:"data"`
+
+	Included []struct {
+		Attributes struct {
+			EpisodeCount int `json:"episodeCount"`
+		} `json:"attributes"`
+	} `json:"included"`
+}
+
 type APIErrorData struct {
 	Errors []struct {
 		Status int    `json:"status"`
