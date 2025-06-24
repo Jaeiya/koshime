@@ -83,3 +83,7 @@ func (fs *FilenameStream) Next() (string, bool) {
 	fs.index++
 	return fileName, true
 }
+
+func MoveFile(oldPath, newPath string) error {
+	return os.Rename(oldPath, newPath)
+}
