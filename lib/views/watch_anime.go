@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/database"
@@ -19,12 +20,22 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
+type WatchState int
+
+const (
+	Unwatched = WatchState(iota)
+	Watched
+	NonSeasonalCount
+	Mismatched
+)
+
 type (
-	WatchAnimeCommandRunMsg struct{}
+	WatchAnimePlayMsg struct{}
 	// Holds previous episode progress value
 	WatchAnimeUpdateSuccessMsg struct {
-		lastProgress   int
-		nextProgress   int
+		lastEpisode    int
+		nextEpisode    int
+		fileEpisode    int
 		alreadyWatched bool
 		isCompleted    bool
 	}
@@ -58,7 +69,8 @@ type WatchAnime_State struct {
 	err           error
 	filteredAnime []lib.FilteredAnime
 	selection     struct {
-		anime lib.FilteredAnime
+		data      lib.FilteredAnime
+		fileState WatchState
 	}
 	progress struct {
 		isUpdated   bool
@@ -66,6 +78,7 @@ type WatchAnime_State struct {
 		hasWatched  bool
 		last        int
 		next        int
+		file        int
 	}
 }
 
@@ -116,9 +129,6 @@ func (m WatchAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m.state.filteredAnime = msg
 		m.PopulateAnimeList()
 		m.ui.loader.Stop()
-
-	case WatchAnimeCommandRunMsg:
-		m.state.view = WatchAnime_Progress
 
 	case error:
 		if m.ui.loader.IsLoading() {
@@ -211,11 +221,34 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 		case key.Matches(msg, ui.KeyMap.Submit):
 			if m.ui.list.FilterState() != list.Filtering {
 				item := m.ui.list.SelectedItem().(ui.ListItem)
-				m.state.selection.anime = m.state.filteredAnime[item.Index()]
+				m.state.selection.data = m.state.filteredAnime[item.Index()]
+				data := m.state.selection.data
+
+				fileEp, err := strconv.Atoi(data.Fansub.Episode)
+				if err != nil {
+					m.state.err = fmt.Errorf("failed to parse fansub episode: %w", err)
+					return m, nil
+				}
+
+				nextProgress := data.Anime.Progress + 1
+				switch {
+				case fileEp > data.Anime.Episodes:
+					m.state.selection.fileState = NonSeasonalCount
+
+				case fileEp > nextProgress:
+					m.state.selection.fileState = Mismatched
+
+				case fileEp < nextProgress:
+					m.state.selection.fileState = Watched
+				}
+
 				return m, m.PlayAnime
 			}
 
 		}
+
+	case WatchAnimePlayMsg:
+		m.state.view = WatchAnime_Progress
 	}
 
 	m.ui.list, cmd = m.ui.list.Update(msg)
@@ -240,7 +273,7 @@ func (m WatchAnime_Model) UpdateProgress(msg tea.Msg) (WatchAnime_Model, tea.Cmd
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.EscBack):
-			m.reset()
+			m.cancelProgress()
 			return m, nil
 
 		case key.Matches(msg, ui.KeyMap.Select):
@@ -251,7 +284,7 @@ func (m WatchAnime_Model) UpdateProgress(msg tea.Msg) (WatchAnime_Model, tea.Cmd
 			}
 
 			if m.ui.consent.Select() == ui.No {
-				m.reset()
+				m.cancelProgress()
 				return m, nil
 			}
 
@@ -264,8 +297,8 @@ func (m WatchAnime_Model) UpdateProgress(msg tea.Msg) (WatchAnime_Model, tea.Cmd
 		p.isUpdated = true
 		p.hasWatched = msg.alreadyWatched
 		p.isCompleted = msg.isCompleted
-		p.last = msg.lastProgress
-		p.next = msg.nextProgress
+		p.last = msg.lastEpisode
+		p.next = msg.nextEpisode
 		m.ui.loader.Stop()
 
 	}
@@ -304,22 +337,67 @@ func (m WatchAnime_Model) ViewProgress() (string, *tea.Cursor) {
 
 	engTitle := lipgloss.JoinHorizontal(
 		lipgloss.Left,
-		utils.ColorText(";db;Title:  "),
-		ui.Style.Width(40).Render(m.state.selection.anime.Anime.ENG_Title),
+		utils.ColorText(";db;  Title: "),
+		ui.Style.Width(40).Render(m.state.selection.data.Anime.ENG_Title),
 	)
+
+	fileStr := strings.Replace(
+		m.state.selection.data.Fansub.Filename,
+		m.state.selection.data.Fansub.Episode,
+		fmt.Sprintf(";g;%s;x;", m.state.selection.data.Fansub.Episode),
+		1,
+	)
+
 	fileName := lipgloss.JoinHorizontal(
 		lipgloss.Left,
-		utils.ColorText(";db; File:  "),
-		ui.Style.Width(m.windowSize.Width-10).Render(
-			utils.ColorText(fmt.Sprintf(
-				";bk;[%s] ;x;%s - ;g;%s ;bk;[%s]",
-				m.state.selection.anime.Fansub.Fansub,
-				m.state.selection.anime.Fansub.Title,
-				m.state.selection.anime.Fansub.Episode,
-				m.state.selection.anime.Fansub.Encoding,
-			)),
+		utils.ColorText(";db;   File: "),
+		ui.Style.Width(m.windowSize.Width-17).Render(utils.ColorText(fileStr)),
+	)
+
+	fileEp, err := strconv.Atoi(m.state.selection.data.Fansub.Episode)
+	if err != nil {
+		return ui.DisplayError(fmt.Errorf("failed to parse fansub episode: %w", err)), nil
+	}
+
+	warnText := ""
+	switch m.state.selection.fileState {
+	case NonSeasonalCount:
+		warnText = `;dm;This fansub group is not following seasonal episode counts, which is
+why the file episode does not match the actual episode number.`
+
+	case Mismatched:
+		warnText = `;dm;File episode count mismatch; you're either watching an episode
+ahead of your progress, or the fansub group is not following seasonal episode counts.`
+
+	case Watched:
+		warnText = `;dm;You have already seen this episode according to your progress.`
+	}
+
+	progress := m.state.selection.data.Anime.Progress
+	if fileEp >= progress+1 {
+		progress = progress + 1
+	} else if fileEp <= progress {
+		progress = fileEp
+	}
+
+	progressStr := utils.ColorText(
+		fmt.Sprintf(
+			";db; Progress: ;y;%d ;bk;(current)",
+			m.state.selection.data.Anime.Progress,
 		),
 	)
+
+	episodeText := []string{
+		utils.ColorText(
+			fmt.Sprintf("  ;db;Episode: ;g;%d ;bk;(watching)", progress),
+		),
+	}
+	if warnText != "" {
+		episodeText = append([]string{warnText, "", progressStr}, episodeText...)
+	} else {
+		episodeText = append([]string{progressStr}, episodeText...)
+	}
+	episodeInfo := ui.DisplayText(episodeText)
 
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -332,19 +410,14 @@ func (m WatchAnime_Model) ViewProgress() (string, *tea.Cursor) {
 			0,
 		),
 		"",
-		ui.TextStyle.Render(engTitle),
+		ui.Style.MarginLeft(5).Render(engTitle),
 		"",
-		ui.TextStyle.Render(fileName),
+		ui.Style.MarginLeft(5).Render(fileName),
 		"",
+		episodeInfo,
 		"",
 		ui.TextStyle.Render(
-			m.ui.consent.View(
-				utils.ColorText(
-					";dy;Only update the episode progress once you've finished the episode.",
-				),
-				"",
-				utils.ColorText(";b;Update now?"),
-			),
+			m.ui.consent.View(utils.ColorText(";b;Have you finished watching?")),
 		),
 	)
 
@@ -365,8 +438,10 @@ func (m *WatchAnime_Model) PopulateAnimeList() {
 	})
 }
 
-func (m *WatchAnime_Model) reset() {
-	m.state.view = WatchAnime_Selection
+func (m *WatchAnime_Model) cancelProgress() {
+	anime := m.state.filteredAnime
+	m.state = WatchAnime_State{}
+	m.state.filteredAnime = anime
 }
 
 func (m WatchAnime_Model) LoadAnime() tea.Msg {
@@ -387,7 +462,7 @@ func (m WatchAnime_Model) LoadAnime() tea.Msg {
 func (m WatchAnime_Model) PlayAnime() tea.Msg {
 	wd := utils.GetWorkingDir()
 	var cmd *exec.Cmd
-	filePath := filepath.Join(wd, m.state.selection.anime.Fansub.Filename)
+	filePath := filepath.Join(wd, m.state.selection.data.Fansub.Filename)
 
 	switch runtime.GOOS {
 	case "windows":
@@ -401,11 +476,11 @@ func (m WatchAnime_Model) PlayAnime() tea.Msg {
 	if err != nil {
 		return err
 	}
-	return WatchAnimeCommandRunMsg{}
+	return WatchAnimePlayMsg{}
 }
 
 func (m *WatchAnime_Model) SaveProgress() tea.Msg {
-	anime := m.state.selection.anime
+	anime := m.state.selection.data
 	if !utils.FileExists(filepath.Join(utils.GetWorkingDir(), anime.Fansub.Filename)) {
 		return fmt.Errorf("the fansub file has been moved or deleted")
 	}
@@ -417,15 +492,15 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 		return fmt.Errorf("failed to parse file episode number: %w", err)
 	}
 
-	// 🟡 If a fansub does NOT adhere to seasonal episode counts, then
-	// this check will fail. A seasonal count means that each new
-	// season's first episode, starts at 1.
-	if fileEpisode <= lastProgress {
+	// 🟡 This only works for fansubs that follow seasonal episode counts.
+	// A seasonal count means that each new season's first episode,
+	// starts at 1.
+	if m.state.selection.fileState == Watched {
 		if err = m.moveFansubFile(); err != nil {
 			return err
 		}
 		return WatchAnimeUpdateSuccessMsg{
-			lastProgress:   lastProgress,
+			lastEpisode:    lastProgress,
 			alreadyWatched: true,
 		}
 	}
@@ -474,14 +549,15 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 	}
 
 	return WatchAnimeUpdateSuccessMsg{
-		lastProgress: lastProgress,
-		nextProgress: nextProgress,
-		isCompleted:  isCompleted,
+		lastEpisode: lastProgress,
+		nextEpisode: nextProgress,
+		fileEpisode: fileEpisode,
+		isCompleted: isCompleted,
 	}
 }
 
 func (m WatchAnime_Model) moveFansubFile() error {
-	anime := m.state.selection.anime
+	anime := m.state.selection.data
 	wd := utils.GetWorkingDir()
 	err := utils.MoveFile(
 		anime.Fansub.Filename,
