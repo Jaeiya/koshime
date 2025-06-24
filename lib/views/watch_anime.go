@@ -2,9 +2,7 @@ package views
 
 import (
 	"fmt"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -335,28 +333,42 @@ func (m WatchAnime_Model) ViewProgress() (string, *tea.Cursor) {
 		return view, nil
 	}
 
-	engTitle := lipgloss.JoinHorizontal(
+	return m.displayProgress(), nil
+}
+
+func (m WatchAnime_Model) displayProgress() string {
+	header := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("Watch Anime", "Watching"),
+		"",
+		ui.DisplayText(
+			[]string{
+				`The following anime should now be ;c;playing ;x;in your default video player:`,
+			},
+			0,
+		),
+	)
+
+	engTitle := ui.Style.MarginLeft(5).Render(lipgloss.JoinHorizontal(
 		lipgloss.Left,
 		utils.ColorText(";db;  Title: "),
 		ui.Style.Width(40).Render(m.state.selection.data.Anime.ENG_Title),
-	)
+	))
 
-	fileStr := strings.Replace(
-		m.state.selection.data.Fansub.Filename,
-		m.state.selection.data.Fansub.Episode,
-		fmt.Sprintf(";g;%s;x;", m.state.selection.data.Fansub.Episode),
-		1,
-	)
-
-	fileName := lipgloss.JoinHorizontal(
+	fileName := ui.Style.MarginLeft(5).Render(lipgloss.JoinHorizontal(
 		lipgloss.Left,
 		utils.ColorText(";db;   File: "),
-		ui.Style.Width(m.windowSize.Width-17).Render(utils.ColorText(fileStr)),
-	)
+		ui.Style.Width(m.windowSize.Width-17).Render(strings.Replace(
+			m.state.selection.data.Fansub.Filename,
+			m.state.selection.data.Fansub.Episode,
+			utils.ColorText(fmt.Sprintf(";g;%s;x;", m.state.selection.data.Fansub.Episode)),
+			1,
+		)),
+	))
 
 	fileEp, err := strconv.Atoi(m.state.selection.data.Fansub.Episode)
 	if err != nil {
-		return ui.DisplayError(fmt.Errorf("failed to parse fansub episode: %w", err)), nil
+		return ui.DisplayError(fmt.Errorf("failed to parse fansub episode: %w", err))
 	}
 
 	warnText := ""
@@ -375,53 +387,34 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 
 	progress := m.state.selection.data.Anime.Progress
 	if fileEp >= progress+1 {
-		progress = progress + 1
+		progress++
 	} else if fileEp <= progress {
 		progress = fileEp
 	}
 
-	progressStr := utils.ColorText(
-		fmt.Sprintf(
-			";db; Progress: ;y;%d ;bk;(current)",
-			m.state.selection.data.Anime.Progress,
-		),
-	)
+	progressStr := utils.ColorText(fmt.Sprintf(
+		";db; Progress: ;y;%d ;bk;(current)", m.state.selection.data.Anime.Progress,
+	))
 
-	episodeText := []string{
-		utils.ColorText(
-			fmt.Sprintf("  ;db;Episode: ;g;%d ;bk;(watching)", progress),
-		),
-	}
+	episodeLine := utils.ColorText(fmt.Sprintf("  ;db;Episode: ;g;%d ;bk;(watching)", progress))
+
+	statusText := []string{progressStr, episodeLine}
 	if warnText != "" {
-		episodeText = append([]string{warnText, "", progressStr}, episodeText...)
-	} else {
-		episodeText = append([]string{progressStr}, episodeText...)
+		statusText = append([]string{warnText, ""}, statusText...)
 	}
-	episodeInfo := ui.DisplayText(episodeText)
 
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplaySubTitle("Watch Anime", "Watching"),
-		"",
-		ui.DisplayText(
-			[]string{
-				`The following anime should now be ;c;playing ;x;in your default video player:`,
-			},
-			0,
-		),
-		"",
-		ui.Style.MarginLeft(5).Render(engTitle),
-		"",
-		ui.Style.MarginLeft(5).Render(fileName),
-		"",
-		episodeInfo,
-		"",
+		header, "",
+		engTitle, "",
+		fileName, "",
+		ui.DisplayText(statusText), "",
 		ui.TextStyle.Render(
 			m.ui.consent.View(utils.ColorText(";b;Have you finished watching?")),
 		),
 	)
 
-	return view, nil
+	return view
 }
 
 func (m *WatchAnime_Model) PopulateAnimeList() {
@@ -460,22 +453,22 @@ func (m WatchAnime_Model) LoadAnime() tea.Msg {
 }
 
 func (m WatchAnime_Model) PlayAnime() tea.Msg {
-	wd := utils.GetWorkingDir()
-	var cmd *exec.Cmd
-	filePath := filepath.Join(wd, m.state.selection.data.Fansub.Filename)
+	// wd := utils.GetWorkingDir()
+	// var cmd *exec.Cmd
+	// filePath := filepath.Join(wd, m.state.selection.data.Fansub.Filename)
 
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("cmd", "/C", "start", "", filePath)
-	case "darwin":
-		cmd = exec.Command("open", filePath)
-	default:
-		cmd = exec.Command("xdg-open", filePath)
-	}
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
+	// switch runtime.GOOS {
+	// case "windows":
+	// 	cmd = exec.Command("cmd", "/C", "start", "", filePath)
+	// case "darwin":
+	// 	cmd = exec.Command("open", filePath)
+	// default:
+	// 	cmd = exec.Command("xdg-open", filePath)
+	// }
+	// err := cmd.Run()
+	// if err != nil {
+	// 	return err
+	// }
 	return WatchAnimePlayMsg{}
 }
 
