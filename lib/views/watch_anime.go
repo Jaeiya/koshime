@@ -23,7 +23,7 @@ import (
 type WatchState int
 
 const (
-	Unwatched = WatchState(iota)
+	_ = WatchState(iota)
 	WatchedAlready
 	NonSeasonalCount
 	Mismatched
