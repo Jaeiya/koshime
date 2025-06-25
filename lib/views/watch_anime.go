@@ -81,9 +81,7 @@ type WatchAnime_State struct {
 func newWatchAnimeModel(db *database.Database) WatchAnime_Model {
 	m := WatchAnime_Model{}
 	m.ui.loader = ui.NewLoader()
-
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
-
 	m.ui.list = ui.NewList(ui.ListOptions{})
 	m.db = db
 	return m
@@ -218,17 +216,17 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 			if m.ui.list.FilterState() != list.Filtering {
 				item := m.ui.list.SelectedItem().(ui.ListItem)
 				m.state.selection.anime = m.state.filteredAnime[item.Index()]
-				data := m.state.selection.anime
+				anime := m.state.selection.anime
 
-				fileEp, err := strconv.Atoi(data.FileInfo.Episode)
+				fileEp, err := strconv.Atoi(anime.FileInfo.Episode)
 				if err != nil {
 					m.state.err = fmt.Errorf("failed to parse fansub episode: %w", err)
 					return m, nil
 				}
 
-				nextProgress := data.LibEntry.Progress + 1
+				nextProgress := anime.LibEntry.Progress + 1
 				switch {
-				case fileEp > data.LibEntry.Episodes:
+				case fileEp > anime.LibEntry.Episodes:
 					m.state.selection.fileState = NonSeasonalCount
 
 				case fileEp > nextProgress:
@@ -328,6 +326,7 @@ moved to the watched directory.`, m.state.progress.last),
 			),
 		})
 	}
+
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Watch Anime", "Progress"),
@@ -336,6 +335,7 @@ moved to the watched directory.`, m.state.progress.last),
 		"",
 		ui.TextStyle.MarginTop(1).Foreground(ansi.BrightGreen).Render("> Continue"),
 	)
+
 	return view
 }
 
