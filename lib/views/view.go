@@ -188,7 +188,7 @@ func (m *Model) CreateMenuItems() {
 			// 	Desc: "View & manage your watched anime files.",
 			// },
 		}, Desc: "Submenu for managing Koshime functionality."},
-	}, m.db.GetProfile())
+	}, m.db.Profile())
 }
 
 func abort() tea.Msg {

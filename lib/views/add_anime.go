@@ -295,7 +295,7 @@ func (m *AddAnime_Model) reset() {
 
 func (m AddAnime_Model) addAnime(animeID string) tea.Cmd {
 	return func() tea.Msg {
-		p := m.db.GetProfile()
+		p := m.db.Profile()
 		libID, err := kitsu.AddAnime(animeID, p.ID, p.AccessToken, kitsu.LibAnimeWatching)
 		if err != nil {
 			return FetchErrorMsg(err)

@@ -38,7 +38,7 @@ func newManageWatchModel(db *database.Database) ManageWatchModel {
 	m.ui.loader = ui.NewLoader()
 	m.ui.animeDisplay = NewAnimeDisplayModel()
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
-	m.state.anime = ui.ToAnimeInfo(db.GetAllAnime())
+	m.state.anime = ui.ToAnimeInfo(db.Anime())
 	return m
 }
 
@@ -154,7 +154,7 @@ func (m ManageWatchModel) FullHelp() [][]key.Binding {
 }
 
 func (m ManageWatchModel) reloadLibrary() tea.Msg {
-	profile := m.db.GetProfile()
+	profile := m.db.Profile()
 	watchList, err := kitsu.GetLibraryAnime(profile.ID, kitsu.LibAnimeWatching)
 	if err != nil {
 		return err

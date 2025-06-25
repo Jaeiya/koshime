@@ -100,7 +100,7 @@ func (db Database) FindAnime(query string) ([]kitsu.LibraryEntry, error) {
 		return []kitsu.LibraryEntry{}, nil
 	}
 
-	return db.GetAnime(indexes...)
+	return db.AnimeByIndex(indexes...)
 }
 
 // FindLibAnimeIndex uses the query to do a partial lookup against
@@ -117,9 +117,9 @@ func (db Database) FindLibAnimeIndex(query string) ([]LibraryIndex, error) {
 	return indexes, nil
 }
 
-// GetAnime will retrieve library anime using the specified
+// AnimeByIndex will retrieve library anime using the specified
 // library indexes.
-func (db Database) GetAnime(libIndexes ...LibraryIndex) ([]kitsu.LibraryEntry, error) {
+func (db Database) AnimeByIndex(libIndexes ...LibraryIndex) ([]kitsu.LibraryEntry, error) {
 	if len(libIndexes) == 0 {
 		return []kitsu.LibraryEntry{}, fmt.Errorf("missing indexes to lookup")
 	}
@@ -136,11 +136,11 @@ func (db Database) GetAnime(libIndexes ...LibraryIndex) ([]kitsu.LibraryEntry, e
 	return entries, nil
 }
 
-func (db Database) GetAllAnime() []kitsu.LibraryEntry {
+func (db Database) Anime() []kitsu.LibraryEntry {
 	return utils.CopySlice(db.data.Library)
 }
 
-func (db Database) GetProfile() kitsu.Profile {
+func (db Database) Profile() kitsu.Profile {
 	return db.data.Profile
 }
 
@@ -183,7 +183,7 @@ func (db *Database) DeleteAnimeByIndex(index LibraryIndex) error {
 	return db.Save()
 }
 
-func (db *Database) UpdateAnimeAtIndex(i LibraryIndex, entry kitsu.LibraryEntry) error {
+func (db *Database) UpdateAnimeAt(i LibraryIndex, entry kitsu.LibraryEntry) error {
 	db.data.Library[i] = entry
 	return db.Save()
 }

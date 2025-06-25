@@ -9,9 +9,9 @@ import (
 )
 
 type FilteredAnime struct {
-	Anime  kitsu.LibraryEntry
-	Fansub FansubInfo
-	Score  int
+	LibEntry kitsu.LibraryEntry
+	FileInfo FansubFileInfo
+	Score    int
 }
 
 type AnimeTitleMap map[string]map[string]struct{}
@@ -58,8 +58,8 @@ func (ff FansubFilter) FilterByLibEntry(
 			score := int(float64(confidence) / float64(len(titleWords)) * 100)
 			if score > found.Score {
 				found.Score = score
-				found.Anime = anime
-				found.Fansub = fansub
+				found.LibEntry = anime
+				found.FileInfo = fansub
 			}
 			if found.Score == 100 {
 				foundStore[anime.ID] = struct{}{}

@@ -164,7 +164,7 @@ func (m TokenModel) FullHelp() [][]key.Binding {
 }
 
 func (m TokenModel) ViewDefault() (string, *tea.Cursor) {
-	p := m.db.GetProfile()
+	p := m.db.Profile()
 
 	tokenExpiration := utils.NewRelativeTimeUnits(p.TokenExpirationSec)
 	expStyle := ui.ExpireStyle(tokenExpiration)
@@ -251,7 +251,7 @@ option, which requires your password.`,
 }
 
 func (m TokenModel) RefreshToken() tea.Msg {
-	data, err := kitsu.RefreshToken(m.db.GetProfile().RefreshToken)
+	data, err := kitsu.RefreshToken(m.db.Profile().RefreshToken)
 	if err != nil {
 		return err
 	}
@@ -264,6 +264,6 @@ func (m TokenModel) RefreshToken() tea.Msg {
 }
 
 func (m TokenModel) HasBeenRenewed() bool {
-	rtu := utils.NewRelativeTimeUnits(m.db.GetProfile().TokenExpirationSec)
+	rtu := utils.NewRelativeTimeUnits(m.db.Profile().TokenExpirationSec)
 	return rtu.Weeks == 4 && rtu.Days > 0
 }

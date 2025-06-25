@@ -107,7 +107,7 @@ var fansubExtMap = map[string]struct{}{
 	".ts":  {},
 }
 
-type FansubInfo struct {
+type FansubFileInfo struct {
 	Fansub   string
 	Title    string
 	Encoding string
@@ -127,14 +127,14 @@ func (FansubParser) IsSupported(fileName string) bool {
 	return exists
 }
 
-func (fp FansubParser) Parse(fileName string) (FansubInfo, error) {
+func (fp FansubParser) Parse(fileName string) (FansubFileInfo, error) {
 	ext := filepath.Ext(fileName)
 	if _, hasExt := fansubExtMap[ext]; hasExt {
 		fileName = strings.TrimSuffix(fileName, ext)
 	}
 
 	if !strings.ContainsAny(fileName, " ._") {
-		return FansubInfo{}, fmt.Errorf("unsupported file name")
+		return FansubFileInfo{}, fmt.Errorf("unsupported file name")
 	}
 
 	var fansubName, episode, season string
@@ -142,7 +142,7 @@ func (fp FansubParser) Parse(fileName string) (FansubInfo, error) {
 
 	tokens, err := fp.getTokens(fileName)
 	if err != nil {
-		return FansubInfo{}, err
+		return FansubFileInfo{}, err
 	}
 	fansubName = tokens[0]
 	tokens = tokens[1:] // Ignore fansub name
@@ -188,7 +188,7 @@ func (fp FansubParser) Parse(fileName string) (FansubInfo, error) {
 
 		// Assume "batch" always comes after some meta data
 		if hasMetaData() && normalizedToken == "batch" {
-			return FansubInfo{}, fmt.Errorf("batch files not supported")
+			return FansubFileInfo{}, fmt.Errorf("batch files not supported")
 		}
 
 		// Assume title is always before meta-data
@@ -198,7 +198,7 @@ func (fp FansubParser) Parse(fileName string) (FansubInfo, error) {
 
 	}
 
-	info := FansubInfo{}
+	info := FansubFileInfo{}
 
 	info.Fansub = fansubName
 	info.Episode = episode
