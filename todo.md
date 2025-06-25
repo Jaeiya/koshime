@@ -1,22 +1,3 @@
-### What to Watch
-
-Should allow the user to watch anime that can be found in their anime directory, which
-is different than there `watch` directory.
-
-- It should be able to match on a full or partial search of an anime title.
-- Only match on supported media files (.mkv, .mp4, .avi, etc...)
-- If a partial match is found, display a confidence percentage
-  - The higher the confidence the more words in the title have matched
-  - Default to selecting the highest confident matches first
-
-**Interface**
-
-1. Searches watch directory for files that match a specific anime and displays them
-1. Choice to select which anime to watch
-1. Open anime
-1. Choice to auto-update progress
-1. Update progress and re-run search for new selection
-
 ### Add Anime
 
 Should allow users to interactively add a movie or anime series to their
