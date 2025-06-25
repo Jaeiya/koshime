@@ -22,20 +22,26 @@ type WatchState int
 
 const (
 	Unwatched = WatchState(iota)
-	Watched
+	WatchedAlready
 	NonSeasonalCount
 	Mismatched
+)
+
+type UpdateState int
+
+const (
+	Watched = UpdateState(iota)
+	Completed
 )
 
 type (
 	WatchAnimePlayMsg struct{}
 	// Holds previous episode progress value
 	WatchAnimeUpdateSuccessMsg struct {
-		lastEpisode    int
-		nextEpisode    int
-		fileEpisode    int
-		alreadyWatched bool
-		isCompleted    bool
+		lastEpisode int
+		nextEpisode int
+		fileEpisode int
+		isCompleted bool
 	}
 	WatchAnimeLoadedAnimeMsg = []lib.FilteredAnime
 )
@@ -237,7 +243,7 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 					m.state.selection.fileState = Mismatched
 
 				case fileEp < nextProgress:
-					m.state.selection.fileState = Watched
+					m.state.selection.fileState = WatchedAlready
 				}
 
 				return m, m.PlayAnime
@@ -293,7 +299,6 @@ func (m WatchAnime_Model) UpdateProgress(msg tea.Msg) (WatchAnime_Model, tea.Cmd
 	case WatchAnimeUpdateSuccessMsg:
 		p := &m.state.progress
 		p.isUpdated = true
-		p.hasWatched = msg.alreadyWatched
 		p.isCompleted = msg.isCompleted
 		p.last = msg.lastEpisode
 		p.next = msg.nextEpisode
@@ -305,35 +310,41 @@ func (m WatchAnime_Model) UpdateProgress(msg tea.Msg) (WatchAnime_Model, tea.Cmd
 
 func (m WatchAnime_Model) ViewProgress() (string, *tea.Cursor) {
 	if m.state.progress.isUpdated {
-		progressStr := ui.DisplayText([]string{
-			fmt.Sprintf(
-				"Episode ;w;updated ;x;from ;y;%d ;x;to ;g;%d",
-				m.state.progress.last,
-				m.state.progress.next,
-			),
-		})
-		if m.state.progress.isCompleted {
-			progressStr = ui.DisplayText([]string{`Anime has been ;g;Completed;x;!`})
-		}
+		return m.displayUpdatedProgress(), nil
+	}
+	return m.displayProgress(), nil
+}
 
-		if m.state.progress.hasWatched {
-			progressStr = ui.DisplayText([]string{
-				`You have already watched this Anime at an earlier time, therefore
-;m;progress has not been updated.`,
-			})
-		}
-		view := lipgloss.JoinVertical(
-			lipgloss.Left,
-			ui.DisplaySubTitle("Watch Anime", "Progress"),
-			"",
-			progressStr,
-			"",
-			ui.TextStyle.MarginTop(1).Foreground(ansi.BrightGreen).Render("> Continue"),
-		)
-		return view, nil
+func (m WatchAnime_Model) displayUpdatedProgress() string {
+	progressStr := ui.DisplayText([]string{
+		fmt.Sprintf(
+			"Episode ;w;updated ;x;from ;y;%d ;x;to ;g;%d",
+			m.state.progress.last,
+			m.state.progress.next,
+		),
+	})
+
+	if m.state.progress.isCompleted {
+		progressStr = ui.DisplayText([]string{`Anime has been ;g;Completed;x;!`})
 	}
 
-	return m.displayProgress(), nil
+	if m.state.selection.fileState == WatchedAlready {
+		progressStr = ui.DisplayText([]string{
+			utils.ColorText(
+				fmt.Sprintf(`Progress remains at ;g;%d;x;, but the file ;dc;has been;x;
+moved to the watched directory.`, m.state.progress.last),
+			),
+		})
+	}
+	view := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("Watch Anime", "Progress"),
+		"",
+		progressStr,
+		"",
+		ui.TextStyle.MarginTop(1).Foreground(ansi.BrightGreen).Render("> Continue"),
+	)
+	return view
 }
 
 func (m WatchAnime_Model) displayProgress() string {
@@ -381,7 +392,7 @@ why the file episode does not match the actual episode number.`
 		warnText = `;dm;File episode count mismatch; you're either watching an episode
 ahead of your progress, or the fansub group is not following seasonal episode counts.`
 
-	case Watched:
+	case WatchedAlready:
 		warnText = `;dm;You have already seen this episode according to your progress.`
 	}
 
@@ -488,13 +499,12 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 	// 🟡 This only works for fansubs that follow seasonal episode counts.
 	// A seasonal count means that each new season's first episode,
 	// starts at 1.
-	if m.state.selection.fileState == Watched {
+	if m.state.selection.fileState == WatchedAlready {
 		if err = m.moveFansubFile(); err != nil {
 			return err
 		}
 		return WatchAnimeUpdateSuccessMsg{
-			lastEpisode:    lastProgress,
-			alreadyWatched: true,
+			lastEpisode: lastProgress,
 		}
 	}
 
