@@ -6,6 +6,12 @@ for the anime.
 - None
 - 1, 1.5, 2, 2.5, etc...
 
+### Custom List Component
+
+I'm not a huge fan of the complexity of the list component and I think it would
+be more efficient to create my own, for my own specific use case. The display
+options are very limited.
+
 ### Add Anime
 
 Should allow users to interactively add a movie or anime series to their
