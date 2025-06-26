@@ -29,12 +29,6 @@ if "%VERSION%"=="" (
 :: Set output binary name
 set OUTPUT=dist\koshime-%BUILD_TAG%
 
-if exist "%OUTPUT%.exe" (
-    echo.
-    echo  ⛔ Current version already built
-    goto end
-)
-
 :: Run the build with ldflags
 go build -ldflags="-s -w -X %MODULE%.Version=%VERSION_STR% -X %MODULE%.CommitHash=%COMMIT% -X %MODULE%.BuildDate=%DATE%" -trimpath -o %OUTPUT%.exe
 if errorlevel 1 (
