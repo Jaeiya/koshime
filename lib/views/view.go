@@ -188,6 +188,11 @@ func (m *Model) CreateMenuItems() {
 			// 	Desc: "View & manage your watched anime files.",
 			// },
 		}, Desc: "Submenu for managing Koshime functionality."},
+		{
+			Name:      "About",
+			ModelFunc: func() ViewModel { return newAboutModel() },
+			Desc:      "View the nitty-gritty details of Koshime",
+		},
 	}, m.db.Profile())
 }
 
