@@ -6,7 +6,7 @@ chcp 65001 >nul
 setlocal enabledelayedexpansion
 
 :: Set module path (adjust if it ever changes)
-set MODULE=github.com/Jaeiya/koshime/version
+set MODULE=github.com/Jaeiya/koshime/lib
 
 :: Get latest version tag
 for /f "delims=" %%i in ('git describe --tags --abbrev=0 2^>nul') do set VERSION=%%i
@@ -36,7 +36,7 @@ if exist "%OUTPUT%.exe" (
 )
 
 :: Run the build with ldflags
-go build -ldflags="-s -w -X %MODULE%.Version=%VERSION_STR% -X %MODULE%.Commit=%COMMIT% -X %MODULE%.Date=%DATE%" -trimpath -o %OUTPUT%.exe
+go build -ldflags="-s -w -X %MODULE%.Version=%VERSION_STR% -X %MODULE%.CommitHash=%COMMIT% -X %MODULE%.BuildDate=%DATE%" -trimpath -o %OUTPUT%.exe
 if errorlevel 1 (
     echo ❌ Build failed.
     exit /b 1
@@ -80,6 +80,10 @@ if errorlevel 1 (
 
 
 :binarysuccess
+echo.
+echo Version: %VERSION%
+echo  Commit: %COMMIT%
+echo    Date: %DATE%
 echo.
 echo  ✅ Built binary: %OUTPUT%
 
