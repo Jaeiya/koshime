@@ -15,7 +15,10 @@ for /f "delims=" %%i in ('git describe --tags --abbrev=0 2^>nul') do set VERSION
 for /f %%i in ('git rev-parse --short HEAD') do set COMMIT=%%i
 
 :: Get UTC build date
-for /f %%i in ('powershell -NoProfile -Command "Get-Date -Format yyyy-MM-ddTHH:mm:ssZ"') do set DATE=%%i
+for /f %%i in (
+  'powershell -NoProfile -Command "Get-Date -Format o"'
+) do set DATE=%%i
+
 
 :: Decide what to use as build tag
 if "%VERSION%"=="" (
