@@ -273,3 +273,11 @@ func (ru RelativeUnits) ToPrecisionString(p TimeUnit) string {
 	}
 	return strings.Join(parts, ", ") + " ago"
 }
+
+func ToISO8601(timeStr string) (time.Time, error) {
+	t, err := time.Parse(time.RFC3339, timeStr)
+	if err != nil {
+		return t, err
+	}
+	return t, nil
+}
