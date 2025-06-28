@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 )
 
+const watchDir = "(watched)"
+
 // GetWorkingDir gets the working directory without returning
 // an error.
 //
@@ -50,6 +52,11 @@ func FileExists(path string) bool {
 		panic(err)
 	}
 	return !info.IsDir()
+}
+
+func WatchDir() string {
+	wd := GetWorkingDir()
+	return filepath.Join(wd, watchDir)
 }
 
 type FilenameIterator interface {
