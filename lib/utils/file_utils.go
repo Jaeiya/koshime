@@ -61,6 +61,23 @@ func (fs FileSys) WatchDir() string {
 	return filepath.Join(wd, watchDirName)
 }
 
+func (fs FileSys) ReadDirFiles(path string) ([]string, error) {
+	entries, err := os.ReadDir(path)
+	if err != nil {
+		return nil, err
+	}
+
+	fileNames := []string{}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		fileNames = append(fileNames, entry.Name())
+	}
+
+	return fileNames, nil
+}
+
 func (FileSys) MoveFile(oldPath, newPath string) error {
 	return os.Rename(oldPath, newPath)
 }
