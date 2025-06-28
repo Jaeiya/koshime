@@ -12,7 +12,7 @@ import (
 	"github.com/charmbracelet/lipgloss/v2"
 )
 
-type ManageWatchModel struct {
+type WatchList_Model struct {
 	windowSize tea.WindowSizeMsg
 	ui         struct {
 		loader       ui.LoaderModel
@@ -23,18 +23,18 @@ type ManageWatchModel struct {
 		reload key.Binding
 	}
 	db    *database.Database
-	state ManageWatchState
+	state WatchList_State
 }
 
-type ManageWatchState struct {
+type WatchList_State struct {
 	err         error
 	anime       []ui.AnimeInfo
 	animeIndex  int
 	isReloading bool
 }
 
-func newManageWatchModel(db *database.Database) ManageWatchModel {
-	m := ManageWatchModel{db: db}
+func newWatchListModel(db *database.Database) WatchList_Model {
+	m := WatchList_Model{db: db}
 	m.ui.loader = ui.NewLoader()
 	m.ui.animeDisplay = NewAnimeDisplayModel()
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
@@ -42,7 +42,7 @@ func newManageWatchModel(db *database.Database) ManageWatchModel {
 	return m
 }
 
-func (m ManageWatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m WatchList_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	if m.state.isReloading {
 		m.ui.consent = m.ui.consent.Update(msg)
@@ -62,7 +62,7 @@ func (m ManageWatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.state.isReloading {
-				m.state = ManageWatchState{}
+				m.state = WatchList_State{}
 				if m.ui.consent.Select() == ui.No {
 					return m, nil
 				}
@@ -98,7 +98,7 @@ func (m ManageWatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m ManageWatchModel) View() (string, *tea.Cursor) {
+func (m WatchList_Model) View() (string, *tea.Cursor) {
 	if m.ui.loader.IsLoading() {
 		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
 	}
@@ -120,7 +120,7 @@ func (m ManageWatchModel) View() (string, *tea.Cursor) {
 	return view, nil
 }
 
-func (m ManageWatchModel) ViewReloading() string {
+func (m WatchList_Model) ViewReloading() string {
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Manage Watch List", "Reloading"),
@@ -142,18 +142,18 @@ manually update your Kitsu watch list from the website.`,
 	return view
 }
 
-func (m ManageWatchModel) ShortHelp() []key.Binding {
+func (m WatchList_Model) ShortHelp() []key.Binding {
 	if m.state.isReloading {
 		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
 	}
 	return []key.Binding{m.keys.reload, ui.KeyMap.Left, ui.KeyMap.Right, ui.KeyMap.MainMenu}
 }
 
-func (m ManageWatchModel) FullHelp() [][]key.Binding {
+func (m WatchList_Model) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m ManageWatchModel) reloadLibrary() tea.Msg {
+func (m WatchList_Model) reloadLibrary() tea.Msg {
 	profile := m.db.Profile()
 	watchList, err := kitsu.GetLibraryAnime(profile.ID, kitsu.LibAnimeWatching)
 	if err != nil {
