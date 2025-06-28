@@ -5,6 +5,29 @@ import (
 	"strconv"
 )
 
+type ByteMap struct {
+	size     int64
+	notation string
+}
+
+var byteTable = []ByteMap{
+	{1 << (10 * 5), "PiB"},
+	{1 << (10 * 4), "TiB"},
+	{1 << (10 * 3), "GiB"},
+	{1 << (10 * 2), "MiB"},
+	{1 << (10 * 1), "KiB"},
+	{0, "Bytes"},
+}
+
+func FormatBytes(byteSize int64) string {
+	for _, entry := range byteTable {
+		if byteSize >= entry.size {
+			return fmt.Sprintf("%.2f %s", float64(byteSize)/float64(entry.size), entry.notation)
+		}
+	}
+	return "0 bytes"
+}
+
 func IsNumber(s string) bool {
 	_, err := strconv.Atoi(s)
 	return err == nil
