@@ -609,7 +609,7 @@ func (m SetupUserModel) getAuthToken() tea.Msg {
 }
 
 func (m SetupUserModel) createWatchDir() tea.Msg {
-	wd := utils.GetWorkingDir()
+	wd := fileSys.GetWorkingDir()
 	err := os.Mkdir(filepath.Join(wd, "(watched)"), 0o755)
 	if err != nil {
 		return err
@@ -618,7 +618,7 @@ func (m SetupUserModel) createWatchDir() tea.Msg {
 }
 
 func (m SetupUserModel) deleteWatchDir() {
-	wd := utils.GetWorkingDir()
+	wd := fileSys.GetWorkingDir()
 	err := os.Remove(filepath.Join(wd, "(watched)"))
 	if errors.Is(err, os.ErrNotExist) {
 		return

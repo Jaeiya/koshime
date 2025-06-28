@@ -16,7 +16,10 @@ import (
 	"github.com/shamaton/msgpack/v2"
 )
 
-var dbFileName = "koshime.db"
+var (
+	fileSys    utils.FileSys
+	dbFileName = "koshime.db"
+)
 
 type LibraryIndex int
 
@@ -54,7 +57,7 @@ func (db *Database) Load() error {
 	if db.isLoaded {
 		return nil
 	}
-	fileBytes, err := os.ReadFile(filepath.Join(utils.GetWorkingDir(), dbFileName))
+	fileBytes, err := os.ReadFile(filepath.Join(fileSys.GetWorkingDir(), dbFileName))
 	if err != nil {
 		return err
 	}

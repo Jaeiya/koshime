@@ -6,14 +6,16 @@ import (
 	"path/filepath"
 )
 
-const watchDir = "(watched)"
+const watchDirName = "(watched)"
+
+type FileSys struct{}
 
 // GetWorkingDir gets the working directory without returning
 // an error.
 //
 // 🔴 Panics on error. We always expect standard file
 // operations to succeed.
-func GetWorkingDir() string {
+func (FileSys) GetWorkingDir() string {
 	wd, err := os.Getwd()
 	if err != nil {
 		panic(err)
@@ -26,7 +28,7 @@ func GetWorkingDir() string {
 //
 // 🔴 Panics on error. We always expect standard file
 // operations to succeed.
-func GetExecutableDirPath() string {
+func (FileSys) GetExecutableDirPath() string {
 	exePath, err := os.Executable()
 	if err != nil {
 		panic(err)
@@ -43,7 +45,7 @@ func GetExecutableDirPath() string {
 //
 // 🔴 Panics on error. We always expect standard file
 // operations to succeed.
-func FileExists(path string) bool {
+func (FileSys) FileExists(path string) bool {
 	info, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -54,9 +56,13 @@ func FileExists(path string) bool {
 	return !info.IsDir()
 }
 
-func WatchDir() string {
-	wd := GetWorkingDir()
-	return filepath.Join(wd, watchDir)
+func (fs FileSys) WatchDir() string {
+	wd := fs.GetWorkingDir()
+	return filepath.Join(wd, watchDirName)
+}
+
+func (FileSys) MoveFile(oldPath, newPath string) error {
+	return os.Rename(oldPath, newPath)
 }
 
 type FilenameIterator interface {
@@ -72,7 +78,7 @@ type FilenameStream struct {
 // struct which allows you to walk through each file name.
 //
 // 🟡 Directory names are ignored
-func NewFilenameStream(dir string) (*FilenameStream, error) {
+func (FileSys) NewFilenameStream(dir string) (*FilenameStream, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return &FilenameStream{}, fmt.Errorf("could not read dir: %w", err)
@@ -89,8 +95,4 @@ func (fs *FilenameStream) Next() (string, bool) {
 	fileName := fs.entries[fs.index].Name()
 	fs.index++
 	return fileName, true
-}
-
-func MoveFile(oldPath, newPath string) error {
-	return os.Rename(oldPath, newPath)
 }

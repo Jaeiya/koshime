@@ -20,6 +20,8 @@ const (
 	Exit
 )
 
+var fileSys = utils.FileSys{}
+
 type (
 	FetchErrorMsg error
 )
@@ -56,8 +58,9 @@ func New(dbPath string) (Model, error) {
 	// Initialize empty database
 	db, _ := database.NewDatabase(nil)
 	m.db = db
+	fs := utils.FileSys{}
 
-	if !utils.FileExists(dbPath) {
+	if !fs.FileExists(dbPath) {
 		m.setupUser = newSetupUserModel()
 		return m, nil
 	}
