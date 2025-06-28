@@ -126,7 +126,7 @@ func DisplayPropValue(props []string, values []string) string {
 		sb.WriteString(
 			lipgloss.JoinHorizontal(
 				lipgloss.Left,
-				propStyle.Render(prop+":")+" ",
+				propStyle.Render(utils.ColorText(prop)+":")+" ",
 				valStyle.Render(utils.ColorText(values[i])),
 			) + "\n",
 		)
