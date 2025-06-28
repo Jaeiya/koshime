@@ -183,13 +183,14 @@ func (m *Model) CreateMenuItems() {
 			},
 			{
 				Name:      "Watch List",
-				ModelFunc: func() ViewModel { return newManageWatchModel(m.db) },
+				ModelFunc: func() ViewModel { return newWatchListModel(m.db) },
 				Desc:      "View or Reload your entire watch list.",
 			},
-			// {
-			// 	Name: "Clean",
-			// 	Desc: "View & manage your watched anime files.",
-			// },
+			{
+				Name:      "Clean",
+				ModelFunc: func() ViewModel { return newWatchDirModel() },
+				Desc:      "View & manage your watched anime files.",
+			},
 		}, Desc: "Submenu for managing Koshime functionality."},
 		{
 			Name:      "About",

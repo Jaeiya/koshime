@@ -1,0 +1,301 @@
+package views
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"slices"
+	"strconv"
+
+	"github.com/Jaeiya/koshime/lib"
+	"github.com/Jaeiya/koshime/lib/ui"
+	"github.com/Jaeiya/koshime/lib/utils"
+	"github.com/charmbracelet/bubbles/v2/key"
+	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss/v2"
+)
+
+type WatchDir_View int
+
+const (
+	WatchDir_Default = WatchDir_View(iota)
+)
+
+type (
+	WatchDirSuccessfulDeleteMsg struct {
+		count int
+		size  int64
+	}
+)
+
+type WatchDir_Info struct {
+	location    string
+	size        int64
+	fileCount   int
+	avgFileSize int64
+}
+
+type WatchDir_Model struct {
+	windowSize tea.WindowSizeMsg
+	ui         struct {
+		loader ui.LoaderModel
+	}
+	menuItems []string
+	state     WatchDir_State
+}
+
+type WatchDir_State struct {
+	err        error
+	folderInfo WatchDir_Info
+	menuIndex  int
+	recent     struct {
+		completed bool
+		deleted   int
+		size      int64
+	}
+}
+
+func newWatchDirModel() WatchDir_Model {
+	m := WatchDir_Model{}
+	m.menuItems = []string{
+		"Clean All",
+		"Clean Recent",
+	}
+	m.loadWatchedFiles()
+	return m
+}
+
+func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.windowSize = msg
+
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.MainMenu):
+			return m, exitToMenu
+
+		case key.Matches(msg, ui.KeyMap.Up):
+			if m.state.menuIndex == 0 {
+				return m, nil
+			}
+			m.state.menuIndex--
+			return m, nil
+
+		case key.Matches(msg, ui.KeyMap.Down):
+			if m.state.menuIndex+1 == len(m.menuItems) {
+				return m, nil
+			}
+			m.state.menuIndex++
+			return m, nil
+
+		case key.Matches(msg, ui.KeyMap.Select):
+			if m.state.recent.completed {
+				fi := m.state.folderInfo
+				m.state = WatchDir_State{}
+				// FIX  Temporary until we reload after deletions
+				m.state.folderInfo = fi
+				return m, nil
+			}
+			if m.state.menuIndex == 0 {
+				// Clean all
+			} else {
+				return m, m.cleanRecentFansubs
+			}
+		}
+
+	case WatchDirSuccessfulDeleteMsg:
+		m.state.recent.completed = true
+		m.state.recent.deleted = msg.count
+		m.state.recent.size = msg.size
+
+	case error:
+		m.state.err = msg
+	}
+
+	return m, nil
+}
+
+func (m WatchDir_Model) View() (string, *tea.Cursor) {
+	if m.ui.loader.IsLoading() {
+		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+	}
+
+	if m.state.err != nil {
+		return ui.DisplayError(m.state.err), nil
+	}
+
+	if m.state.recent.completed {
+		viewLines := []string{
+			ui.DisplaySubTitle("Manage Watch Directory", "Deleted Recent"),
+			"",
+		}
+
+		continueStr := ui.DisplayMenuItems([]string{"Continue"}, 0)
+
+		viewLines = append(viewLines,
+			ui.DisplayText([]string{
+				`All files are recent; ;m;no deletions are necessary;x;.`,
+			}),
+			"",
+			continueStr,
+		)
+
+		if m.state.recent.deleted == 0 {
+			return lipgloss.JoinVertical(
+				lipgloss.Left,
+				viewLines...,
+			), nil
+		}
+
+		viewLines = append(viewLines,
+			ui.DisplayPropValue(
+				[]string{
+					";dc;Deleted",
+					";dc;Freed",
+				},
+				[]string{
+					fmt.Sprintf(";dy;%d Files", m.state.recent.deleted),
+					fmt.Sprintf(";dy;%s", utils.FormatBytes(m.state.recent.size)),
+				},
+			),
+			continueStr,
+		)
+
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			viewLines...,
+		), nil
+	}
+
+	view := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplayTitle("Manage Watch Directory"),
+		"",
+		ui.DisplayPropValue(
+			[]string{
+				";dc;Location",
+				";dc;Size",
+				";dc;File Count",
+				";dc;Avg. File Size",
+			},
+			[]string{
+				fmt.Sprintf(";dg;%s", m.state.folderInfo.location),
+				fmt.Sprintf(";dy;%s", utils.FormatBytes(m.state.folderInfo.size)),
+				fmt.Sprintf(";dy;%s", strconv.Itoa(m.state.folderInfo.fileCount)),
+				fmt.Sprintf(";dy;%s", utils.FormatBytes(m.state.folderInfo.avgFileSize)),
+			},
+		),
+		"",
+		ui.DisplayText([]string{
+			`;dgu;Clean All;x; removes all files within the watch directory. This is
+typically a good idea after each season.`,
+			`;dgu;Clean Recent;x; removes all files except for the most recent, per
+series. If you've watched ;dy;5;x; different series, this will leave ;dy;5;x; files.`,
+		}, 1),
+		ui.DisplayMenuItems(m.menuItems, m.state.menuIndex),
+	)
+
+	return view, nil
+}
+
+func (m WatchDir_Model) ShortHelp() []key.Binding {
+	return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.MainMenu}
+}
+
+func (m WatchDir_Model) FullHelp() [][]key.Binding {
+	return [][]key.Binding{}
+}
+
+func (m *WatchDir_Model) loadWatchedFiles() {
+	var fileSys utils.FileSys
+	dirPath := fileSys.WatchDir()
+	entries, err := os.ReadDir(dirPath)
+	if err != nil {
+		m.state.err = fmt.Errorf("could not read watch dir: %w", err)
+		return
+	}
+
+	info := WatchDir_Info{
+		location: dirPath,
+	}
+	for _, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		fileInfo, err := os.Stat(filepath.Join(dirPath, entry.Name()))
+		if err != nil {
+			m.state.err = fmt.Errorf("could not read file stats: %w", err)
+		}
+		info.size += fileInfo.Size()
+		info.fileCount++
+	}
+	info.avgFileSize = info.size / int64(info.fileCount)
+	m.state.folderInfo = info
+}
+
+func (m WatchDir_Model) cleanRecentFansubs() tea.Msg {
+	var fileSys utils.FileSys
+
+	fileNames, err := fileSys.ReadDirFiles(fileSys.WatchDir())
+	if err != nil {
+		return fmt.Errorf("failed to read watch dir: %w", err)
+	}
+
+	type MappedInfo struct {
+		modTime int64
+		fansub  lib.FansubFileInfo
+		size    int64
+	}
+
+	infoMap := map[string][]MappedInfo{}
+	for _, name := range fileNames {
+		fp := lib.FansubParser{}
+		info, err := fp.Parse(name)
+		if err != nil {
+			return fmt.Errorf("failed to parse fansub file: %w", err)
+		}
+		stats, err := os.Stat(filepath.Join(fileSys.WatchDir(), info.Filename))
+		if err != nil {
+			return fmt.Errorf("failed to get file stats: %w", err)
+		}
+		infoMap[info.Title] = append(infoMap[info.Title], MappedInfo{
+			modTime: stats.ModTime().UnixMilli(),
+			fansub:  info,
+			size:    stats.Size(),
+		})
+	}
+
+	// Sort by mod time
+	sortMostRecent := func(data []MappedInfo) []MappedInfo {
+		slices.SortFunc(data, func(a MappedInfo, b MappedInfo) int {
+			if a.modTime > b.modTime {
+				return 1
+			}
+			return -1
+		})
+		return data
+	}
+
+	var totalSize int64
+	var count int
+
+	for _, info := range infoMap {
+		if len(info) < 2 {
+			continue
+		}
+
+		sortMostRecent(info)
+
+		for _, info := range info[1:] {
+			err := os.Remove(filepath.Join(fileSys.WatchDir(), info.fansub.Filename))
+			if err != nil {
+				return fmt.Errorf("failed to remove fansub: %w", err)
+			}
+			totalSize += info.size
+			count++
+		}
+	}
+
+	return WatchDirSuccessfulDeleteMsg{count, totalSize}
+}
