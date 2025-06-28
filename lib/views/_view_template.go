@@ -33,6 +33,12 @@ func (m Some_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.windowSize = msg
 
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.MainMenu):
+			return m, exitToMenu
+		}
+
 	case error:
 		m.state.err = msg
 	}
