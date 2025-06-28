@@ -13,10 +13,10 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-type Add_AnimeView int
+type AddAnime_View int
 
 const (
-	AddAnime_Selection = Add_AnimeView(iota)
+	AddAnime_Selection = AddAnime_View(iota)
 	AddAnime_Query
 	AddAnime_Review
 	AddAnime_Rss
@@ -26,7 +26,7 @@ const (
 
 type (
 	AnimeAddedMsg struct{}
-	AddAnime_Help map[Add_AnimeView]ui.KeyHelpInfo[AddAnime_Model]
+	AddAnime_Help map[AddAnime_View]ui.KeyHelpInfo[AddAnime_Model]
 )
 
 type AddAnime_Model struct {
@@ -46,11 +46,11 @@ type AddAnime_Model struct {
 	}
 	helpMap AddAnime_Help
 	db      *database.Database
-	state   Add_AnimeModelState
+	state   AddAnime_State
 }
 
-type Add_AnimeModelState struct {
-	view          Add_AnimeView
+type AddAnime_State struct {
+	view          AddAnime_View
 	fetchErr      error
 	selectedAnime ui.AnimeInfo
 	menuIndex     int
@@ -286,7 +286,7 @@ func (m *AddAnime_Model) InitAnimeSearch(animeStatus []kitsu.AnimeStatus) {
 }
 
 func (m *AddAnime_Model) reset() {
-	m.state = Add_AnimeModelState{
+	m.state = AddAnime_State{
 		view: AddAnime_Selection,
 	}
 	m.ui.animeSearch.Reset()
