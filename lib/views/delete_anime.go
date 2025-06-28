@@ -11,9 +11,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-type (
-	DelAnime_View int
-)
+type DelAnime_View int
 
 const (
 	DelAnime_Query = DelAnime_View(iota)
