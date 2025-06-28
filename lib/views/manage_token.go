@@ -47,6 +47,10 @@ func newTokenModel(db *database.Database) TokenModel {
 	return m
 }
 
+func (TokenModel) Init() tea.Cmd {
+	return nil
+}
+
 func (m TokenModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd

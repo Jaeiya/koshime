@@ -65,6 +65,10 @@ func newWatchDirModel() WatchDir_Model {
 	return m
 }
 
+func (m WatchDir_Model) Init() tea.Cmd {
+	return nil
+}
+
 func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:

@@ -79,6 +79,10 @@ func newAddAnimeModel(db *database.Database) AddAnime_Model {
 	return m
 }
 
+func (m AddAnime_Model) Init() tea.Cmd {
+	return nil
+}
+
 func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd

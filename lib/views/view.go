@@ -30,6 +30,7 @@ type ViewModel interface {
 	tea.CursorModel
 	help.KeyMap
 	Update(msg tea.Msg) (ViewModel, tea.Cmd)
+	Init() tea.Cmd
 }
 
 type (

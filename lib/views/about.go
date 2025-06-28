@@ -26,6 +26,10 @@ func newAboutModel() AboutModel {
 	return m
 }
 
+func (m AboutModel) Init() tea.Cmd {
+	return nil
+}
+
 func (m AboutModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:

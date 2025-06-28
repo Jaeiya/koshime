@@ -50,6 +50,10 @@ func newFindAnimeModel(db *database.Database) Find_AnimeModel {
 	return m
 }
 
+func (m Find_AnimeModel) Init() tea.Cmd {
+	return nil
+}
+
 func (m Find_AnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd

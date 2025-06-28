@@ -52,6 +52,7 @@ func NewMenuModel(views []MenuView, p kitsu.Profile) MenuModel {
 
 func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 	var cmd tea.Cmd
+	var cmds []tea.Cmd
 
 	if m.selectedModel != nil {
 		m.selectedModel, cmd = m.selectedModel.Update(msg)
@@ -95,6 +96,7 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 			} else {
 				m.selectedModel = chosen.ModelFunc()
 				m.selectedModel, cmd = m.selectedModel.Update(m.windowSize)
+				cmds = append(cmds, cmd, m.selectedModel.Init())
 			}
 
 		case key.Matches(msg, ui.KeyMap.HelpMore):
@@ -114,7 +116,7 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 		}
 	}
 
-	return m, cmd
+	return m, tea.Batch(cmds...)
 }
 
 func (m MenuModel) View() (string, *tea.Cursor) {

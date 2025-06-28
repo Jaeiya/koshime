@@ -42,6 +42,10 @@ func newWatchListModel(db *database.Database) WatchList_Model {
 	return m
 }
 
+func (m WatchList_Model) Init() tea.Cmd {
+	return nil
+}
+
 func (m WatchList_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	if m.state.isReloading {

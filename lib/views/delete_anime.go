@@ -70,6 +70,10 @@ func newDelAnimeModel(db *database.Database) DelAnime_Model {
 	return m
 }
 
+func (m DelAnime_Model) Init() tea.Cmd {
+	return nil
+}
+
 func (m DelAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
