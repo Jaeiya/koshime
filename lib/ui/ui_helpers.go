@@ -100,8 +100,10 @@ func DisplayAnimeInfo(info AnimeInfo, showSynopsis bool) string {
 	return DisplayPropValue(headers, items)
 }
 
-// DisplayPropValue displays properties and values in a fixed
-// width arrangement.
+// DisplayPropVal converts a slice of properties and values
+// into a displayable string.
+//
+// 🔴 Panics with inconsistent value/property lengths
 func DisplayPropValue(props []string, values []string) string {
 	if len(props) != len(values) {
 		panic("number of properties do not match number of values")
@@ -187,42 +189,6 @@ func DisplayText(lines []string, margins ...int) string {
 		text = Style.MarginBottom(margins[2]).Render(text)
 	}
 	return text
-}
-
-// DisplayPropVal converts a slice of properties and values
-// into a displayable string.
-//
-// 🔴 Panics with inconsistent value/property lengths
-func DisplayPropVal(props []string, values []string) string {
-	if len(props) != len(values) {
-		panic("number of properties do not match number of values")
-	}
-
-	var propWidth int
-	for _, p := range props {
-		if propWidth < lipgloss.Width(p) {
-			propWidth = lipgloss.Width(p)
-		}
-	}
-
-	propStyle := Style.Width(propWidth + 1).
-		Align(lipgloss.Right).
-		Foreground(lipgloss.Cyan)
-
-	valStyle := Style.Width(60)
-
-	var sb strings.Builder
-	for i, prop := range props {
-		sb.WriteString(
-			lipgloss.JoinHorizontal(
-				lipgloss.Left,
-				propStyle.Render(prop+":")+" ",
-				valStyle.Render(utils.ColorText(values[i])),
-			) + "\n",
-		)
-	}
-
-	return Style.MarginLeft(5).Render(strings.TrimRight(sb.String(), "\n"))
 }
 
 func ToAnimeInfo(entries []kitsu.LibraryEntry) []AnimeInfo {

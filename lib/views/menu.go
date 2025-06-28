@@ -211,7 +211,7 @@ func (m MenuModel) DisplayProfile() string {
 
 	return lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplayPropVal(props, values),
+		ui.DisplayPropValue(props, values),
 	)
 }
 
