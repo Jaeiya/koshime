@@ -270,10 +270,10 @@ func (m WatchDir_Model) cleanRecentFansubs() tea.Msg {
 		})
 	}
 
-	// Sort by mod time
 	sortMostRecent := func(data []MappedInfo) []MappedInfo {
 		slices.SortFunc(data, func(a MappedInfo, b MappedInfo) int {
-			if a.modTime > b.modTime {
+			// Descending order
+			if a.modTime < b.modTime {
 				return 1
 			}
 			return -1
