@@ -86,12 +86,6 @@ func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m.ui.loader, cmd = m.ui.loader.Start("Loading Watched Files")
 		return m, tea.Batch(cmd, m.loadFiles)
 
-	case tea.KeyPressMsg:
-		switch {
-		case key.Matches(msg, ui.KeyMap.MainMenu):
-			return m, exitToMenu
-		}
-
 	case WatchDir_Info:
 		m.state.folderInfo = msg
 		m.ui.loader.Stop()
@@ -160,6 +154,9 @@ func (m WatchDir_Model) UpdateMenu(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
+		case key.Matches(msg, ui.KeyMap.MainMenu):
+			return m, exitToMenu
+
 		case key.Matches(msg, ui.KeyMap.Up):
 			if m.state.menu.index == 0 {
 				return m, nil
