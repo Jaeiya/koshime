@@ -16,11 +16,13 @@ var byteTable = []ByteMap{
 	{1 << (10 * 3), "GiB"},
 	{1 << (10 * 2), "MiB"},
 	{1 << (10 * 1), "KiB"},
-	{0, "Bytes"},
 }
 
 func FormatBytes(byteSize int64) string {
 	for _, entry := range byteTable {
+		if byteSize == 0 {
+			break
+		}
 		if byteSize >= entry.size {
 			return fmt.Sprintf("%.2f %s", float64(byteSize)/float64(entry.size), entry.notation)
 		}
