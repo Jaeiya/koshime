@@ -26,6 +26,7 @@ type (
 		count int
 		size  int64
 	}
+	WatchDirLoadFilesMsg struct{}
 )
 
 type WatchDir_Info struct {
@@ -61,18 +62,28 @@ func newWatchDirModel() WatchDir_Model {
 		"Clean All",
 		"Clean Recent",
 	}
-	m.loadWatchedFiles()
+	m.ui.loader = ui.NewLoader()
 	return m
 }
 
 func (m WatchDir_Model) Init() tea.Cmd {
-	return nil
+	return m.loadWatchDir
 }
 
 func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+	var cmd tea.Cmd
+
+	if m.ui.loader.IsLoading() {
+		m.ui.loader, cmd = m.ui.loader.Update(msg)
+	}
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.windowSize = msg
+
+	case WatchDirLoadFilesMsg:
+		m.ui.loader, cmd = m.ui.loader.Start("Loading Watched Files")
+		return m, tea.Batch(cmd, m.loadFiles)
 
 	case tea.KeyPressMsg:
 		switch {
@@ -97,27 +108,32 @@ func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			if m.state.recent.completed {
 				fi := m.state.folderInfo
 				m.state = WatchDir_State{}
-				// FIX  Temporary until we reload after deletions
 				m.state.folderInfo = fi
-				return m, nil
+				return m, m.loadWatchDir
 			}
 			if m.state.menuIndex == 0 {
 				// Clean all
 			} else {
-				return m, m.cleanRecentFansubs
+				m.ui.loader, cmd = m.ui.loader.Start("Cleaning Files")
+				return m, tea.Batch(cmd, m.cleanRecentFansubs)
 			}
 		}
+
+	case WatchDir_Info:
+		m.state.folderInfo = msg
+		m.ui.loader.Stop()
 
 	case WatchDirSuccessfulDeleteMsg:
 		m.state.recent.completed = true
 		m.state.recent.deleted = msg.count
 		m.state.recent.size = msg.size
+		m.ui.loader.Stop()
 
 	case error:
 		m.state.err = msg
 	}
 
-	return m, nil
+	return m, cmd
 }
 
 func (m WatchDir_Model) View() (string, *tea.Cursor) {
@@ -162,6 +178,7 @@ func (m WatchDir_Model) View() (string, *tea.Cursor) {
 					fmt.Sprintf(";dy;%s", utils.FormatBytes(m.state.recent.size)),
 				},
 			),
+			"",
 			continueStr,
 		)
 
@@ -213,13 +230,12 @@ func (m WatchDir_Model) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m *WatchDir_Model) loadWatchedFiles() {
+func (m WatchDir_Model) loadFiles() tea.Msg {
 	var fileSys utils.FileSys
 	dirPath := fileSys.WatchDir()
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
-		m.state.err = fmt.Errorf("could not read watch dir: %w", err)
-		return
+		return fmt.Errorf("could not read watch dir: %w", err)
 	}
 
 	info := WatchDir_Info{
@@ -231,13 +247,13 @@ func (m *WatchDir_Model) loadWatchedFiles() {
 		}
 		fileInfo, err := os.Stat(filepath.Join(dirPath, entry.Name()))
 		if err != nil {
-			m.state.err = fmt.Errorf("could not read file stats: %w", err)
+			return fmt.Errorf("could not read file stats: %w", err)
 		}
 		info.size += fileInfo.Size()
 		info.fileCount++
 	}
 	info.avgFileSize = info.size / int64(info.fileCount)
-	m.state.folderInfo = info
+	return info
 }
 
 func (m WatchDir_Model) cleanRecentFansubs() tea.Msg {
@@ -304,4 +320,8 @@ func (m WatchDir_Model) cleanRecentFansubs() tea.Msg {
 	}
 
 	return WatchDirSuccessfulDeleteMsg{count, totalSize}
+}
+
+func (m WatchDir_Model) loadWatchDir() tea.Msg {
+	return WatchDirLoadFilesMsg{}
 }
