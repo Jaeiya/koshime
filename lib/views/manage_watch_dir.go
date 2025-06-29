@@ -204,6 +204,9 @@ series. If you've watched ;dy;5;x; different series, this will leave ;dy;5;x; fi
 }
 
 func (m WatchDir_Model) ShortHelp() []key.Binding {
+	if m.ui.loader.IsLoading() {
+		return []key.Binding{}
+	}
 	return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.MainMenu}
 }
 
