@@ -51,8 +51,10 @@ type WatchDir_State struct {
 	err        error
 	view       WatchDir_View
 	folderInfo WatchDir_Info
-	menuIndex  int
-	recent     struct {
+	menu       struct {
+		index int
+	}
+	recent struct {
 		deleted int
 		size    int64
 	}
@@ -159,21 +161,21 @@ func (m WatchDir_Model) UpdateMenu(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Up):
-			if m.state.menuIndex == 0 {
+			if m.state.menu.index == 0 {
 				return m, nil
 			}
-			m.state.menuIndex--
+			m.state.menu.index--
 			return m, nil
 
 		case key.Matches(msg, ui.KeyMap.Down):
-			if m.state.menuIndex+1 == len(m.menuItems) {
+			if m.state.menu.index+1 == len(m.menuItems) {
 				return m, nil
 			}
-			m.state.menuIndex++
+			m.state.menu.index++
 			return m, nil
 
 		case key.Matches(msg, ui.KeyMap.Select):
-			if m.state.menuIndex == 0 {
+			if m.state.menu.index == 0 {
 				// Clean all files
 				return m, nil
 			}
@@ -213,7 +215,7 @@ typically a good idea after each season.`,
 			`;dgu;Clean Recent;x; removes all files except for the most recent, per
 series. If you've watched ;dy;5;x; different series, this will leave ;dy;5;x; files.`,
 		}, 1),
-		ui.DisplayMenuItems(m.menuItems, m.state.menuIndex),
+		ui.DisplayMenuItems(m.menuItems, m.state.menu.index),
 	)
 
 	return view
