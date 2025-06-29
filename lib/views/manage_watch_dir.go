@@ -18,7 +18,7 @@ import (
 type WatchDir_View int
 
 const (
-	WatchDir_Default = WatchDir_View(iota)
+	WatchDir_Menu = WatchDir_View(iota)
 	WatchDir_CleanRecent
 	WatchDir_CleanAll
 )
@@ -88,34 +88,6 @@ func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.MainMenu):
 			return m, exitToMenu
-
-		case key.Matches(msg, ui.KeyMap.Up):
-			if m.state.menuIndex == 0 {
-				return m, nil
-			}
-			m.state.menuIndex--
-			return m, nil
-
-		case key.Matches(msg, ui.KeyMap.Down):
-			if m.state.menuIndex+1 == len(m.menuItems) {
-				return m, nil
-			}
-			m.state.menuIndex++
-			return m, nil
-
-		case key.Matches(msg, ui.KeyMap.Select):
-			if m.state.view > WatchDir_Default {
-				break
-			}
-
-			if m.state.menuIndex == 0 {
-				// Clean all files
-				return m, nil
-			}
-
-			m.ui.loader, cmd = m.ui.loader.Start("Cleaning Files")
-			m.state.view = WatchDir_CleanRecent
-			return m, tea.Batch(cmd, m.cleanRecentFansubs)
 		}
 
 	case WatchDir_Info:
@@ -132,6 +104,10 @@ func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	}
 
 	switch m.state.view {
+	case WatchDir_Menu:
+		m, cmd = m.UpdateMenu(msg)
+		cmds = append(cmds, cmd)
+
 	case WatchDir_CleanRecent:
 		m, cmd = m.UpdateCleanRecent(msg)
 		cmds = append(cmds, cmd)
@@ -150,10 +126,68 @@ func (m WatchDir_Model) View() (string, *tea.Cursor) {
 	}
 
 	switch m.state.view {
+	case WatchDir_Menu:
+		return m.ViewMenu(), nil
 	case WatchDir_CleanRecent:
 		return m.ViewCleanRecent(), nil
+	default:
+		return "unknown view", nil
+	}
+}
+
+func (m WatchDir_Model) ShortHelp() []key.Binding {
+	if m.ui.loader.IsLoading() {
+		return []key.Binding{}
 	}
 
+	switch m.state.view {
+	case WatchDir_CleanRecent:
+		return []key.Binding{ui.KeyMap.Submit}
+	}
+
+	return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.MainMenu}
+}
+
+func (m WatchDir_Model) FullHelp() [][]key.Binding {
+	return [][]key.Binding{}
+}
+
+func (m WatchDir_Model) UpdateMenu(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.Up):
+			if m.state.menuIndex == 0 {
+				return m, nil
+			}
+			m.state.menuIndex--
+			return m, nil
+
+		case key.Matches(msg, ui.KeyMap.Down):
+			if m.state.menuIndex+1 == len(m.menuItems) {
+				return m, nil
+			}
+			m.state.menuIndex++
+			return m, nil
+
+		case key.Matches(msg, ui.KeyMap.Select):
+			if m.state.menuIndex == 0 {
+				// Clean all files
+				return m, nil
+			}
+
+			m.ui.loader, cmd = m.ui.loader.Start("Cleaning Files")
+			m.state.view = WatchDir_CleanRecent
+			return m, tea.Batch(cmd, m.cleanRecentFansubs)
+		}
+	}
+
+	return m, nil
+}
+
+func (m WatchDir_Model) ViewMenu() string {
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplayTitle("Watch Directory"),
@@ -182,24 +216,7 @@ series. If you've watched ;dy;5;x; different series, this will leave ;dy;5;x; fi
 		ui.DisplayMenuItems(m.menuItems, m.state.menuIndex),
 	)
 
-	return view, nil
-}
-
-func (m WatchDir_Model) ShortHelp() []key.Binding {
-	if m.ui.loader.IsLoading() {
-		return []key.Binding{}
-	}
-
-	switch m.state.view {
-	case WatchDir_CleanRecent:
-		return []key.Binding{ui.KeyMap.Submit}
-	}
-
-	return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.MainMenu}
-}
-
-func (m WatchDir_Model) FullHelp() [][]key.Binding {
-	return [][]key.Binding{}
+	return view
 }
 
 func (m WatchDir_Model) UpdateCleanRecent(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
