@@ -137,15 +137,14 @@ func (m WatchDir_Model) View() (string, *tea.Cursor) {
 
 		continueStr := ui.DisplayMenuItems([]string{"Continue"}, 0)
 
-		viewLines = append(viewLines,
-			ui.DisplayText([]string{
-				`All files are recent; ;m;no deletions are necessary;x;.`,
-			}),
-			"",
-			continueStr,
-		)
-
 		if m.state.recent.deleted == 0 {
+			viewLines = append(viewLines,
+				ui.DisplayText([]string{
+					`All files are recent; ;m;no deletions are necessary;x;.`,
+				}),
+				"",
+				continueStr,
+			)
 			return lipgloss.JoinVertical(
 				lipgloss.Left,
 				viewLines...,
