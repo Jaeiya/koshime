@@ -19,6 +19,8 @@ type WatchDir_View int
 
 const (
 	WatchDir_Default = WatchDir_View(iota)
+	WatchDir_CleanRecent
+	WatchDir_CleanAll
 )
 
 type (
@@ -47,12 +49,12 @@ type WatchDir_Model struct {
 
 type WatchDir_State struct {
 	err        error
+	view       WatchDir_View
 	folderInfo WatchDir_Info
 	menuIndex  int
 	recent     struct {
-		completed bool
-		deleted   int
-		size      int64
+		deleted int
+		size    int64
 	}
 }
 
@@ -72,10 +74,7 @@ func (m WatchDir_Model) Init() tea.Cmd {
 
 func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
-
-	if m.ui.loader.IsLoading() {
-		m.ui.loader, cmd = m.ui.loader.Update(msg)
-	}
+	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
@@ -105,35 +104,40 @@ func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			return m, nil
 
 		case key.Matches(msg, ui.KeyMap.Select):
-			if m.state.recent.completed {
-				fi := m.state.folderInfo
-				m.state = WatchDir_State{}
-				m.state.folderInfo = fi
-				return m, m.loadWatchDir
+			if m.state.view > WatchDir_Default {
+				break
 			}
+
 			if m.state.menuIndex == 0 {
-				// Clean all
-			} else {
-				m.ui.loader, cmd = m.ui.loader.Start("Cleaning Files")
-				return m, tea.Batch(cmd, m.cleanRecentFansubs)
+				// Clean all files
+				return m, nil
 			}
+
+			m.ui.loader, cmd = m.ui.loader.Start("Cleaning Files")
+			m.state.view = WatchDir_CleanRecent
+			return m, tea.Batch(cmd, m.cleanRecentFansubs)
 		}
 
 	case WatchDir_Info:
 		m.state.folderInfo = msg
 		m.ui.loader.Stop()
 
-	case WatchDirSuccessfulDeleteMsg:
-		m.state.recent.completed = true
-		m.state.recent.deleted = msg.count
-		m.state.recent.size = msg.size
-		m.ui.loader.Stop()
-
 	case error:
 		m.state.err = msg
 	}
 
-	return m, cmd
+	if m.ui.loader.IsLoading() {
+		m.ui.loader, cmd = m.ui.loader.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	switch m.state.view {
+	case WatchDir_CleanRecent:
+		m, cmd = m.UpdateCleanRecent(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m WatchDir_Model) View() (string, *tea.Cursor) {
@@ -145,52 +149,14 @@ func (m WatchDir_Model) View() (string, *tea.Cursor) {
 		return ui.DisplayError(m.state.err), nil
 	}
 
-	if m.state.recent.completed {
-		viewLines := []string{
-			ui.DisplaySubTitle("Manage Watch Directory", "Deleted Recent"),
-			"",
-		}
-
-		continueStr := ui.DisplayMenuItems([]string{"Continue"}, 0)
-
-		if m.state.recent.deleted == 0 {
-			viewLines = append(viewLines,
-				ui.DisplayText([]string{
-					`All files are recent; ;m;no deletions are necessary;x;.`,
-				}),
-				"",
-				continueStr,
-			)
-			return lipgloss.JoinVertical(
-				lipgloss.Left,
-				viewLines...,
-			), nil
-		}
-
-		viewLines = append(viewLines,
-			ui.DisplayPropValue(
-				[]string{
-					";dc;Deleted",
-					";dc;Freed",
-				},
-				[]string{
-					fmt.Sprintf(";dy;%d Files", m.state.recent.deleted),
-					fmt.Sprintf(";dy;%s", utils.FormatBytes(m.state.recent.size)),
-				},
-			),
-			"",
-			continueStr,
-		)
-
-		return lipgloss.JoinVertical(
-			lipgloss.Left,
-			viewLines...,
-		), nil
+	switch m.state.view {
+	case WatchDir_CleanRecent:
+		return m.ViewCleanRecent(), nil
 	}
 
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplayTitle("Manage Watch Directory"),
+		ui.DisplayTitle("Watch Directory"),
 		"",
 		ui.DisplayPropValue(
 			[]string{
@@ -223,11 +189,77 @@ func (m WatchDir_Model) ShortHelp() []key.Binding {
 	if m.ui.loader.IsLoading() {
 		return []key.Binding{}
 	}
+
+	switch m.state.view {
+	case WatchDir_CleanRecent:
+		return []key.Binding{ui.KeyMap.Submit}
+	}
+
 	return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.MainMenu}
 }
 
 func (m WatchDir_Model) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
+}
+
+func (m WatchDir_Model) UpdateCleanRecent(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.Select):
+			m.state = WatchDir_State{}
+			return m, m.loadWatchDir
+		}
+
+	case WatchDirSuccessfulDeleteMsg:
+		m.state.recent.deleted = msg.count
+		m.state.recent.size = msg.size
+		m.ui.loader.Stop()
+	}
+	return m, nil
+}
+
+func (m WatchDir_Model) ViewCleanRecent() string {
+	viewLines := []string{
+		ui.DisplaySubTitle("Manage Watch Directory", "Cleaned Recent"),
+		"",
+	}
+
+	continueStr := ui.DisplayMenuItems([]string{"Continue"}, 0)
+
+	if m.state.recent.deleted == 0 {
+		viewLines = append(viewLines,
+			ui.DisplayText([]string{
+				`All files are recent; ;m;no deletions are necessary;x;.`,
+			}),
+			"",
+			continueStr,
+		)
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			viewLines...,
+		)
+	}
+
+	viewLines = append(viewLines,
+		ui.DisplayPropValue(
+			[]string{
+				";dc;Deleted",
+				";dc;Freed",
+			},
+			[]string{
+				fmt.Sprintf(";dy;%d Files", m.state.recent.deleted),
+				fmt.Sprintf(";dy;%s", utils.FormatBytes(m.state.recent.size)),
+			},
+		),
+		"",
+		continueStr,
+	)
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		viewLines...,
+	)
 }
 
 func (m WatchDir_Model) loadFiles() tea.Msg {
