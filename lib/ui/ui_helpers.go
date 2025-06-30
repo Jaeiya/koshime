@@ -111,9 +111,10 @@ func DisplayPropValue(props []string, values []string) string {
 	var sb strings.Builder
 
 	var propWidth int
-	for _, p := range props {
-		if propWidth < lipgloss.Width(p) {
-			propWidth = lipgloss.Width(p)
+	for i, p := range props {
+		props[i] = utils.ColorText(p)
+		if propWidth < lipgloss.Width(props[i]) {
+			propWidth = lipgloss.Width(props[i])
 		}
 	}
 
@@ -126,13 +127,13 @@ func DisplayPropValue(props []string, values []string) string {
 		sb.WriteString(
 			lipgloss.JoinHorizontal(
 				lipgloss.Left,
-				propStyle.Render(utils.ColorText(prop))+": ",
+				propStyle.Render(prop)+": ",
 				valStyle.Render(utils.ColorText(values[i])),
 			) + "\n",
 		)
 	}
 
-	return Style.MarginLeft(4).Render(strings.TrimRight(sb.String(), "\n"))
+	return Style.MarginLeft(5).Render(strings.TrimRight(sb.String(), "\n"))
 }
 
 func DisplayError(err error) string {
