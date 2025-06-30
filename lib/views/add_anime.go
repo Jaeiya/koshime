@@ -1,6 +1,8 @@
 package views
 
 import (
+	"fmt"
+
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
@@ -321,7 +323,7 @@ func (m AddAnime_Model) addAnime(animeID string) tea.Cmd {
 			Slug:      anime.Slug,
 		})
 		if err != nil {
-			return FetchErrorMsg(err)
+			return FetchErrorMsg(fmt.Errorf("failed to add anime to database: %w", err))
 		}
 		return AnimeAddedMsg{}
 	}
