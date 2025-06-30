@@ -7,7 +7,7 @@ type MainKeyMap struct {
 	Down     key.Binding
 	Left     key.Binding
 	Right    key.Binding
-	Last     key.Binding
+	Prev     key.Binding
 	Next     key.Binding
 	Select   key.Binding
 	Submit   key.Binding
@@ -25,7 +25,7 @@ var KeyMap = MainKeyMap{
 	Down:     key.NewBinding(key.WithKeys("down", "j"), key.WithHelp("↓/j", "down")),
 	Left:     key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←/h", "left")),
 	Right:    key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("→/l", "right")),
-	Last:     key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←/h", "last")),
+	Prev:     key.NewBinding(key.WithKeys("left", "h"), key.WithHelp("←/h", "prev")),
 	Next:     key.NewBinding(key.WithKeys("right", "l"), key.WithHelp("→/l", "next")),
 	Select:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "select")),
 	Submit:   key.NewBinding(key.WithKeys("enter"), key.WithHelp("enter", "submit")),
