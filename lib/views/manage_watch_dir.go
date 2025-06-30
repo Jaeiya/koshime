@@ -54,7 +54,7 @@ type WatchDir_State struct {
 	menu       struct {
 		index int
 	}
-	recent struct {
+	cleanResults struct {
 		deleted int
 		size    int64
 	}
@@ -104,8 +104,8 @@ func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m, cmd = m.UpdateMenu(msg)
 		cmds = append(cmds, cmd)
 
-	case WatchDir_CleanRecent:
-		m, cmd = m.UpdateCleanRecent(msg)
+	case WatchDir_CleanRecent, WatchDir_CleanAll:
+		m, cmd = m.UpdateCleaned(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -124,8 +124,8 @@ func (m WatchDir_Model) View() (string, *tea.Cursor) {
 	switch m.state.view {
 	case WatchDir_Menu:
 		return m.ViewMenu(), nil
-	case WatchDir_CleanRecent:
-		return m.ViewCleanRecent(), nil
+	case WatchDir_CleanRecent, WatchDir_CleanAll:
+		return m.ViewCleaned(), nil
 	default:
 		return "unknown view", nil
 	}
@@ -134,6 +134,10 @@ func (m WatchDir_Model) View() (string, *tea.Cursor) {
 func (m WatchDir_Model) ShortHelp() []key.Binding {
 	if m.ui.loader.IsLoading() {
 		return []key.Binding{}
+	}
+
+	if m.state.folderInfo.size == 0 {
+		return []key.Binding{ui.KeyMap.MainMenu}
 	}
 
 	switch m.state.view {
@@ -172,14 +176,19 @@ func (m WatchDir_Model) UpdateMenu(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 			return m, nil
 
 		case key.Matches(msg, ui.KeyMap.Select):
-			if m.state.menu.index == 0 {
-				// Clean all files
-				return m, nil
+			// Nothing to clean
+			if m.state.folderInfo.size == 0 {
+				break
 			}
 
 			m.ui.loader, cmd = m.ui.loader.Start("Cleaning Files")
+			if m.state.menu.index == 0 {
+				m.state.view = WatchDir_CleanAll
+				return m, tea.Batch(cmd, m.cleanAll)
+			}
+
 			m.state.view = WatchDir_CleanRecent
-			return m, tea.Batch(cmd, m.cleanRecentFansubs)
+			return m, tea.Batch(cmd, m.cleanRecentFiles)
 		}
 	}
 
@@ -187,6 +196,23 @@ func (m WatchDir_Model) UpdateMenu(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 }
 
 func (m WatchDir_Model) ViewMenu() string {
+	if m.state.folderInfo.size == 0 {
+		view := lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplayTitle("Watch Directory"),
+			"",
+			ui.DisplayPropValue(
+				[]string{`;dc;Location`},
+				[]string{fmt.Sprintf(";dy;%s", m.state.folderInfo.location)},
+			),
+			"",
+			ui.DisplayText([]string{
+				`;m;Watch directory is currently empty.`,
+			}),
+		)
+		return view
+	}
+
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplayTitle("Watch Directory"),
@@ -218,7 +244,7 @@ series. If you've watched ;dy;5;x; different series, this will leave ;dy;5;x; fi
 	return view
 }
 
-func (m WatchDir_Model) UpdateCleanRecent(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
+func (m WatchDir_Model) UpdateCleaned(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
@@ -228,14 +254,14 @@ func (m WatchDir_Model) UpdateCleanRecent(msg tea.Msg) (WatchDir_Model, tea.Cmd)
 		}
 
 	case WatchDirSuccessfulDeleteMsg:
-		m.state.recent.deleted = msg.count
-		m.state.recent.size = msg.size
+		m.state.cleanResults.deleted = msg.count
+		m.state.cleanResults.size = msg.size
 		m.ui.loader.Stop()
 	}
 	return m, nil
 }
 
-func (m WatchDir_Model) ViewCleanRecent() string {
+func (m WatchDir_Model) ViewCleaned() string {
 	viewLines := []string{
 		ui.DisplaySubTitle("Manage Watch Directory", "Cleaned Recent"),
 		"",
@@ -243,10 +269,14 @@ func (m WatchDir_Model) ViewCleanRecent() string {
 
 	continueStr := ui.DisplayMenuItems([]string{"Continue"}, 0)
 
-	if m.state.recent.deleted == 0 {
+	if m.state.cleanResults.deleted == 0 {
+		typeStr := "Folder has no recent files to delete"
+		if m.state.view == WatchDir_CleanAll {
+			typeStr = "Folder is already empty"
+		}
 		viewLines = append(viewLines,
 			ui.DisplayText([]string{
-				`All files are recent; ;m;no deletions are necessary;x;.`,
+				typeStr,
 			}),
 			"",
 			continueStr,
@@ -264,8 +294,8 @@ func (m WatchDir_Model) ViewCleanRecent() string {
 				";dc;Freed",
 			},
 			[]string{
-				fmt.Sprintf(";dy;%d Files", m.state.recent.deleted),
-				fmt.Sprintf(";dy;%s", utils.FormatBytes(m.state.recent.size)),
+				fmt.Sprintf(";dy;%d Files", m.state.cleanResults.deleted),
+				fmt.Sprintf(";dy;%s", utils.FormatBytes(m.state.cleanResults.size)),
 			},
 		),
 		"",
@@ -278,6 +308,7 @@ func (m WatchDir_Model) ViewCleanRecent() string {
 	)
 }
 
+// FIX  Loading files on an empty directory probably has some caveats...
 func (m WatchDir_Model) loadFiles() tea.Msg {
 	var fileSys utils.FileSys
 	dirPath := fileSys.WatchDir()
@@ -300,13 +331,13 @@ func (m WatchDir_Model) loadFiles() tea.Msg {
 		info.size += fileInfo.Size()
 		info.fileCount++
 	}
-	info.avgFileSize = info.size / int64(info.fileCount)
+	if info.size > 0 {
+		info.avgFileSize = info.size / int64(info.fileCount)
+	}
 	return info
 }
 
-func (m WatchDir_Model) cleanRecentFansubs() tea.Msg {
-	var fileSys utils.FileSys
-
+func (m WatchDir_Model) cleanRecentFiles() tea.Msg {
 	fileNames, err := fileSys.ReadDirFiles(fileSys.WatchDir())
 	if err != nil {
 		return fmt.Errorf("failed to read watch dir: %w", err)
@@ -368,6 +399,32 @@ func (m WatchDir_Model) cleanRecentFansubs() tea.Msg {
 	}
 
 	return WatchDirSuccessfulDeleteMsg{count, totalSize}
+}
+
+func (m WatchDir_Model) cleanAll() tea.Msg {
+	fileNames, err := fileSys.ReadDirFiles(fileSys.WatchDir())
+	if err != nil {
+		return fmt.Errorf("failed to read watch dir: %w", err)
+	}
+
+	var size int64
+	var count int
+
+	for _, fn := range fileNames {
+		path := filepath.Join(fileSys.WatchDir(), fn)
+		stats, err := os.Stat(path)
+		if err != nil {
+			return fmt.Errorf("failed to get file stats: %w", err)
+		}
+
+		if err = os.Remove(path); err != nil {
+			return fmt.Errorf("failed to delete file: %w", err)
+		}
+		size += stats.Size()
+		count++
+	}
+
+	return WatchDirSuccessfulDeleteMsg{count, size}
 }
 
 func (m WatchDir_Model) loadWatchDir() tea.Msg {
