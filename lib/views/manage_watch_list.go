@@ -145,6 +145,36 @@ func (m WatchList_Model) View() (string, *tea.Cursor) {
 	return view, nil
 }
 
+func (m WatchList_Model) ShortHelp() []key.Binding {
+	if m.state.view == WatchList_Reload {
+		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
+	}
+
+	keys := []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down}
+
+	if len(m.state.anime) > 0 {
+		switch {
+		case m.state.animeIndex == len(m.state.anime)-1:
+			keys = append(keys, ui.KeyMap.Prev)
+
+		case m.state.animeIndex > 0:
+			keys = append(keys, ui.KeyMap.Prev, ui.KeyMap.Next)
+
+		default:
+			keys = append(keys, ui.KeyMap.Next)
+		}
+	}
+	keys = append(keys, ui.KeyMap.HelpMore)
+	return keys
+}
+
+func (m WatchList_Model) FullHelp() [][]key.Binding {
+	return [][]key.Binding{
+		{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Prev, ui.KeyMap.Next, ui.KeyMap.Select},
+		{m.keys.reload, ui.KeyMap.MainMenu, ui.KeyMap.HelpLess},
+	}
+}
+
 func (m WatchList_Model) UpdateMenu(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
@@ -270,36 +300,6 @@ the local database.`, m.state.anime[m.state.animeIndex].EngTitle),
 		),
 	)
 	return view
-}
-
-func (m WatchList_Model) ShortHelp() []key.Binding {
-	if m.state.view == WatchList_Reload {
-		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
-	}
-
-	keys := []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down}
-
-	if len(m.state.anime) > 0 {
-		switch {
-		case m.state.animeIndex == len(m.state.anime)-1:
-			keys = append(keys, ui.KeyMap.Prev)
-
-		case m.state.animeIndex > 0:
-			keys = append(keys, ui.KeyMap.Prev, ui.KeyMap.Next)
-
-		default:
-			keys = append(keys, ui.KeyMap.Next)
-		}
-	}
-	keys = append(keys, ui.KeyMap.HelpMore)
-	return keys
-}
-
-func (m WatchList_Model) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Prev, ui.KeyMap.Next, ui.KeyMap.Select},
-		{m.keys.reload, ui.KeyMap.MainMenu, ui.KeyMap.HelpLess},
-	}
 }
 
 func (m WatchList_Model) reloadLibrary() tea.Msg {
