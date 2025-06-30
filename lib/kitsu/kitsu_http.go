@@ -99,6 +99,14 @@ func validateResponse(resp utils.HttpResponse) error {
 			}
 		}
 
+		var errDataV2 APIErrorDataV2
+		err = json.Unmarshal(resp.Body, &errDataV2)
+		if err == nil {
+			if len(errDataV2.Errors) > 0 {
+				return fmt.Errorf("%s", errDataV2)
+			}
+		}
+
 		var authErrData AuthErrorData
 		err = json.Unmarshal(resp.Body, &authErrData)
 		if err == nil {

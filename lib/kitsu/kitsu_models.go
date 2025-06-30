@@ -3,6 +3,7 @@ package kitsu
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -132,6 +133,7 @@ type APIErrorData struct {
 	Errors []struct {
 		Status int    `json:"status"`
 		Title  string `json:"title"`
+		Detail string `json:"detail"`
 	} `json:"errors"`
 }
 
@@ -142,7 +144,39 @@ func (ed APIErrorData) String() string {
 		if err.Status >= 500 {
 			errType = "ServerError"
 		}
-		sb.WriteString(fmt.Sprintf("%s: [HTTP %d] %s\n", errType, err.Status, err.Title))
+		detail := err.Detail
+		if detail == "" {
+			detail = err.Title
+		}
+		sb.WriteString(fmt.Sprintf("%s: [HTTP %d] %s\n", errType, err.Status, detail))
+	}
+	if sb.Len() > 0 {
+		return sb.String()
+	}
+	return "no error data"
+}
+
+type APIErrorDataV2 struct {
+	Errors []struct {
+		Status string `json:"status"`
+		Title  string `json:"title"`
+		Detail string `json:"detail"`
+	} `json:"errors"`
+}
+
+func (ed APIErrorDataV2) String() string {
+	var sb strings.Builder
+	for _, err := range ed.Errors {
+		errType := "ClientError"
+		status, _ := strconv.Atoi(err.Status)
+		if status >= 500 {
+			errType = "ServerError"
+		}
+		detail := err.Detail
+		if detail == "" {
+			detail = err.Title
+		}
+		sb.WriteString(fmt.Sprintf("%s: [HTTP %d] %s\n", errType, status, detail))
 	}
 	if sb.Len() > 0 {
 		return sb.String()
