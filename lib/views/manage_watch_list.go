@@ -117,7 +117,7 @@ func (m WatchList_Model) View() (string, *tea.Cursor) {
 
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplayTitle("Manage Watch List"),
+		ui.DisplayTitle("Watch List"),
 		"",
 		m.ui.animeDisplay.View(m.state.anime[m.state.animeIndex]),
 	)
@@ -127,7 +127,7 @@ func (m WatchList_Model) View() (string, *tea.Cursor) {
 func (m WatchList_Model) ViewReloading() string {
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplaySubTitle("Manage Watch List", "Reloading"),
+		ui.DisplaySubTitle("Watch List", "Reloading"),
 		"",
 		ui.DisplayText(
 			[]string{
