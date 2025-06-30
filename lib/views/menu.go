@@ -56,7 +56,20 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 
 	if m.selectedModel != nil {
 		m.selectedModel, cmd = m.selectedModel.Update(msg)
-		if _, ok := msg.(ExitToMenuMsg); ok {
+		switch msg := msg.(type) {
+		case tea.KeyPressMsg:
+			switch {
+			case key.Matches(msg, ui.KeyMap.HelpMore):
+				if m.selectedModel == nil || len(m.selectedModel.FullHelp()) == 0 {
+					break
+				}
+				m.help.ShowAll = !m.help.ShowAll
+				return m, nil
+			}
+
+		case ExitToMenuMsg:
+			// Short help should always be default
+			m.help.ShowAll = false
 			m.selectedModel = nil
 		}
 		return m, cmd
@@ -98,13 +111,6 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 				m.selectedModel, cmd = m.selectedModel.Update(m.windowSize)
 				cmds = append(cmds, cmd, m.selectedModel.Init())
 			}
-
-		case key.Matches(msg, ui.KeyMap.HelpMore):
-			if m.selectedModel == nil || len(m.selectedModel.FullHelp()) == 0 {
-				break
-			}
-			m.help.ShowAll = !m.help.ShowAll
-			return m, nil
 
 		case key.Matches(msg, ui.KeyMap.Up):
 			itemLen := len(m.activeItems)
