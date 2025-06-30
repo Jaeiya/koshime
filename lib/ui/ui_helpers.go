@@ -117,7 +117,7 @@ func DisplayPropValue(props []string, values []string) string {
 		}
 	}
 
-	propStyle := Style.Width(propWidth + 1).
+	propStyle := Style.Width(propWidth).
 		Align(lipgloss.Right).
 		Foreground(lipgloss.BrightWhite)
 	valStyle := Style.Width(60)
@@ -126,13 +126,13 @@ func DisplayPropValue(props []string, values []string) string {
 		sb.WriteString(
 			lipgloss.JoinHorizontal(
 				lipgloss.Left,
-				propStyle.Render(utils.ColorText(prop)+":")+" ",
+				propStyle.Render(utils.ColorText(prop))+": ",
 				valStyle.Render(utils.ColorText(values[i])),
 			) + "\n",
 		)
 	}
 
-	return Style.MarginLeft(5).Render(strings.TrimRight(sb.String(), "\n"))
+	return Style.MarginLeft(4).Render(strings.TrimRight(sb.String(), "\n"))
 }
 
 func DisplayError(err error) string {
