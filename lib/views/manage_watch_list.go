@@ -21,6 +21,7 @@ type WatchList_Model struct {
 	}
 	keys struct {
 		reload key.Binding
+		delete key.Binding
 	}
 	db    *database.Database
 	state WatchList_State
@@ -38,6 +39,7 @@ func newWatchListModel(db *database.Database) WatchList_Model {
 	m.ui.loader = ui.NewLoader()
 	m.ui.animeDisplay = NewAnimeDisplayModel()
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
+	m.keys.delete = key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "delete"))
 	m.state.anime = ui.ToAnimeInfo(db.Anime())
 	return m
 }
@@ -154,21 +156,24 @@ func (m WatchList_Model) ShortHelp() []key.Binding {
 	if m.state.isReloading {
 		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
 	}
+
+	keys := []key.Binding{m.keys.reload, m.keys.delete}
+
 	if len(m.state.anime) > 0 {
-		if m.state.animeIndex == len(m.state.anime)-1 {
-			return []key.Binding{m.keys.reload, ui.KeyMap.Last, ui.KeyMap.MainMenu}
-		}
-		if m.state.animeIndex > 0 {
-			return []key.Binding{
-				m.keys.reload,
-				ui.KeyMap.Last,
-				ui.KeyMap.Next,
-				ui.KeyMap.MainMenu,
-			}
+		switch {
+		case m.state.animeIndex == len(m.state.anime)-1:
+			keys = append(keys, ui.KeyMap.Prev)
+
+		case m.state.animeIndex > 0:
+			keys = append(keys, ui.KeyMap.Prev, ui.KeyMap.Next)
+
+		default:
+			keys = append(keys, ui.KeyMap.Next)
 		}
 	}
 
-	return []key.Binding{m.keys.reload, ui.KeyMap.Next, ui.KeyMap.MainMenu}
+	keys = append(keys, ui.KeyMap.MainMenu)
+	return keys
 }
 
 func (m WatchList_Model) FullHelp() [][]key.Binding {
