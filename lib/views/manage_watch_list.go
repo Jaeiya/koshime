@@ -119,6 +119,10 @@ func (m WatchList_Model) View() (string, *tea.Cursor) {
 		lipgloss.Left,
 		ui.DisplayTitle("Watch List"),
 		"",
+		ui.DisplayText([]string{
+			fmt.Sprintf(`There are ;g;%d ;x;anime in your watch list.`, len(m.state.anime)),
+		}),
+		"",
 		m.ui.animeDisplay.View(m.state.anime[m.state.animeIndex]),
 	)
 	return view, nil
@@ -150,7 +154,21 @@ func (m WatchList_Model) ShortHelp() []key.Binding {
 	if m.state.isReloading {
 		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
 	}
-	return []key.Binding{m.keys.reload, ui.KeyMap.Left, ui.KeyMap.Right, ui.KeyMap.MainMenu}
+	if len(m.state.anime) > 0 {
+		if m.state.animeIndex == len(m.state.anime)-1 {
+			return []key.Binding{m.keys.reload, ui.KeyMap.Last, ui.KeyMap.MainMenu}
+		}
+		if m.state.animeIndex > 0 {
+			return []key.Binding{
+				m.keys.reload,
+				ui.KeyMap.Last,
+				ui.KeyMap.Next,
+				ui.KeyMap.MainMenu,
+			}
+		}
+	}
+
+	return []key.Binding{m.keys.reload, ui.KeyMap.Next, ui.KeyMap.MainMenu}
 }
 
 func (m WatchList_Model) FullHelp() [][]key.Binding {
