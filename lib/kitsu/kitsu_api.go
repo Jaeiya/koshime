@@ -253,19 +253,14 @@ func UpdateAnimeProgress(libID, token string, progress int) (ProgressRespData, e
 	}
 
 	respData := ProgressRespData{}
-	qurl, err := newQURL(LibraryURL)
+	qurl, err := getProgressQURL(libID)
 	if err != nil {
-		return respData, nil
+		return respData, err
 	}
-
-	url := qurl.IncludeCategory([]DataCategory{AnimeCategory}).
-		QueryAnimeFields([]AnimeField{EpisodeCountField}).
-		JoinPath(libID).
-		Build()
 
 	opts := APIReqOptions{
 		method:      apiPatch,
-		url:         APIUrl(url),
+		url:         qurl,
 		contentType: vndAPIContent,
 		payload:     payload,
 		token:       token,

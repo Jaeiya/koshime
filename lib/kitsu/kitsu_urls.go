@@ -188,6 +188,19 @@ func getProfileQURL(userName string) (APIUrl, error) {
 	return APIUrl(u.Build()), nil
 }
 
+func getProgressQURL(libID string) (APIUrl, error) {
+	qurl, err := newQURL(LibraryURL)
+	if err != nil {
+		return "", err
+	}
+
+	url := qurl.IncludeCategory([]DataCategory{AnimeCategory}).
+		QueryAnimeFields([]AnimeField{EpisodeCountField}).
+		JoinPath(libID)
+
+	return APIUrl(url.Build()), nil
+}
+
 type KitsuURL struct {
 	url   *url.URL
 	query url.Values
