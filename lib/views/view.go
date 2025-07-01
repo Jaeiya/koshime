@@ -172,20 +172,15 @@ func (m *Model) CreateMenuItems() {
 			Desc:      "Add an airing or completed anime to your watch list.",
 		},
 		{
-			Name:      "Delete",
-			ModelFunc: func() ViewModel { return newDelAnimeModel(m.db) },
-			Desc:      "Delete an anime from your watch list.",
+			Name:      "Watch List",
+			ModelFunc: func() ViewModel { return newWatchListModel(m.db) },
+			Desc:      "View & manage your watch list",
 		},
 		{Name: "Maintenance", SubViews: []MenuView{
 			{
 				Name:      "Token",
 				ModelFunc: func() ViewModel { return newTokenModel(m.db) },
 				Desc:      "Refresh, reset, or view your Kitsu access token.",
-			},
-			{
-				Name:      "Watch List",
-				ModelFunc: func() ViewModel { return newWatchListModel(m.db) },
-				Desc:      "View or Reload your entire watch list.",
 			},
 			{
 				Name:      "Clean",
