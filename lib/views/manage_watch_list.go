@@ -304,7 +304,7 @@ the local database.`, m.state.anime[m.state.animeIndex].EngTitle),
 
 func (m WatchList_Model) reloadLibrary() tea.Msg {
 	profile := m.db.Profile()
-	watchList, err := kitsu.GetLibraryAnime(profile.ID, kitsu.LibAnimeWatching)
+	watchList, err := kitsu.GetUserAnime(profile.ID, kitsu.LibAnimeWatching)
 	if err != nil {
 		return err
 	}
@@ -320,7 +320,7 @@ func (m WatchList_Model) reloadLibrary() tea.Msg {
 func (m WatchList_Model) deleteEntry() tea.Msg {
 	p := m.db.Profile()
 	libID := m.state.anime[m.state.animeIndex].LibID
-	_, err := kitsu.DeleteLibAnime(libID, p.AccessToken)
+	_, err := kitsu.DeleteAnime(libID, p.AccessToken)
 	if err != nil {
 		return err
 	}

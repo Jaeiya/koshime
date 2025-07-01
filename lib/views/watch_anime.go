@@ -507,7 +507,7 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 	// counts.
 	nextProgress := lastProgress + 1
 
-	progResp, err := kitsu.UpdateProgress(
+	progResp, err := kitsu.UpdateAnimeProgress(
 		libEntry.LibID,
 		m.db.Profile().AccessToken,
 		nextProgress,

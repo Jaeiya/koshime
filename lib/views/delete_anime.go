@@ -194,7 +194,7 @@ func (m *DelAnime_Model) reset() {
 
 func (m DelAnime_Model) deleteAnime() tea.Msg {
 	p := m.db.Profile()
-	_, err := kitsu.DeleteLibAnime(m.state.selectedAnime.LibID, p.AccessToken)
+	_, err := kitsu.DeleteAnime(m.state.selectedAnime.LibID, p.AccessToken)
 	if err != nil {
 		return DelAnimeErrorMsg(err)
 	}

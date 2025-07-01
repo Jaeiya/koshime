@@ -589,7 +589,7 @@ func (m SetupUserModel) getProfile(username string) tea.Cmd {
 
 func (m SetupUserModel) getAnimeLibrary(userID string) func() tea.Msg {
 	return func() tea.Msg {
-		data, err := kitsu.GetLibraryAnime(userID, kitsu.LibAnimeWatching)
+		data, err := kitsu.GetUserAnime(userID, kitsu.LibAnimeWatching)
 		if err != nil {
 			return FetchErrorMsg(err)
 		}

@@ -159,7 +159,7 @@ func getAnimeLibInfoQURL(libIDs []string) (APIUrl, error) {
 	return APIUrl(u.Build()), nil
 }
 
-func getUserLibAnimeQURL(userID string, status LibAnimeStatus) (APIUrl, error) {
+func getUserAnimeQURL(userID string, status LibAnimeStatus) (APIUrl, error) {
 	u, err := newQURL(UserURL)
 	if err != nil {
 		return "", err
