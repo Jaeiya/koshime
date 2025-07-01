@@ -147,7 +147,7 @@ func (m WatchList_Model) View() (string, *tea.Cursor) {
 }
 
 func (m WatchList_Model) ShortHelp() []key.Binding {
-	if m.state.view == WatchList_Reload {
+	if m.state.view > WatchList_Menu {
 		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
 	}
 
