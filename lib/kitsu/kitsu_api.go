@@ -8,7 +8,7 @@ import (
 )
 
 func GetProfile(userName string) (Profile, error) {
-	qurl, err := getProfileQURL(userName)
+	qurl, err := profileURL(userName)
 	if err != nil {
 		return Profile{}, err
 	}
@@ -52,7 +52,7 @@ func GetProfileLink(userName string) string {
 }
 
 func GetUserAnime(userID string, status LibAnimeStatus) ([]LibraryEntry, error) {
-	qurl, err := getUserAnimeQURL(userID, status)
+	qurl, err := userAnimeURL(userID, status)
 	if err != nil {
 		return nil, err
 	}
@@ -147,7 +147,7 @@ func FindAnime(q string, status []AnimeStatus, maxItems int) ([]AnimeData, error
 		normalizedStatus = append(normalizedStatus, s...)
 	}
 
-	qurl, err := getAnimeInfoQURL(q, normalizedStatus, maxItems)
+	qurl, err := animeInfoURL(q, normalizedStatus, maxItems)
 	if err != nil {
 		return []AnimeData{}, nil
 	}
@@ -216,7 +216,7 @@ func SetAnimeStatus(libID, token string, status LibAnimeStatus) (LibAnimeStatus,
 
 	opts := APIReqOptions{
 		method:      apiPatch,
-		url:         getLibEntryURL(libID),
+		url:         libraryEntryURL(libID),
 		contentType: vndAPIContent,
 		payload:     payload,
 		token:       token,
@@ -234,7 +234,7 @@ func SetAnimeStatus(libID, token string, status LibAnimeStatus) (LibAnimeStatus,
 func DeleteAnime(libID, token string) (int, error) {
 	opts := APIReqOptions{
 		method:      apiDelete,
-		url:         getLibEntryURL(libID),
+		url:         libraryEntryURL(libID),
 		contentType: vndAPIContent,
 		token:       token,
 	}
@@ -253,7 +253,7 @@ func UpdateAnimeProgress(libID, token string, progress int) (ProgressRespData, e
 	}
 
 	respData := ProgressRespData{}
-	qurl, err := getProgressQURL(libID)
+	qurl, err := progressURL(libID)
 	if err != nil {
 		return respData, err
 	}
@@ -271,4 +271,7 @@ func UpdateAnimeProgress(libID, token string, progress int) (ProgressRespData, e
 	}
 
 	return respData, nil
+}
+
+func DropAnime(libID, token string) {
 }

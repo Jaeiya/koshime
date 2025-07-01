@@ -99,12 +99,12 @@ const (
 	LibAnimeOnHold    = LibAnimeStatus("on_hold")
 )
 
-func getLibEntryURL(libID string) APIUrl {
+func libraryEntryURL(libID string) APIUrl {
 	u, _ := url.JoinPath(string(apiLibraryURL), libID)
 	return APIUrl(u)
 }
 
-func getAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (APIUrl, error) {
+func animeInfoURL(query string, status AnimeStatus, maxItems int) (APIUrl, error) {
 	u, err := newQURL(AnimeURL)
 	if err != nil {
 		return "", nil
@@ -137,29 +137,29 @@ func getAnimeInfoQURL(query string, status AnimeStatus, maxItems int) (APIUrl, e
 	return APIUrl(u.Build()), nil
 }
 
-func getAnimeLibInfoQURL(libIDs []string) (APIUrl, error) {
-	if len(libIDs) == 0 {
-		return "", fmt.Errorf("the provided slice of IDs is empty")
-	}
+// func getAnimeLibInfoQURL(libIDs []string) (APIUrl, error) {
+// 	if len(libIDs) == 0 {
+// 		return "", fmt.Errorf("the provided slice of IDs is empty")
+// 	}
 
-	u, err := newQURL(LibraryURL)
-	if err != nil {
-		return "", nil
-	}
+// 	u, err := newQURL(LibraryURL)
+// 	if err != nil {
+// 		return "", nil
+// 	}
 
-	u = u.QueryIDs(libIDs).
-		IncludeCategory([]DataCategory{AnimeCategory}).
-		QueryAnimeFields([]AnimeField{
-			EpisodeCountField,
-			AverageRatingField,
-			SynopsisField,
-		}).
-		PageLimit(len(libIDs))
+// 	u = u.QueryIDs(libIDs).
+// 		IncludeCategory([]DataCategory{AnimeCategory}).
+// 		QueryAnimeFields([]AnimeField{
+// 			EpisodeCountField,
+// 			AverageRatingField,
+// 			SynopsisField,
+// 		}).
+// 		PageLimit(len(libIDs))
 
-	return APIUrl(u.Build()), nil
-}
+// 	return APIUrl(u.Build()), nil
+// }
 
-func getUserAnimeQURL(userID string, status LibAnimeStatus) (APIUrl, error) {
+func userAnimeURL(userID string, status LibAnimeStatus) (APIUrl, error) {
 	u, err := newQURL(UserURL)
 	if err != nil {
 		return "", err
@@ -175,7 +175,7 @@ func getUserAnimeQURL(userID string, status LibAnimeStatus) (APIUrl, error) {
 	return APIUrl(u.Build()), nil
 }
 
-func getProfileQURL(userName string) (APIUrl, error) {
+func profileURL(userName string) (APIUrl, error) {
 	u, err := newQURL(UserURL)
 	if err != nil {
 		return "", err
@@ -188,7 +188,7 @@ func getProfileQURL(userName string) (APIUrl, error) {
 	return APIUrl(u.Build()), nil
 }
 
-func getProgressQURL(libID string) (APIUrl, error) {
+func progressURL(libID string) (APIUrl, error) {
 	qurl, err := newQURL(LibraryURL)
 	if err != nil {
 		return "", err
