@@ -246,6 +246,14 @@ func DeleteAnime(libID, token string) (int, error) {
 	return status, nil
 }
 
+func DropAnime(libID, token string) error {
+	_, err := SetAnimeStatus(libID, token, LibAnimeDropped)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func UpdateAnimeProgress(libID, token string, progress int) (ProgressRespData, error) {
 	payload, err := newAnimeProgressPayload(libID, progress)
 	if err != nil {
@@ -271,7 +279,4 @@ func UpdateAnimeProgress(libID, token string, progress int) (ProgressRespData, e
 	}
 
 	return respData, nil
-}
-
-func DropAnime(libID, token string) {
 }
