@@ -117,7 +117,7 @@ func animeInfoURL(query string, status AnimeStatus, maxItems int) (APIUrl, error
 
 	u = u.QueryText(query).
 		PageLimit(maxItems).
-		QueryAnimeType([]AnimeType{TV, ONA, OVA}).
+		QueryAnimeType([]AnimeType{TV, ONA, OVA, Movie}).
 		QueryAnimeStatus(status).
 		QueryAnimeFields(
 			[]AnimeField{
