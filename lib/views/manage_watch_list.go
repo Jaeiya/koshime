@@ -18,6 +18,8 @@ const (
 	WatchList_Menu = WatchList_View(iota)
 	WatchList_Reload
 	WatchList_Delete
+	WatchList_Drop
+	WatchList_Complete
 )
 
 type WatchListReloadedMsg = []kitsu.LibraryEntry
@@ -28,13 +30,13 @@ type WatchList_Model struct {
 		loader       ui.LoaderModel
 		consent      ui.ConsentModel
 		animeDisplay *AnimeDisplayModel
+		menu         ui.MenuModel
 	}
 	keys struct {
 		reload key.Binding
 	}
-	db        *database.Database
-	menuItems []string
-	state     WatchList_State
+	db    *database.Database
+	state WatchList_State
 }
 
 type WatchList_State struct {
@@ -42,16 +44,17 @@ type WatchList_State struct {
 	view       WatchList_View
 	anime      []ui.AnimeInfo
 	animeIndex int
-	menuIndex  int
 }
 
 func newWatchListModel(db *database.Database) WatchList_Model {
 	m := WatchList_Model{db: db}
-	m.menuItems = []string{
-		"Delete",
-	}
 	m.ui.loader = ui.NewLoader()
 	m.ui.animeDisplay = NewAnimeDisplayModel()
+	m.ui.menu = ui.NewMenuModel([]string{
+		"Delete",
+		"Drop",
+		"Complete",
+	})
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
 	m.state.anime = ui.ToAnimeInfo(db.Anime())
 	return m
@@ -104,6 +107,15 @@ func (m WatchList_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	case WatchList_Delete:
 		m, cmd = m.UpdateDelete(msg)
 		cmds = append(cmds, cmd)
+
+	case WatchList_Drop:
+		m, cmd = m.UpdateDrop(msg)
+		cmds = append(cmds, cmd)
+
+	case WatchList_Complete:
+		m, cmd = m.UpdateCompleted(msg)
+		cmds = append(cmds, cmd)
+
 	}
 
 	return m, tea.Batch(cmds...)
@@ -119,30 +131,19 @@ func (m WatchList_Model) View() (string, *tea.Cursor) {
 	}
 
 	switch m.state.view {
+	case WatchList_Menu:
+		return m.ViewMenu(), nil
 	case WatchList_Reload:
 		return m.ViewReload(), nil
 	case WatchList_Delete:
 		return m.ViewDeleting(), nil
+	case WatchList_Drop:
+		return m.ViewDrop(), nil
+	case WatchList_Complete:
+		return m.ViewCompleted(), nil
+	default:
+		return "unknown view", nil
 	}
-
-	view := lipgloss.JoinVertical(
-		lipgloss.Left,
-		ui.DisplayTitle("Watch List"),
-		"",
-		ui.DisplayText([]string{
-			fmt.Sprintf(`There are ;g;%d ;x;anime in your watch list.`, len(m.state.anime)),
-		}),
-		"",
-		m.ui.animeDisplay.View(m.state.anime[m.state.animeIndex]),
-		ui.DisplayTitle("Manage"),
-		"",
-		ui.DisplayText([]string{
-			`Select an action to apply to the above entry.`,
-		}),
-		"",
-		ui.DisplayMenuItems(m.menuItems, 0),
-	)
-	return view, nil
 }
 
 func (m WatchList_Model) ShortHelp() []key.Binding {
@@ -176,6 +177,8 @@ func (m WatchList_Model) FullHelp() [][]key.Binding {
 }
 
 func (m WatchList_Model) UpdateMenu(msg tea.Msg) (WatchList_Model, tea.Cmd) {
+	var cmd tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
@@ -191,25 +194,42 @@ func (m WatchList_Model) UpdateMenu(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 			}
 			m.state.animeIndex++
 
-		case key.Matches(msg, ui.KeyMap.Up):
-			if m.state.menuIndex == 0 {
-				break
-			}
-			m.state.menuIndex--
+		}
 
-		case key.Matches(msg, ui.KeyMap.Down):
-			if m.state.menuIndex == len(m.menuItems)-1 {
-				break
-			}
-			m.state.menuIndex++
-
-		case key.Matches(msg, ui.KeyMap.Select):
-			if m.state.menuIndex == 0 {
-				m.state.view = WatchList_Delete
-			}
+	case ui.MenuIndexMsg:
+		switch msg {
+		case 0:
+			m.state.view = WatchList_Delete
+		case 1:
+			m.state.view = WatchList_Drop
+		case 2:
+			m.state.view = WatchList_Complete
 		}
 	}
-	return m, nil
+
+	m.ui.menu, cmd = m.ui.menu.Update(msg)
+	return m, cmd
+}
+
+func (m WatchList_Model) ViewMenu() string {
+	view := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplayTitle("Watch List"),
+		"",
+		ui.DisplayText([]string{
+			fmt.Sprintf(`There are ;g;%d ;x;anime in your watch list.`, len(m.state.anime)),
+		}),
+		"",
+		m.ui.animeDisplay.View(m.state.anime[m.state.animeIndex]),
+		ui.DisplayTitle("Manage"),
+		"",
+		ui.DisplayText([]string{
+			`Select an action to apply to the above entry.`,
+		}),
+		"",
+		m.ui.menu.View(),
+	)
+	return view
 }
 
 func (m WatchList_Model) UpdateReload(msg tea.Msg) (WatchList_Model, tea.Cmd) {
@@ -302,6 +322,93 @@ the local database.`, m.state.anime[m.state.animeIndex].EngTitle),
 	return view
 }
 
+func (m WatchList_Model) UpdateDrop(msg tea.Msg) (WatchList_Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.Select):
+			if m.ui.consent.Select() == ui.No {
+				m.state.view = WatchList_Menu
+				return m, nil
+			}
+			m.ui.loader, cmd = m.ui.loader.Start("Dropping Anime")
+			return m, tea.Batch(cmd, m.dropAnime)
+		}
+
+	case WatchListReloadedMsg:
+		m.state = WatchList_State{}
+		m.state.anime = ui.ToAnimeInfo(msg)
+		m.ui.loader.Stop()
+	}
+
+	m.ui.consent = m.ui.consent.Update(msg)
+	return m, nil
+}
+
+func (m WatchList_Model) ViewDrop() string {
+	view := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("Watch List", "Drop"),
+		"",
+		ui.DisplayText([]string{
+			fmt.Sprintf(
+				`;dc;%s ;x;is about to be ;m;dropped ;x;from your watch list.`,
+				m.state.anime[m.state.animeIndex].EngTitle,
+			),
+			`This is not the same as deletion. Dropping an anime sets its status to
+;dm;dropped;x;, which stores it under the dropped tab in ;db;Kitsu;x;.`,
+			`Dropping an anime is often times better than deletion because it keeps
+track of the episodes you ;w;did;x; watch. This makes your watch time stats more
+accurate.`,
+		}, 1),
+		ui.TextStyle.Render(m.ui.consent.View(utils.ColorText(";b;Are you sure?"))),
+	)
+	return view
+}
+
+func (m WatchList_Model) UpdateCompleted(msg tea.Msg) (WatchList_Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.Select):
+			if m.ui.consent.Select() == ui.No {
+				m.state.view = WatchList_Menu
+				return m, nil
+			}
+			m.ui.loader, cmd = m.ui.loader.Start("Completing Anime")
+			return m, tea.Batch(cmd, m.completeAnime)
+		}
+
+	case WatchListReloadedMsg:
+		m.state = WatchList_State{}
+		m.state.anime = ui.ToAnimeInfo(msg)
+		m.ui.loader.Stop()
+	}
+
+	m.ui.consent = m.ui.consent.Update(msg)
+	return m, nil
+}
+
+func (m WatchList_Model) ViewCompleted() string {
+	animeTitle := m.state.anime[m.state.animeIndex].EngTitle
+	view := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("Watch List", "Complete"),
+		"",
+		ui.DisplayText([]string{
+			fmt.Sprintf(`;dc;%s ;x;is about to be ;b;completed;x;.`, animeTitle),
+			`This should only be necessary if ;dg;Kitsu;x; messes up episode counts.
+Updating the progress of an anime will auto-complete it on the last episode of a season.`,
+		}, 1),
+		ui.TextStyle.Render(m.ui.consent.View(utils.ColorText(";b;Are you sure?"))),
+	)
+	return view
+}
+
 func (m WatchList_Model) reloadLibrary() tea.Msg {
 	profile := m.db.Profile()
 	watchList, err := kitsu.GetUserAnime(profile.ID, kitsu.LibAnimeWatching)
@@ -326,6 +433,35 @@ func (m WatchList_Model) deleteEntry() tea.Msg {
 	}
 	err = m.db.DeleteAnimeById(libID)
 	if err != nil {
+		return fmt.Errorf("failed to delete anime from database: %w", err)
+	}
+
+	return m.db.Anime()
+}
+
+func (m WatchList_Model) dropAnime() tea.Msg {
+	p := m.db.Profile()
+	libID := m.state.anime[m.state.animeIndex].LibID
+	if err := kitsu.DropAnime(libID, p.AccessToken); err != nil {
+		return err
+	}
+
+	if err := m.db.DeleteAnimeById(libID); err != nil {
+		return fmt.Errorf("failed to delete anime from database: %w", err)
+	}
+
+	return m.db.Anime()
+}
+
+func (m WatchList_Model) completeAnime() tea.Msg {
+	p := m.db.Profile()
+	libID := m.state.anime[m.state.animeIndex].LibID
+	_, err := kitsu.SetAnimeStatus(libID, p.AccessToken, kitsu.LibAnimeCompleted)
+	if err != nil {
+		return err
+	}
+
+	if err := m.db.DeleteAnimeById(libID); err != nil {
 		return fmt.Errorf("failed to delete anime from database: %w", err)
 	}
 
