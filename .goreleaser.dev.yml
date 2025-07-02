@@ -1,0 +1,114 @@
+version: 2
+
+builds:
+  - id: "windows"
+    main: .
+    binary: >-
+      koshime
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    gcflags:
+      - "all=-B -l=120"
+    ldflags:
+      - -s -w
+      - -X github.com/Jaeiya/koshime/lib.Version={{ .Version }}
+      - -X github.com/Jaeiya/koshime/lib.CommitHash={{ .ShortCommit }}
+      - -X github.com/Jaeiya/koshime/lib.BuildDate={{ .Date }}
+    goos:
+      - windows
+    goarch:
+      - amd64
+    goamd64:
+      - v3
+    no_unique_dist_dir: true
+
+  - id: "unix"
+    main: .
+    skip: true
+    binary: >-
+      koshime_{{ .ShortCommit }}_{{ .Os }}
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    gcflags:
+      - "all=-B -l=120"
+    ldflags:
+      - -s -w
+      - -X github.com/jaeiya/koshime/lib.Version={{ .Version }}
+      - -X github.com/jaeiya/koshime/lib.CommitHash={{ .ShortCommit }}
+      - -X github.com/jaeiya/koshime/lib.BuildDate={{ .Date }}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+    goamd64:
+      - v3
+    no_unique_dist_dir: true
+
+  - id: "windows-upx"
+    main: .
+    skip: true # Set false if you want UPX for windows binaries
+    binary: >-
+      koshime_{{ .ShortCommit }}_upx
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    gcflags:
+      - "all=-B -l=120"
+    ldflags:
+      - -s -w
+      - -X github.com/jaeiya/koshime/lib.Version={{ .Version }}
+      - -X github.com/jaeiya/koshime/lib.CommitHash={{ .ShortCommit }}
+      - -X github.com/jaeiya/koshime/lib.BuildDate={{ .Date }}
+    goos:
+      - windows
+    goarch:
+      - amd64
+    goamd64:
+      - v3
+    no_unique_dist_dir: true
+    hooks:
+      post: # Hook to run after the build
+        - upx --best --lzma -qq --force-overwrite {{ .Path }}
+
+  - id: "unix-upx"
+    main: .
+    skip: true # Set false if you want UPX for unix (linux, darwin) binaries
+    binary: >-
+      koshime_{{ .ShortCommit }}_{{ .Os }}_upx
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    gcflags:
+      - "all=-B -l=120"
+    ldflags:
+      - -s -w
+      - -X github.com/jaeiya/koshime/lib.Version={{ .Version }}
+      - -X github.com/jaeiya/koshime/lib.CommitHash={{ .ShortCommit }}
+      - -X github.com/jaeiya/koshime/lib.BuildDate={{ .Date }}
+    goos:
+      - linux
+      - darwin
+    goarch:
+      - amd64
+    goamd64:
+      - v3
+    no_unique_dist_dir: true
+    hooks:
+      post: # Hook to run after the build
+        - upx --best --lzma -qq --force-overwrite --force-macos {{ .Path }}
+
+snapshot:
+  version_template: "build-{{ .ShortCommit }}"
+
+checksum:
+  disable: true
+
+archives:
+  - formats: ["binary"]
