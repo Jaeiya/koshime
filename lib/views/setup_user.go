@@ -48,9 +48,10 @@ const (
 
 type SetupUserModel struct {
 	ui struct {
-		consent ui.ConsentModel
-		loader  ui.LoaderModel
-		input   textinput.Model
+		consent  ui.ConsentModel
+		loader   ui.LoaderModel
+		username textinput.Model
+		password textinput.Model
 	}
 	helpMap SetupUserHelpMap
 	state   struct {
@@ -75,7 +76,13 @@ type SetupUserModel struct {
 func newSetupUserModel() SetupUserModel {
 	m := SetupUserModel{}
 	m.ui.loader = ui.NewLoader()
-	m.ui.input = ui.NewTextInput()
+
+	m.ui.username = ui.NewTextInput()
+	m.ui.username.Placeholder = "<profile-url-name>"
+
+	m.ui.password = ui.NewTextInput()
+	m.ui.password.EchoMode = textinput.EchoPassword
+	m.ui.password.Placeholder = "<password>"
 
 	m.helpMap = SetupUserHelpMap{
 		SetupConsentView: {
@@ -240,7 +247,6 @@ func (m SetupUserModel) UpdateConsent(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 				return m, m.abort
 			}
 			m.state.view = SetupUsernameView
-			m.ui.input.Placeholder = "<username>"
 			return m, tea.Batch(textinput.Blink, m.createWatchDir)
 		}
 	}
@@ -274,7 +280,7 @@ func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 				if ui.No == m.ui.consent.Select() {
 					return m, m.abort
 				}
-				m.ui.input.Reset()
+				m.ui.username.Reset()
 				state.notFound = false
 				return m, nil
 			}
@@ -283,12 +289,9 @@ func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 			if state.found {
 				if ui.No == m.ui.consent.Select() {
 					state.found = false
-					m.ui.input.Reset()
+					m.ui.username.Reset()
 					return m, nil
 				}
-				m.ui.input.Reset()
-				m.ui.input.EchoMode = textinput.EchoPassword
-				m.ui.input.Placeholder = "<password>"
 				m.state.view = SetupPasswordView
 				// User will likely want to retry bad password
 				m.ui.consent.SetConsentPos(ui.Yes)
@@ -296,7 +299,7 @@ func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 			}
 
 			m.ui.loader, cmd = m.ui.loader.Start("User Setup")
-			return m, tea.Batch(cmd, m.getProfile(m.ui.input.Value()))
+			return m, tea.Batch(cmd, m.getProfile(m.ui.username.Value()))
 		}
 
 	case KitsuProfileMsg:
@@ -316,7 +319,7 @@ func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 
 	}
 
-	m.ui.input, cmd = m.ui.input.Update(msg)
+	m.ui.username, cmd = m.ui.username.Update(msg)
 	return m, cmd
 }
 
@@ -327,7 +330,7 @@ func (m SetupUserModel) ViewUsername() (string, *tea.Cursor) {
 
 	if m.state.username.notFound {
 		return m.ui.consent.View(
-			ui.DisplayText([]string{`;y;User name not found; ;g;try again?`}, 0, 1),
+			ui.DisplayText([]string{`;y;Profile not found; ;g;try again?`}, 0, 1),
 		), nil
 	}
 
@@ -365,7 +368,7 @@ func (m SetupUserModel) ViewUsername() (string, *tea.Cursor) {
 		), nil
 	}
 
-	c := m.ui.input.Cursor()
+	c := m.ui.username.Cursor()
 	c.Shape = tea.CursorBar
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -373,9 +376,14 @@ func (m SetupUserModel) ViewUsername() (string, *tea.Cursor) {
 		ui.DisplayText([]string{
 			`A ;g;Kitsu;x; account is required. So make sure you've
 created one at ;dc;http://kitsu.app;x;.`,
-			`;b;Enter your username below to continue`,
+			`You'll also need to apply a profile URL to your account. You can do this
+at the following link:`,
+			`;dc;https://kitsu.app/settings/profile`,
+			`You'll see a setting for ;w;Profile URL;x;. Enter a name for your profile URL
+in that box and click ;w;update profile;x; at the bottom of the page.`,
+			`;b;Enter the profile URL name you applied`,
 		}, 1, 1),
-		m.ui.input.View(),
+		m.ui.username.View(),
 	)
 	return view, c
 }
@@ -401,7 +409,7 @@ func (m SetupUserModel) UpdatePassword(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 					return m, m.abort
 				}
 				state.failed = false
-				m.ui.input.Reset()
+				m.ui.password.Reset()
 				return m, nil
 			}
 
@@ -432,7 +440,7 @@ func (m SetupUserModel) UpdatePassword(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 		m.ui.loader.Stop()
 	}
 
-	m.ui.input, cmd = m.ui.input.Update(msg)
+	m.ui.password, cmd = m.ui.password.Update(msg)
 	return m, cmd
 }
 
@@ -482,7 +490,7 @@ transparency purposes only.`,
 		), nil
 	}
 
-	c := m.ui.input.Cursor()
+	c := m.ui.password.Cursor()
 	c.Shape = tea.CursorBar
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
@@ -495,7 +503,7 @@ renewed any time within the ;w;30 days;x;, without a password.`,
 to renew it.`,
 			`;b;Enter your password below to finish logging in.`,
 		}, 1, 1),
-		m.ui.input.View(),
+		m.ui.password.View(),
 	)
 	return view, c
 }
@@ -583,11 +591,13 @@ func (m SetupUserModel) ViewLibAnime() string {
 	return ""
 }
 
-func (m SetupUserModel) getProfile(username string) tea.Cmd {
+func (m SetupUserModel) getProfile(profileSlug string) tea.Cmd {
 	return func() tea.Msg {
-		p, err := kitsu.GetProfile(username)
+		// Convert to proper slug
+		slug := strings.ReplaceAll(strings.TrimSpace(profileSlug), " ", "-")
+		p, err := kitsu.GetProfile(slug)
 		if err != nil {
-			return FetchErrorMsg(err)
+			return FetchErrorMsg{Msg: err.Error()}
 		}
 		return KitsuProfileMsg(p)
 	}
@@ -605,8 +615,8 @@ func (m SetupUserModel) getAnimeLibrary(userID string) func() tea.Msg {
 
 func (m SetupUserModel) getAuthToken() tea.Msg {
 	tokenData, err := kitsu.GetAuthToken(
-		m.state.data.Profile.Username,
-		m.ui.input.Value(),
+		m.state.data.Profile.Slug,
+		m.ui.password.Value(),
 	)
 	if err != nil {
 		return FetchErrorMsg{Msg: err.Error()}
