@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/ui"
@@ -92,8 +93,8 @@ application...and the rest is history.`,
 	}
 
 	version := utils.ColorText(fmt.Sprintf(";c;%s", lib.Version))
-	if lib.Version == "" {
-		version = utils.ColorText(fmt.Sprintf(";m;%s", lib.CommitHash))
+	if lib.Version == "" || strings.Contains(lib.Version, "build-") {
+		version = utils.ColorText(fmt.Sprintf(";r;0x%s", lib.CommitHash))
 	}
 
 	if lib.CommitHash == "" {
