@@ -33,6 +33,7 @@ func GetProfile(userName string) (Profile, error) {
 	profile := Profile{
 		ID:              profileData.ID,
 		Username:        profileData.Attributes.Name,
+		Slug:            profileData.Attributes.Slug,
 		About:           profileData.Attributes.About,
 		Birthday:        profileData.Attributes.Birthday,
 		Location:        profileData.Attributes.Location,

@@ -175,13 +175,13 @@ func userAnimeURL(userID string, status LibAnimeStatus) (APIUrl, error) {
 	return APIUrl(u.Build()), nil
 }
 
-func profileURL(userName string) (APIUrl, error) {
+func profileURL(profileSlug string) (APIUrl, error) {
 	u, err := newQURL(UserURL)
 	if err != nil {
 		return "", err
 	}
 
-	u = u.QueryUserName(userName).
+	u = u.QuerySlug(profileSlug).
 		IncludeCategory([]DataCategory{StatsCategory}).
 		PageLimit(1)
 
@@ -252,6 +252,11 @@ func (k *KitsuURL) QueryUserName(name string) *KitsuURL {
 
 func (k *KitsuURL) QueryUserID(id string) *KitsuURL {
 	k.query.Add("filter[user_id]", id)
+	return k
+}
+
+func (k *KitsuURL) QuerySlug(slug string) *KitsuURL {
+	k.query.Add("filter[slug]", slug)
 	return k
 }
 

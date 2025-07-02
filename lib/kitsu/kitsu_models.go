@@ -29,6 +29,7 @@ type Profile struct {
 	SecondsWatched  int
 	CompletedSeries int
 	Username        string
+	Slug            string
 	About           string
 	Location        string
 	Birthday        string
@@ -59,6 +60,7 @@ type ProfileData struct {
 		// CreatedAt & Name are the only values that can by relied on.
 		Attributes struct {
 			Name     string `json:"name"`
+			Slug     string `json:"slug"`
 			About    string `json:"about"`
 			Location string `json:"location"`
 			Birthday string `json:"birthday"`
