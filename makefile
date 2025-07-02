@@ -14,9 +14,10 @@ else
 	VERSION_STR := $(VERSION)
 endif
 
-OUTPUT=dist/koshime-$(BUILD_TAG)
+OUTPUT=dist/koshime
+ARCHIVE_OUTPUT=dist/koshime-$(BUILD_TAG)
 
-.PHONY: all build archive clean
+.PHONY: all build archive
 
 all: build archive
 	@echo
@@ -33,12 +34,8 @@ build:
 
 archive:
 	@command -v 7z >/dev/null 2>&1 || { echo "⚠️ 7z not found in PATH. Skipping packaging."; exit 0; }
-	@if [ -f "$(OUTPUT).7z" ]; then rm -f "$(OUTPUT).7z"; fi
-	@echo "📦 Creating archive $(OUTPUT).7z ..."
-	@7z a -t7z -mx=7 "$(OUTPUT).7z" "$(OUTPUT).exe" >/dev/null
+	@if [ -f "$(ARCHIVE_OUTPUT).7z" ]; then rm -f "$(ARCHIVE_OUTPUT).7z"; fi
+	@echo "📦 Creating archive $(ARCHIVE_OUTPUT).7z ..."
+	@7z a -t7z -mx=7 "$(ARCHIVE_OUTPUT).7z" "$(OUTPUT).exe" >/dev/null
 	@if [ $$? -ne 0 ]; then echo "❌ 7z packaging failed."; exit 1; fi
-	@echo "✅ Built Archive: $(OUTPUT).7z"
-
-clean:
-	@echo "🧹 Cleaning..."
-	@rm -f dist/koshime-*.exe dist/koshime-*.7z
+	@echo "✅ Built Archive: $(ARCHIVE_OUTPUT).7z"
