@@ -54,6 +54,7 @@ type SetupUserModel struct {
 		password textinput.Model
 	}
 	helpMap SetupUserHelpMap
+	err     error
 	state   struct {
 		data     database.Data
 		view     SetupUserView
@@ -145,7 +146,7 @@ func (m SetupUserModel) Update(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 		return m, abort
 
 	case SetupUserDefaultError:
-		m.state.err = msg
+		m.err = msg
 	}
 
 	if m.ui.loader.IsLoading() {
@@ -175,7 +176,7 @@ func (m SetupUserModel) View() (string, *tea.Cursor) {
 	var view string
 	var c *tea.Cursor
 
-	if m.state.err != nil {
+	if m.err != nil {
 		view := lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("User Setup", "Error"),
@@ -313,7 +314,7 @@ func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 			// Most users will want to try again quickly
 			m.ui.consent.SetConsentPos(ui.Yes)
 		} else {
-			m.state.err = msg
+			m.err = msg
 		}
 		m.ui.loader.Stop()
 
@@ -435,8 +436,12 @@ func (m SetupUserModel) UpdatePassword(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 		return m, nil
 
 	case FetchErrorMsg:
-		state.failed = true
-		m.state.err = msg
+		if strings.Contains(msg.Error(), "provided authorization grant") {
+			state.failed = true
+			m.state.err = msg
+		} else {
+			m.err = msg
+		}
 		m.ui.loader.Stop()
 	}
 
