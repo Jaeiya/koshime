@@ -27,6 +27,14 @@ type (
 	SetupUserAbortMsg    struct{}
 )
 
+type SetupUserDefaultError struct {
+	Err error
+}
+
+func (e SetupUserDefaultError) Error() string {
+	return e.Err.Error()
+}
+
 type SetupUserHelpMap map[SetupUserView]ui.KeyHelpInfo[SetupUserModel]
 
 type SetupUserView int
@@ -45,7 +53,6 @@ type SetupUserModel struct {
 		input   textinput.Model
 	}
 	helpMap SetupUserHelpMap
-	err     error
 	state   struct {
 		data     database.Data
 		view     SetupUserView
@@ -130,8 +137,8 @@ func (m SetupUserModel) Update(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 		m.deleteWatchDir()
 		return m, abort
 
-	case error:
-		m.err = msg
+	case SetupUserDefaultError:
+		m.state.err = msg
 	}
 
 	if m.ui.loader.IsLoading() {
@@ -161,12 +168,11 @@ func (m SetupUserModel) View() (string, *tea.Cursor) {
 	var view string
 	var c *tea.Cursor
 
-	if m.err != nil {
+	if m.state.err != nil {
 		view := lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("User Setup", "Error"),
-			"",
-			ui.DisplayError(m.err),
+			ui.DisplayError(m.state.err),
 		)
 		return view, nil
 	}
@@ -591,7 +597,7 @@ func (m SetupUserModel) getAnimeLibrary(userID string) func() tea.Msg {
 	return func() tea.Msg {
 		data, err := kitsu.GetUserAnime(userID, kitsu.LibAnimeWatching)
 		if err != nil {
-			return FetchErrorMsg(err)
+			return FetchErrorMsg{Msg: err.Error()}
 		}
 		return data
 	}
@@ -603,7 +609,7 @@ func (m SetupUserModel) getAuthToken() tea.Msg {
 		m.ui.input.Value(),
 	)
 	if err != nil {
-		return FetchErrorMsg(err)
+		return FetchErrorMsg{Msg: err.Error()}
 	}
 	return tokenData
 }
@@ -612,7 +618,7 @@ func (m SetupUserModel) createWatchDir() tea.Msg {
 	wd := fileSys.GetWorkingDir()
 	err := os.Mkdir(filepath.Join(wd, "(watched)"), 0o755)
 	if err != nil {
-		return err
+		return SetupUserDefaultError{err}
 	}
 	return nil
 }

@@ -22,9 +22,13 @@ const (
 
 var fileSys = utils.FileSys{}
 
-type (
-	FetchErrorMsg error
-)
+type FetchErrorMsg struct {
+	Msg string
+}
+
+func (e FetchErrorMsg) Error() string {
+	return e.Msg
+}
 
 type ViewModel interface {
 	tea.CursorModel

@@ -304,7 +304,7 @@ func (m AddAnime_Model) addAnime(animeID string) tea.Cmd {
 		p := m.db.Profile()
 		libID, err := kitsu.AddAnime(animeID, p.ID, p.AccessToken, kitsu.LibAnimeWatching)
 		if err != nil {
-			return FetchErrorMsg(err)
+			return FetchErrorMsg{Msg: err.Error()}
 		}
 
 		anime := m.state.selectedAnime
@@ -323,7 +323,9 @@ func (m AddAnime_Model) addAnime(animeID string) tea.Cmd {
 			Slug:      anime.Slug,
 		})
 		if err != nil {
-			return FetchErrorMsg(fmt.Errorf("failed to add anime to database: %w", err))
+			return FetchErrorMsg{
+				Msg: fmt.Errorf("failed to add anime to database: %w", err).Error(),
+			}
 		}
 		return AnimeAddedMsg{}
 	}
