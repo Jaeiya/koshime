@@ -19,7 +19,7 @@ ARCHIVE_OUTPUT=dist/koshime-$(BUILD_TAG)
 
 .PHONY: all build archive
 
-all: build archive
+all: build compress archive
 	@echo
 	@echo "Version: $(VERSION)"
 	@echo " Commit: $(COMMIT)"
@@ -31,6 +31,13 @@ build:
 	@echo "🔨 Building binary..."
 	@go build -ldflags="-s -w -X $(MODULE).Version=$(VERSION_STR) -X $(MODULE).CommitHash=$(COMMIT) -X $(MODULE).BuildDate=$(DATE)" -trimpath -o $(OUTPUT).exe
 	@if [ $$? -ne 0 ]; then echo "❌ Build failed."; exit 1; fi
+
+compress:
+	@where upx >nul 2>&1 || (echo ⚠️ UPX not found in PATH. Skipping compression. & exit /b 0)
+	@echo 🗜️ Compressing binary with UPX...
+	@upx --best --lzma "$(OUTPUT).exe"
+	@if errorlevel 1 (echo ❌ UPX compression failed. & exit /b 1)
+	@echo ✅ Compression completed.
 
 archive:
 	@command -v 7z >/dev/null 2>&1 || { echo "⚠️ 7z not found in PATH. Skipping packaging."; exit 0; }
