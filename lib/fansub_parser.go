@@ -206,7 +206,12 @@ func (fp FansubParser) Parse(fileName string) (FansubFileInfo, error) {
 	info.Title = strings.TrimRight(title.String(), "- ~")
 	info.Encoding = strings.TrimSpace(encoding.String())
 	info.Source = strings.TrimSpace(source.String())
-	info.Filename = fileName + ext
+
+	info.Filename = fileName
+	if _, hasExt := fansubExtMap[ext]; hasExt {
+		info.Filename = fileName + ext
+	}
+
 	return info, nil
 }
 
