@@ -166,9 +166,9 @@ func (m *Model) CreateMenuItems() {
 			Desc:      "Finds downloaded anime and coordinates with your watch list to execute the file.",
 		},
 		{
-			Name:      "Find",
-			ModelFunc: func() ViewModel { return newFindAnimeModel(m.db) },
-			Desc:      "Lookup an anime from Kitsu or your local watch list.",
+			Name:      "Watch List",
+			ModelFunc: func() ViewModel { return newWatchListModel(m.db) },
+			Desc:      "View & manage your watch list",
 		},
 		{
 			Name:      "Add",
@@ -176,9 +176,9 @@ func (m *Model) CreateMenuItems() {
 			Desc:      "Add an airing or completed anime to your watch list.",
 		},
 		{
-			Name:      "Watch List",
-			ModelFunc: func() ViewModel { return newWatchListModel(m.db) },
-			Desc:      "View & manage your watch list",
+			Name:      "Find",
+			ModelFunc: func() ViewModel { return newFindAnimeModel(m.db) },
+			Desc:      "Lookup an anime from Kitsu or your local watch list.",
 		},
 		{Name: "Maintenance", SubViews: []MenuView{
 			{
