@@ -317,7 +317,7 @@ func (m AddAnime_Model) addAnime(animeID string) tea.Cmd {
 			Episodes:  anime.Episodes,
 			Type:      anime.ShowType,
 			Status:    anime.Status,
-			Progress:  anime.Progress,
+			Progress:  0,
 			AvgRating: anime.AvgRating,
 			Synopsis:  anime.Synopsis,
 			Slug:      anime.Slug,

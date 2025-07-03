@@ -69,7 +69,6 @@ func (af KitsuAnimeSearch) Search(query string) (AnimeFinderResult, error) {
 			ShowType:  item.Attributes.Type,
 			Status:    item.Attributes.Status,
 			Synopsis:  item.Attributes.Synopsis,
-			Progress:  -1,
 			AvgRating: utils.CalcRating(item.Attributes.AvgRating),
 			Episodes:  item.Attributes.EpCount,
 			Slug:      item.Attributes.Slug,
