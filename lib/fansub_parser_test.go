@@ -396,6 +396,19 @@ func TestFansubParser(t *testing.T) {
 				Filename: "[my fansub] it is some title S02E24v2 1080p nf web-dl aac2.0 h.264 (some extra info).mkv",
 			},
 		},
+		{
+			should: "should support varyg fansub group",
+			actual: "Some Title S03E10 Scene 10 1080p NF WEB-DL AAC2.0 H 264-VARYG (Enen no Shouboutai: San no Shou, Multi-Subs)",
+			expected: FansubFileInfo{
+				Fansub:   "VARYG",
+				Title:    "Some Title",
+				Encoding: "1080p AAC 2.0 H.264",
+				Source:   "Netflix Web-Download",
+				Season:   "03",
+				Episode:  "10",
+				Filename: "Some Title S03E10 Scene 10 1080p NF WEB-DL AAC2.0 H 264-VARYG (Enen no Shouboutai: San no Shou, Multi-Subs)",
+			},
+		},
 	}
 
 	t.Parallel()

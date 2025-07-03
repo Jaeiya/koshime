@@ -244,7 +244,7 @@ func (fp FansubParser) getEncoding(s string, index int, tokens []string) (string
 	}
 
 	// Catch "H 264" formatting
-	if s == "264" {
+	if s == "264" || s == "264-varyg" {
 		lastToken := fp.normalizeToken(tokens[index-1])
 		if lastToken == "h" {
 			return "H.264 ", possibleEncodings
@@ -393,6 +393,13 @@ func (fp FansubParser) getTokens(fileName string) ([]string, error) {
 		fansubEndIndex := strings.Index(fileName, "]")
 		fansubName = fileName[1:strings.Index(fileName, "]")]
 		fileName = strings.TrimSpace(fileName[fansubEndIndex+1:])
+	}
+
+	// Explicit fansub group detection
+	if fansubName == "" {
+		if strings.Contains(fileName, "264-VARYG") {
+			fansubName = "VARYG"
+		}
 	}
 
 	// Try to parse inconsistent ellipses separators
