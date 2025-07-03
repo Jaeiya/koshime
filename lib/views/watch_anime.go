@@ -2,7 +2,9 @@ package views
 
 import (
 	"fmt"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 
@@ -383,19 +385,19 @@ func (m WatchAnime_Model) displayProgress() string {
 	warnText := ""
 	switch m.state.selection.fileState {
 	case Pilot:
-		warnText = `;dm;Pilot episode detected; '00' episodes do not count towards
+		warnText = `;m;Pilot episode detected; '00' episodes do not count towards
 your kitsu library progress.`
 
 	case NonSeasonalCount:
-		warnText = `;dm;This fansub group is not following seasonal episode counts, which is
+		warnText = `;m;This fansub group is not following seasonal episode counts, which is
 why the file episode does not match the actual episode number.`
 
 	case Mismatched:
-		warnText = `;dm;File episode count mismatch; you're either watching an episode
+		warnText = `;m;File episode count mismatch; you're either watching an episode
 ahead of your progress, or the fansub group is not following seasonal episode counts.`
 
 	case WatchedAlready:
-		warnText = `;dm;You have already seen this episode according to your progress.`
+		warnText = `;m;You have already seen this episode according to your progress.`
 	}
 
 	progress := m.state.selection.anime.LibEntry.Progress
@@ -471,22 +473,22 @@ func (m WatchAnime_Model) LoadAnime() tea.Msg {
 }
 
 func (m WatchAnime_Model) PlayAnime() tea.Msg {
-	// wd := fileSys.GetWorkingDir()
-	// var cmd *exec.Cmd
-	// filePath := filepath.Join(wd, m.state.selection.anime.FileInfo.Filename)
+	wd := fileSys.GetWorkingDir()
+	var cmd *exec.Cmd
+	filePath := filepath.Join(wd, m.state.selection.anime.FileInfo.Filename)
 
-	// switch runtime.GOOS {
-	// case "windows":
-	// 	cmd = exec.Command("cmd", "/C", "start", "", filePath)
-	// case "darwin":
-	// 	cmd = exec.Command("open", filePath)
-	// default:
-	// 	cmd = exec.Command("xdg-open", filePath)
-	// }
-	// err := cmd.Run()
-	// if err != nil {
-	// 	return err
-	// }
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/C", "start", "", filePath)
+	case "darwin":
+		cmd = exec.Command("open", filePath)
+	default:
+		cmd = exec.Command("xdg-open", filePath)
+	}
+	err := cmd.Run()
+	if err != nil {
+		return err
+	}
 	return WatchAnimePlayMsg{}
 }
 
