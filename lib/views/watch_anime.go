@@ -2,9 +2,7 @@ package views
 
 import (
 	"fmt"
-	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strconv"
 	"strings"
 
@@ -24,6 +22,7 @@ type WatchState int
 
 const (
 	_ = WatchState(iota)
+	Pilot
 	WatchedAlready
 	NonSeasonalCount
 	Mismatched
@@ -230,6 +229,9 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 
 				nextProgress := anime.LibEntry.Progress + 1
 				switch {
+				case fileEp == 0:
+					m.state.selection.fileState = Pilot
+
 				case fileEp > anime.LibEntry.Episodes:
 					m.state.selection.fileState = NonSeasonalCount
 
@@ -322,7 +324,7 @@ func (m WatchAnime_Model) displayUpdatedProgress() string {
 		progressStr = ui.DisplayText([]string{`Anime has been ;g;Completed;x;!`})
 	}
 
-	if m.state.selection.fileState == WatchedAlready {
+	if m.state.selection.fileState == WatchedAlready || m.state.selection.fileState == Pilot {
 		progressStr = ui.DisplayText([]string{
 			utils.ColorText(
 				fmt.Sprintf(`Progress remains at ;g;%d;x;, but the file ;dc;has been;x;
@@ -380,6 +382,10 @@ func (m WatchAnime_Model) displayProgress() string {
 
 	warnText := ""
 	switch m.state.selection.fileState {
+	case Pilot:
+		warnText = `;dm;Pilot episode detected; '00' episodes do not count towards
+your kitsu library progress.`
+
 	case NonSeasonalCount:
 		warnText = `;dm;This fansub group is not following seasonal episode counts, which is
 why the file episode does not match the actual episode number.`
@@ -393,9 +399,14 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 	}
 
 	progress := m.state.selection.anime.LibEntry.Progress
-	if fileEp >= progress+1 {
+	switch {
+	case m.state.selection.fileState == Pilot:
+		progress = 0
+
+	case fileEp >= progress+1:
 		progress++
-	} else if fileEp <= progress {
+
+	case fileEp <= progress:
 		progress = fileEp
 	}
 
@@ -460,22 +471,22 @@ func (m WatchAnime_Model) LoadAnime() tea.Msg {
 }
 
 func (m WatchAnime_Model) PlayAnime() tea.Msg {
-	wd := fileSys.GetWorkingDir()
-	var cmd *exec.Cmd
-	filePath := filepath.Join(wd, m.state.selection.anime.FileInfo.Filename)
+	// wd := fileSys.GetWorkingDir()
+	// var cmd *exec.Cmd
+	// filePath := filepath.Join(wd, m.state.selection.anime.FileInfo.Filename)
 
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("cmd", "/C", "start", "", filePath)
-	case "darwin":
-		cmd = exec.Command("open", filePath)
-	default:
-		cmd = exec.Command("xdg-open", filePath)
-	}
-	err := cmd.Run()
-	if err != nil {
-		return err
-	}
+	// switch runtime.GOOS {
+	// case "windows":
+	// 	cmd = exec.Command("cmd", "/C", "start", "", filePath)
+	// case "darwin":
+	// 	cmd = exec.Command("open", filePath)
+	// default:
+	// 	cmd = exec.Command("xdg-open", filePath)
+	// }
+	// err := cmd.Run()
+	// if err != nil {
+	// 	return err
+	// }
 	return WatchAnimePlayMsg{}
 }
 
@@ -492,7 +503,7 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 	// 🟡 This only works for fansubs that follow seasonal episode counts.
 	// A seasonal count means that each new season's first episode,
 	// starts at 1.
-	if m.state.selection.fileState == WatchedAlready {
+	if m.state.selection.fileState == WatchedAlready || m.state.selection.fileState == Pilot {
 		if err := m.moveFansubFile(); err != nil {
 			return err
 		}
