@@ -27,14 +27,6 @@ type (
 	SetupUserAbortMsg    struct{}
 )
 
-type SetupUserDefaultError struct {
-	Err error
-}
-
-func (e SetupUserDefaultError) Error() string {
-	return e.Err.Error()
-}
-
 type SetupUserHelpMap map[SetupUserView]ui.KeyHelpInfo[SetupUserModel]
 
 type SetupUserView int
@@ -145,7 +137,7 @@ func (m SetupUserModel) Update(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 		m.deleteWatchDir()
 		return m, abort
 
-	case SetupUserDefaultError:
+	case DefaultErrorMsg:
 		m.err = msg
 	}
 
@@ -633,7 +625,7 @@ func (m SetupUserModel) createWatchDir() tea.Msg {
 	wd := fileSys.GetWorkingDir()
 	err := os.Mkdir(filepath.Join(wd, "(watched)"), 0o755)
 	if err != nil {
-		return SetupUserDefaultError{err}
+		return DefaultErrorMsg{err}
 	}
 	return nil
 }

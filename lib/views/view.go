@@ -30,6 +30,14 @@ func (e FetchErrorMsg) Error() string {
 	return e.Msg
 }
 
+type DefaultErrorMsg struct {
+	err error
+}
+
+func (e DefaultErrorMsg) Error() string {
+	return e.err.Error()
+}
+
 type ViewModel interface {
 	tea.CursorModel
 	help.KeyMap
