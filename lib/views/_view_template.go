@@ -28,6 +28,10 @@ func newSomeModel() Some_Model {
 	return m
 }
 
+func (m Some_Model) Init() tea.Cmd {
+	return nil
+}
+
 func (m Some_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
