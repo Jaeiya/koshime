@@ -98,6 +98,8 @@ var fansubSourceMap = map[string]string{
 	"dvdrip": "DVD",
 }
 
+var ErrBatchFile = fmt.Errorf("batch files not supported")
+
 var fansubExtMap = map[string]struct{}{
 	".mp4": {},
 	".mkv": {},
@@ -188,7 +190,7 @@ func (fp FansubParser) Parse(fileName string) (FansubFileInfo, error) {
 
 		// Assume "batch" always comes after some meta data
 		if hasMetaData() && normalizedToken == "batch" {
-			return FansubFileInfo{}, fmt.Errorf("batch files not supported")
+			return FansubFileInfo{}, ErrBatchFile
 		}
 
 		// Assume title is always before meta-data
