@@ -8,7 +8,6 @@ import (
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/key"
-	"github.com/charmbracelet/bubbles/v2/list"
 	"github.com/charmbracelet/bubbles/v2/textinput"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
@@ -42,7 +41,6 @@ type AddAnime_Model struct {
 	ui struct {
 		loader      ui.LoaderModel
 		input       textinput.Model
-		list        list.Model
 		consent     ui.ConsentModel
 		animeSearch *AnimeSearchModel
 	}
@@ -65,7 +63,6 @@ func newAddAnimeModel(db *database.Database) AddAnime_Model {
 	m.config.itemsPerPage = 5
 	m.config.maxAnimeResults = 10
 
-	m.ui.list = ui.NewList(ui.ListOptions{})
 	m.ui.input = ui.NewTextInput()
 	m.ui.input.SetWidth(m.config.maxInputWidth)
 	m.ui.input.Placeholder = "Enter query"
