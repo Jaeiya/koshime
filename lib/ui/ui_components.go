@@ -48,6 +48,7 @@ type ListOptions struct {
 	Width         int
 	MaxHeight     int
 	ItemsPerPage  int
+	EnableFilter  bool
 }
 
 func NewList(o ListOptions) list.Model {
@@ -71,6 +72,7 @@ func NewList(o ListOptions) list.Model {
 	l.SetShowTitle(false)
 	l.DisableQuitKeybindings()
 	l.FilterInput.SetVirtualCursor(false)
+	l.SetFilteringEnabled(o.EnableFilter)
 	// l.FilterInput.VirtualCursor = false
 
 	l.Help.Styles.ShortDesc = HelpDescStyle

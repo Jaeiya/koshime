@@ -466,6 +466,7 @@ func (m *AnimeSearchModel) UpdateResults(msg tea.Msg) tea.Cmd {
 				Width:         m.windowSize.width,
 				MaxHeight:     int(float64(m.windowSize.height) * 0.66),
 				ItemsPerPage:  m.config.itemsPerPage,
+				EnableFilter:  true,
 			},
 		)
 	}

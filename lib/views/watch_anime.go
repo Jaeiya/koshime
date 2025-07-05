@@ -448,6 +448,7 @@ func (m *WatchAnime_Model) PopulateAnimeList() {
 		Width:         m.windowSize.Width - 5,
 		MaxHeight:     m.windowSize.Height,
 		ItemsPerPage:  5,
+		EnableFilter:  true,
 	})
 }
 
