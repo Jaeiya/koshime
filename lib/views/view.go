@@ -184,6 +184,11 @@ func (m *Model) CreateMenuItems() {
 			Desc:      "Add an airing or completed anime to your watch list.",
 		},
 		{
+			Name:      "RSS Lookup",
+			ModelFunc: func() ViewModel { return newRssModel(m.db) },
+			Desc:      "Search for fansub feeds",
+		},
+		{
 			Name:      "Find",
 			ModelFunc: func() ViewModel { return newFindAnimeModel(m.db) },
 			Desc:      "Lookup an anime from Kitsu or your local watch list.",
