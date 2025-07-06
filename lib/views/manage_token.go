@@ -76,6 +76,10 @@ func (m TokenModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			}
 
 		case key.Matches(msg, m.keys.r):
+			// Prevent key press when entering password
+			if m.isResetting {
+				break
+			}
 			if m.HasBeenRenewed() {
 				m.triedRenew = true
 				return m, nil
@@ -83,6 +87,10 @@ func (m TokenModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			m.isRenewing = true
 
 		case key.Matches(msg, m.keys.x):
+			// Prevent key press when entering password
+			if m.isResetting {
+				break
+			}
 			m.isResetting = true
 			return m, nil
 
@@ -91,6 +99,8 @@ func (m TokenModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 		case key.Matches(msg, ui.KeyMap.Submit):
 			if m.isResetting {
+				m.ui.loader, cmd = m.ui.loader.Start("Getting Auth Token")
+				return m, tea.Batch(cmd, m.resetToken)
 			}
 
 			if m.isRenewing {
@@ -110,6 +120,7 @@ func (m TokenModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 	case kitsu.AuthTokenData:
 		m.data = msg
+		m.isResetting = false
 		m.ui.loader.Stop()
 	}
 
@@ -258,6 +269,25 @@ func (m TokenModel) RefreshToken() tea.Msg {
 	data, err := kitsu.RefreshToken(m.db.Profile().RefreshToken)
 	if err != nil {
 		return err
+	}
+
+	err = m.db.SaveTokenData(data.Token, data.RefreshToken, data.ExpiresIn)
+	if err != nil {
+		return err
+	}
+	return data
+}
+
+func (m TokenModel) resetToken() tea.Msg {
+	p := m.db.Profile()
+	data, err := kitsu.GetAuthToken(p.Slug, m.ui.input.Value())
+	if err != nil {
+		return fmt.Errorf(
+			"failed to reset token with %s:%s: %w",
+			p.Slug,
+			m.ui.input.Value(),
+			err,
+		)
 	}
 
 	err = m.db.SaveTokenData(data.Token, data.RefreshToken, data.ExpiresIn)
