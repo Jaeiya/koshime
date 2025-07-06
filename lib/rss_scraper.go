@@ -128,6 +128,9 @@ func (RSS) parseAnimeTosho(xml string) ([]RSSEntry, error) {
 	}
 
 	expr, err := xpath.Compile("count(//item)")
+	if err != nil {
+		return []RSSEntry{}, err
+	}
 	count := expr.Evaluate(xmlquery.CreateXPathNavigator(doc)).(float64)
 
 	results := make([]RSSEntry, int(count))
@@ -154,6 +157,9 @@ func (RSS) parseNyaa(xml string) ([]RSSEntry, error) {
 	}
 
 	expr, err := xpath.Compile("count(//item)")
+	if err != nil {
+		return []RSSEntry{}, err
+	}
 	count := expr.Evaluate(xmlquery.CreateXPathNavigator(doc)).(float64)
 
 	results := make([]RSSEntry, int(count))
