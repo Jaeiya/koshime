@@ -29,6 +29,7 @@ type MenuModel struct {
 	activeItems   []MenuView
 	selectedModel ViewModel
 	help          help.Model
+	menu          ui.MenuModel
 	menuIndex     int
 	activeIndex   int
 	profile       kitsu.Profile
@@ -47,6 +48,8 @@ func NewMenuModel(views []MenuView, p kitsu.Profile) MenuModel {
 
 	m.menuItems = views
 	m.activeItems = views
+
+	m.updateMenu()
 	return m
 }
 
@@ -81,11 +84,12 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, ui.KeyMap.Exit):
+		case key.Matches(msg, ui.KeyMap.EscBack):
 			if m.inSubMenu {
 				m.inSubMenu = false
 				m.activeIndex = m.menuIndex
 				m.activeItems = m.menuItems
+				m.updateMenu()
 				return m, nil
 			}
 			return m, exit
@@ -95,32 +99,31 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 				m.inSubMenu = false
 				m.activeIndex = m.menuIndex
 				m.activeItems = m.menuItems
+				m.updateMenu()
 				return m, nil
 			}
 			return m, nil
 
-		case key.Matches(msg, ui.KeyMap.Select):
-			chosen := m.activeItems[m.activeIndex]
-			if chosen.SubViews != nil {
-				m.inSubMenu = true
-				m.menuIndex = m.activeIndex
-				m.activeItems = chosen.SubViews
-				m.activeIndex = 0
-			} else {
-				m.selectedModel = chosen.ModelFunc()
-				m.selectedModel, cmd = m.selectedModel.Update(m.windowSize)
-				cmds = append(cmds, cmd, m.selectedModel.Init())
-			}
-
-		case key.Matches(msg, ui.KeyMap.Up):
-			itemLen := len(m.activeItems)
-			m.activeIndex = (m.activeIndex - 1 + itemLen) % itemLen
-
-		case key.Matches(msg, ui.KeyMap.Down):
-			m.activeIndex = (m.activeIndex + 1) % len(m.activeItems)
-
 		}
+
+	case ui.MenuIndexMsg:
+		chosen := m.activeItems[msg]
+		if chosen.SubViews != nil {
+			m.inSubMenu = true
+			m.activeIndex = int(msg)
+			m.activeItems = chosen.SubViews
+			m.menuIndex = int(msg)
+			m.updateMenu()
+		} else {
+			m.selectedModel = chosen.ModelFunc()
+			m.selectedModel, cmd = m.selectedModel.Update(m.windowSize)
+			cmds = append(cmds, cmd, m.selectedModel.Init())
+		}
+
 	}
+
+	m.menu, cmd = m.menu.Update(msg)
+	cmds = append(cmds, cmd)
 
 	return m, tea.Batch(cmds...)
 }
@@ -147,7 +150,7 @@ func (m MenuModel) View() (string, *tea.Cursor) {
 		m.DisplayProfile(),
 		title,
 		"",
-		m.DisplayMenu(),
+		m.menu.View(),
 		ui.HelpStyle.Render(m.help.View(m)),
 	), nil
 }
@@ -167,32 +170,6 @@ func (m MenuModel) ShortHelp() []key.Binding {
 
 func (m MenuModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
-}
-
-func (m MenuModel) DisplayMenu() string {
-	lines := make([]string, len(m.activeItems))
-	menuStyle := ui.TextStyle.MarginLeft(3).Width(17).PaddingLeft(1).PaddingRight(3)
-	descStyle := ui.Style.Width(30).MarginLeft(3).Foreground(ansi.Magenta)
-	activeDesc := ""
-
-	for i, item := range m.activeItems {
-		if m.activeIndex == i {
-			activeDesc = item.Desc
-			lines[i] = menuStyle.Foreground(ansi.BrightGreen).
-				Background(ansi.Black).
-				Render("> " + item.Name)
-			continue
-		}
-		lines[i] = menuStyle.Render("  " + item.Name)
-	}
-
-	menu := lipgloss.JoinVertical(lipgloss.Left, lines...)
-
-	return lipgloss.JoinHorizontal(
-		lipgloss.Left,
-		menu,
-		descStyle.Render(activeDesc),
-	)
 }
 
 func (m MenuModel) DisplayProfile() string {
@@ -221,6 +198,16 @@ func (m MenuModel) DisplayProfile() string {
 		lipgloss.Left,
 		ui.DisplayPropValue(props, values),
 	)
+}
+
+func (m *MenuModel) updateMenu() {
+	items := make([]string, len(m.activeItems))
+	menuDesc := make([]string, len(m.activeItems))
+	for i, item := range m.activeItems {
+		menuDesc[i] = item.Desc
+		items[i] = item.Name
+	}
+	m.menu = ui.NewMenuModel(items, ui.WithMenuRotation(), ui.WithMenuDescriptions(menuDesc))
 }
 
 func exitToMenu() tea.Msg {
