@@ -3,6 +3,8 @@ package ui
 import (
 	"github.com/charmbracelet/bubbles/v2/key"
 	tea "github.com/charmbracelet/bubbletea/v2"
+	"github.com/charmbracelet/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 )
 
 type (
@@ -13,6 +15,7 @@ type (
 type MenuModel struct {
 	config struct {
 		rotateMenu       bool
+		menuDescriptions []string
 	}
 	menuIndex int
 	menuItems []string
@@ -25,12 +28,24 @@ func WithMenuRotation() OptionFunc {
 	}
 }
 
+func WithMenuDescriptions(descriptions []string) OptionFunc {
+	return func(m MenuModel) MenuModel {
+		m.config.menuDescriptions = descriptions
+		return m
+	}
+}
+
 func NewMenuModel(items []string, options ...OptionFunc) MenuModel {
 	m := MenuModel{}
 	m.menuItems = items
 
 	for _, o := range options {
 		m = o(m)
+	}
+
+	descLen := len(m.config.menuDescriptions)
+	if descLen > 0 && descLen != len(m.menuItems) {
+		panic("number of menu descriptions does not match number of menu items")
 	}
 
 	return m
@@ -68,5 +83,19 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 }
 
 func (m MenuModel) View() string {
+	var descStr string
+
+	if len(m.config.menuDescriptions) > 0 {
+		descStr = lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			DisplayMenuItems(m.menuItems, m.menuIndex),
+			Style.MarginLeft(3).
+				Width(35).
+				Foreground(ansi.Magenta).
+				Render(m.config.menuDescriptions[m.menuIndex]),
+		)
+		return descStr
+	}
+
 	return DisplayMenuItems(m.menuItems, m.menuIndex)
 }
