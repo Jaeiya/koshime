@@ -155,7 +155,18 @@ func (m Rss_Model) UpdateSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 				m.state.err = err
 				return m, nil
 			}
-			items = append(items, ui.NewListItem(fmt.Sprintf("[%s] %s", info.Fansub, info.Title), info.Filename, i))
+			dateStr := entry.Date.Local().Format("Jan 2, 2006 at 3:04pm")
+			seasonStr := ""
+			if info.Season != "" {
+				seasonStr = " | S" + info.Season
+			}
+			items = append(items,
+				ui.NewListItem(
+					fmt.Sprintf("[%s] %s - %s", info.Fansub, info.Title, info.Episode),
+					fmt.Sprintf("%s | %s | %s%s", dateStr, entry.Size, info.Encoding, seasonStr),
+					i,
+				),
+			)
 		}
 
 		m.ui.list = ui.NewList(
@@ -225,7 +236,8 @@ func (m Rss_Model) ViewReview() string {
 		ui.DisplaySubTitle("RSS Lookup", "Selection"),
 		"",
 		ui.DisplayText([]string{";w;Feed URL:"}),
-		ui.TextStyle.Render(utils.ColorText(fmt.Sprintf(";dg;%s", m.state.rssResult.FeedURL))),
+		ui.Style.MarginLeft(3).
+			Render(utils.ColorText(fmt.Sprintf(";dg;%s", m.state.rssResult.FeedURL))),
 		"",
 		ui.DisplayText([]string{";w;Feed Results:"}),
 		"",
