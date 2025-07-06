@@ -236,7 +236,7 @@ func DisplayMenuItems(items []string, selectedIndex int) string {
 	caret := " > "
 	itemWidth := maxItemWidth + padding + lipgloss.Width(caret)
 
-	menuStyle := TextStyle.MarginLeft(5).
+	menuStyle := TextStyle.MarginLeft(3).
 		Width(itemWidth).
 		PaddingRight(padding)
 
