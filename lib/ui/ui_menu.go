@@ -1,6 +1,9 @@
 package ui
 
 import (
+	"strings"
+
+	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/key"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
@@ -88,7 +91,7 @@ func (m MenuModel) View() string {
 	if len(m.config.menuDescriptions) > 0 {
 		descStr = lipgloss.JoinHorizontal(
 			lipgloss.Left,
-			DisplayMenuItems(m.menuItems, m.menuIndex),
+			m.displayMenuItems(m.menuItems, m.menuIndex),
 			Style.MarginLeft(1).
 				Width(35).
 				Foreground(ansi.Magenta).
@@ -97,5 +100,48 @@ func (m MenuModel) View() string {
 		return descStr
 	}
 
-	return DisplayMenuItems(m.menuItems, m.menuIndex)
+	return m.displayMenuItems(m.menuItems, m.menuIndex)
+}
+
+func (m MenuModel) displayMenuItems(items []string, selectedIndex int) string {
+	items = utils.CopySlice(items)
+
+	if selectedIndex >= len(items) {
+		panic("menu index is beyond the item count")
+	}
+
+	if selectedIndex < 0 {
+		panic("menu index is negative")
+	}
+
+	maxItemWidth := 0
+	for _, item := range items {
+		itemWidth := lipgloss.Width(item)
+		if itemWidth > maxItemWidth {
+			maxItemWidth = itemWidth
+		}
+	}
+
+	padding := 3
+	caret := " > "
+	itemWidth := maxItemWidth + padding + lipgloss.Width(caret)
+
+	menuStyle := TextStyle.MarginLeft(3).
+		Width(itemWidth).
+		PaddingRight(padding)
+
+	for i, item := range items {
+		if i == selectedIndex {
+			items[i] = menuStyle.Foreground(ansi.BrightGreen).
+				Background(ansi.Black).
+				Render(caret + item)
+		} else {
+			items[i] = menuStyle.Render(strings.Repeat(" ", lipgloss.Width(caret)) + item)
+		}
+	}
+
+	return lipgloss.JoinVertical(
+		lipgloss.Left,
+		items...,
+	)
 }

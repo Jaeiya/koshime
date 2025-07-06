@@ -42,9 +42,9 @@ type WatchDir_Model struct {
 	windowSize tea.WindowSizeMsg
 	ui         struct {
 		loader ui.LoaderModel
+		menu   ui.MenuModel
 	}
-	menuItems []string
-	state     WatchDir_State
+	state WatchDir_State
 }
 
 type WatchDir_State struct {
@@ -62,10 +62,10 @@ type WatchDir_State struct {
 
 func newWatchDirModel() WatchDir_Model {
 	m := WatchDir_Model{}
-	m.menuItems = []string{
+	m.ui.menu = ui.NewMenuModel([]string{
 		"Clean All",
 		"Clean Recent",
-	}
+	})
 	m.ui.loader = ui.NewLoader()
 	return m
 }
@@ -154,26 +154,13 @@ func (m WatchDir_Model) FullHelp() [][]key.Binding {
 
 func (m WatchDir_Model) UpdateMenu(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 	var cmd tea.Cmd
+	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.MainMenu):
 			return m, exitToMenu
-
-		case key.Matches(msg, ui.KeyMap.Up):
-			if m.state.menu.index == 0 {
-				return m, nil
-			}
-			m.state.menu.index--
-			return m, nil
-
-		case key.Matches(msg, ui.KeyMap.Down):
-			if m.state.menu.index+1 == len(m.menuItems) {
-				return m, nil
-			}
-			m.state.menu.index++
-			return m, nil
 
 		case key.Matches(msg, ui.KeyMap.Select):
 			// Nothing to clean
@@ -192,7 +179,10 @@ func (m WatchDir_Model) UpdateMenu(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 		}
 	}
 
-	return m, nil
+	m.ui.menu, cmd = m.ui.menu.Update(msg)
+	cmds = append(cmds, cmd)
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m WatchDir_Model) ViewMenu() string {
@@ -238,7 +228,7 @@ typically a good idea after each season.`,
 			`;dgu;Clean Recent;x; removes all files except for the most recent, per
 series. If you've watched ;dy;5;x; different series, this will leave ;dy;5;x; files.`,
 		}, 1),
-		ui.DisplayMenuItems(m.menuItems, m.state.menu.index),
+		m.ui.menu.View(),
 	)
 
 	return view
@@ -267,7 +257,7 @@ func (m WatchDir_Model) ViewCleaned() string {
 		"",
 	}
 
-	continueStr := ui.DisplayMenuItems([]string{"Continue"}, 0)
+	continueStr := ui.NewMenuModel([]string{"Continue"}).View()
 
 	if m.state.cleanResults.deleted == 0 {
 		typeStr := "Folder has no recent files to delete"
