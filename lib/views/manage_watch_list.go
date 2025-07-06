@@ -54,7 +54,7 @@ func newWatchListModel(db *database.Database) WatchList_Model {
 		"Delete",
 		"Drop",
 		"Complete",
-	})
+	}, ui.WithMenuRotation())
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
 	m.state.anime = ui.ToAnimeInfo(db.Anime())
 	return m
