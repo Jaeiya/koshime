@@ -89,7 +89,7 @@ func (m MenuModel) View() string {
 		descStr = lipgloss.JoinHorizontal(
 			lipgloss.Left,
 			DisplayMenuItems(m.menuItems, m.menuIndex),
-			Style.MarginLeft(3).
+			Style.MarginLeft(1).
 				Width(35).
 				Foreground(ansi.Magenta).
 				Render(m.config.menuDescriptions[m.menuIndex]),
