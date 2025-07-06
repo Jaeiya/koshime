@@ -90,10 +90,10 @@ func GetUserAnime(userID string, status LibAnimeStatus) ([]LibraryEntry, error) 
 	return entries, nil
 }
 
-func GetAuthToken(userName, password string) (AuthTokenData, error) {
+func GetAuthToken(profileSlug, password string) (AuthTokenData, error) {
 	credentials := map[string]string{
 		"grant_type": "password",
-		"username":   userName,
+		"username":   profileSlug,
 		"password":   password,
 	}
 
