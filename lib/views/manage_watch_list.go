@@ -54,7 +54,11 @@ func newWatchListModel(db *database.Database) WatchList_Model {
 		"Delete",
 		"Drop",
 		"Complete",
-	}, ui.WithMenuRotation())
+	}, ui.WithMenuRotation(), ui.WithMenuDescriptions([]string{
+		`Deletes the selected anime above.`,
+		`Drops the selected anime above.`,
+		`Sets status of selected anime above, to completed.`,
+	}))
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
 	m.state.anime = ui.ToAnimeInfo(db.Anime())
 	return m
