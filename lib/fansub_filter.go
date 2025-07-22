@@ -66,7 +66,8 @@ func (ff FansubFilter) FilterByLibEntry(
 				break
 			}
 		}
-		if found.Score > 50 {
+
+		if found.Score >= 50 {
 			filteredAnime = append(filteredAnime, found)
 		}
 
