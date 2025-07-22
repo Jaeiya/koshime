@@ -80,8 +80,9 @@ func (ff FansubFilter) buildAnimeWordMap(entries []kitsu.LibraryEntry) AnimeTitl
 
 	for _, entry := range entries {
 		titleTokenMap := map[string]struct{}{}
-		var titles []string = []string{
-			ff.normalizeTitle(entry.JPN_Title),
+		var titles []string
+		if entry.JPN_Title != "" {
+			titles = append(titles, ff.normalizeTitle(entry.JPN_Title))
 		}
 		if entry.ENG_Title != "" {
 			titles = append(titles, ff.normalizeTitle(entry.ENG_Title))
