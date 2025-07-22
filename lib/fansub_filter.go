@@ -90,7 +90,7 @@ func (ff FansubFilter) buildAnimeWordMap(entries []kitsu.LibraryEntry) AnimeTitl
 			titles = append(titles, ff.normalizeTitle(title))
 		}
 		for _, title := range titles {
-			for _, token := range strings.Fields(title) {
+			for token := range strings.FieldsSeq(title) {
 				titleTokenMap[token] = struct{}{}
 			}
 		}
