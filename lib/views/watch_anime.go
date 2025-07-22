@@ -440,6 +440,11 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 func (m *WatchAnime_Model) PopulateAnimeList() {
 	listItems := make([]list.Item, len(m.state.filteredAnime))
 	for i, item := range m.state.filteredAnime {
+		// We always want to display title text
+		if item.LibEntry.ENG_Title == "" {
+			item.LibEntry.ENG_Title = item.LibEntry.JPN_Title
+			item.LibEntry.JPN_Title = ""
+		}
 		listItems[i] = ui.NewListItem(item.LibEntry.ENG_Title, item.LibEntry.JPN_Title, i)
 	}
 	m.ui.list = ui.NewList(ui.ListOptions{
