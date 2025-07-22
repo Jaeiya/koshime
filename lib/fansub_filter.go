@@ -61,6 +61,7 @@ func (ff FansubFilter) FilterByLibEntry(
 				found.LibEntry = anime
 				found.FileInfo = fansub
 			}
+
 			if found.Score >= 50 {
 				foundStore[anime.ID] = struct{}{}
 				break
@@ -102,5 +103,5 @@ func (ff FansubFilter) buildAnimeWordMap(entries []kitsu.LibraryEntry) AnimeTitl
 }
 
 func (FansubFilter) normalizeTitle(title string) string {
-	return strings.ToLower(utils.ReplaceCutset(title, "-,?:!", ""))
+	return strings.ToLower(strings.TrimSpace(utils.ReplaceCutset(title, "-,?:!", " ")))
 }
