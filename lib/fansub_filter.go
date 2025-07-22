@@ -61,7 +61,7 @@ func (ff FansubFilter) FilterByLibEntry(
 				found.LibEntry = anime
 				found.FileInfo = fansub
 			}
-			if found.Score == 100 {
+			if found.Score >= 50 {
 				foundStore[anime.ID] = struct{}{}
 				break
 			}
