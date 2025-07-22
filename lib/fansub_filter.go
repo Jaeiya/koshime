@@ -103,5 +103,9 @@ func (ff FansubFilter) buildAnimeWordMap(entries []kitsu.LibraryEntry) AnimeTitl
 }
 
 func (FansubFilter) normalizeTitle(title string) string {
-	return strings.ToLower(strings.TrimSpace(utils.ReplaceCutset(title, "-,?:!", " ")))
+	return strings.ToLower(
+		strings.TrimSpace(
+			strings.ReplaceAll(utils.ReplaceCutset(title, ".-,?:!", " "), "  ", " "),
+		),
+	)
 }
