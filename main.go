@@ -45,7 +45,7 @@ func main() {
 
 	// for _, file := range f {
 	// 	fmt.Println(file.LibEntry.JPN_Title, file.Score)
-	// 	fmt.Println(file.FileInfo.Filename)
+	// 	fmt.Printf("%s\n\n", file.FileInfo.Filename)
 	// }
 
 	// 	fmt.Println("    Date:", entry.Date.Format("01/02/2006 3:04 PM"))
