@@ -98,6 +98,16 @@ var fansubSourceMap = map[string]string{
 	"dvdrip": "DVD",
 }
 
+var versionMap = map[string]struct{}{
+	"v0": {},
+	"v1": {},
+	"v2": {},
+	"v3": {},
+	"v4": {},
+	"v5": {},
+	"v6": {},
+}
+
 var ErrBatchFile = fmt.Errorf("batch files not supported")
 
 var fansubExtMap = map[string]struct{}{
@@ -316,7 +326,16 @@ func (FansubParser) getEpisode(
 	}
 
 	trimEpVersion := func(episode string) string {
-		return strings.TrimSuffix(episode, "v2")
+		if len(episode) < 3 {
+			return episode
+		}
+
+		version := episode[len(episode)-2:]
+		if _, exists := versionMap[version]; exists {
+			return strings.TrimSuffix(episode, version)
+		}
+
+		return episode
 	}
 
 	// Catch "Season # - #" for season & episode
