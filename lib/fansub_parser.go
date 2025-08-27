@@ -3,6 +3,7 @@ package lib
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/Jaeiya/koshime/lib/utils"
@@ -120,6 +121,7 @@ type FansubFileInfo struct {
 	Encoding string
 	Season   string
 	Episode  string
+	Version  int
 	Source   string
 	Filename string
 }
@@ -145,6 +147,7 @@ func (fp FansubParser) Parse(fileName string) (FansubFileInfo, error) {
 	}
 
 	var fansubName, episode, season string
+	var version int
 	var encoding, source, title strings.Builder
 
 	tokens, err := fp.getTokens(fileName)
@@ -193,6 +196,13 @@ func (fp FansubParser) Parse(fileName string) (FansubFileInfo, error) {
 			season, episode = fp.getEpisode(token, i, tokens)
 		}
 
+		if version == 0 && (len(season) > 0 || len(episode) > 0) {
+			version, err = fp.getVersion(token)
+			if err != nil {
+				return FansubFileInfo{}, err
+			}
+		}
+
 		// Assume "batch" always comes after some meta data
 		if hasMetaData() && normalizedToken == "batch" {
 			return FansubFileInfo{}, ErrBatchFile
@@ -209,6 +219,7 @@ func (fp FansubParser) Parse(fileName string) (FansubFileInfo, error) {
 
 	info.Fansub = fansubName
 	info.Episode = episode
+	info.Version = version
 	info.Season = season
 	info.Title = strings.TrimRight(title.String(), "- ~")
 	info.Encoding = strings.TrimSpace(encoding.String())
@@ -325,9 +336,9 @@ func (FansubParser) getEpisode(
 			return episode
 		}
 
-		version := episode[len(episode)-2:]
-		if _, exists := versionMap[version]; exists {
-			return strings.TrimSuffix(episode, version)
+		v := episode[len(episode)-2:]
+		if _, exists := versionMap[v]; exists {
+			return strings.TrimSuffix(episode, v)
 		}
 
 		return episode
@@ -335,36 +346,41 @@ func (FansubParser) getEpisode(
 
 	// Catch "Season # - #" for season & episode
 	if s == "Season" && index+3 < len(tokens) && tokens[index+2][0] == '-' {
-		if utils.IsNumber(tokens[index+1]) && utils.IsNumber(trimEpVersion(tokens[index+3])) {
-			return tokens[index+1], tokens[index+3]
+		episode := trimEpVersion(tokens[index+3])
+		if utils.IsNumber(tokens[index+1]) && utils.IsNumber(episode) {
+			return tokens[index+1], episode
 		}
 	}
 
 	// Catch "S##E##" for season & episode
 	if s[0] == 'S' && (len(s) == 6 || len(s) == 8) {
-		if utils.IsNumber(s[1:3]) && utils.IsNumber(trimEpVersion(s[4:])) {
-			return s[1:3], s[4:]
+		episode := trimEpVersion(s[4:])
+		if utils.IsNumber(s[1:3]) && utils.IsNumber(episode) {
+			return s[1:3], episode
 		}
 	}
 
 	// Catch "S# - #" for season & episode
 	if s[0] == 'S' && (len(s) == 2 || len(s) == 3) && index+2 < len(tokens) {
-		if utils.IsNumber(s[1:]) && utils.IsNumber(trimEpVersion(tokens[index+2])) {
-			return s[1:], tokens[index+2]
+		episode := trimEpVersion(tokens[index+2])
+		if utils.IsNumber(s[1:]) && utils.IsNumber(episode) {
+			return s[1:], episode
 		}
 	}
 
 	// Catch "- #" for episode
 	if s[0] == '-' && index+1 < len(tokens) {
-		if utils.IsNumber(trimEpVersion(tokens[index+1])) {
-			return "", tokens[index+1]
+		episode := trimEpVersion(tokens[index+1])
+		if utils.IsNumber(episode) {
+			return "", episode
 		}
 	}
 
 	// Catch "EP#" for episode
 	if len(s) > 2 && s[:2] == "EP" {
-		if utils.IsNumber(trimEpVersion(s[2:])) {
-			return "", s[2:]
+		episode := trimEpVersion(s[2:])
+		if utils.IsNumber(episode) {
+			return "", episode
 		}
 	}
 
@@ -375,9 +391,10 @@ func (FansubParser) getEpisode(
 			season = strings.TrimSuffix(season, "nd")
 			season = strings.TrimSuffix(season, "rd")
 			season = strings.TrimSuffix(season, "th")
+			episode := trimEpVersion(tokens[index+3])
 
-			if utils.IsNumber(season) && utils.IsNumber(trimEpVersion(tokens[index+3])) {
-				return season, tokens[index+3]
+			if utils.IsNumber(season) && utils.IsNumber(episode) {
+				return season, episode
 			}
 		}
 	}
@@ -385,7 +402,7 @@ func (FansubParser) getEpisode(
 	// Catch "<title> # [<meta-data>" for episode
 	if utils.IsNumber(trimEpVersion(s)) && index+1 < len(tokens) {
 		if tokens[index+1][0] == '[' {
-			return "", s
+			return "", trimEpVersion(s)
 		}
 	}
 
@@ -397,6 +414,23 @@ func (FansubParser) getEpisode(
 	}
 
 	return
+}
+
+func (FansubParser) getVersion(s string) (int, error) {
+	if len(s) < 2 {
+		return 0, nil
+	}
+
+	version := s[len(s)-2:]
+	if _, exists := versionMap[s[len(s)-2:]]; exists {
+		v, err := strconv.Atoi(version[1:])
+		if err != nil {
+			return 0, fmt.Errorf("could not parse episode version: %w", err)
+		}
+		return v, nil
+	}
+
+	return 0, nil
 }
 
 func (fp FansubParser) getTokens(fileName string) ([]string, error) {
