@@ -99,13 +99,8 @@ var fansubSourceMap = map[string]string{
 }
 
 var versionMap = map[string]struct{}{
-	"v0": {},
-	"v1": {},
-	"v2": {},
-	"v3": {},
-	"v4": {},
-	"v5": {},
-	"v6": {},
+	// Realistically there should never be more than 4 versions, but just in case...
+	"v0": {}, "v1": {}, "v2": {}, "v3": {}, "v4": {}, "v5": {}, "v6": {}, "v7": {},
 }
 
 var ErrBatchFile = fmt.Errorf("batch files not supported")
