@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const KitsuDomain = "https://kitsu.app"
+const KitsuDomain = "https://kitsu.io"
 
 type APIUrl string
 
