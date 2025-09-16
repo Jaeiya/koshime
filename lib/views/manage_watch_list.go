@@ -3,11 +3,13 @@ package views
 import (
 	"fmt"
 
+	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/key"
+	"github.com/charmbracelet/bubbles/v2/list"
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 )
@@ -17,9 +19,18 @@ type WatchList_View int
 const (
 	WatchList_Menu = WatchList_View(iota)
 	WatchList_Reload
-	WatchList_Delete
 	WatchList_Drop
+	WatchList_FileBinding
 	WatchList_Complete
+	WatchList_Delete
+)
+
+type BindingMode int
+
+const (
+	SelectFile = BindingMode(iota)
+	SelectAnime
+	ConfirmSelection
 )
 
 type WatchListReloadedMsg = []kitsu.LibraryEntry
@@ -31,6 +42,7 @@ type WatchList_Model struct {
 		consent      ui.ConsentModel
 		animeDisplay *AnimeDisplayModel
 		menu         ui.MenuModel
+		list         list.Model
 	}
 	keys struct {
 		reload key.Binding
@@ -40,10 +52,13 @@ type WatchList_Model struct {
 }
 
 type WatchList_State struct {
-	err        error
-	view       WatchList_View
-	anime      []ui.AnimeInfo
-	animeIndex int
+	err               error
+	view              WatchList_View
+	anime             []ui.AnimeInfo
+	animeIndex        int
+	selectedFileTitle string
+	selectedAnime     ui.AnimeInfo
+	bindingMode       BindingMode
 }
 
 func newWatchListModel(db *database.Database) WatchList_Model {
@@ -51,13 +66,15 @@ func newWatchListModel(db *database.Database) WatchList_Model {
 	m.ui.loader = ui.NewLoader()
 	m.ui.animeDisplay = NewAnimeDisplayModel()
 	m.ui.menu = ui.NewMenuModel([]string{
-		"Delete",
 		"Drop",
+		"Bind",
 		"Complete",
+		"Delete",
 	}, ui.WithMenuRotation(), ui.WithMenuDescriptions([]string{
-		`Deletes the selected anime above.`,
 		`Drops the selected anime above.`,
+		`Binds a file name to a specific anime in your watch list.`,
 		`Sets status of selected anime above, to completed.`,
+		`Deletes the selected anime above.`,
 	}))
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
 	m.state.anime = ui.ToAnimeInfo(db.Anime())
@@ -86,6 +103,9 @@ func (m WatchList_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			m.state.view = WatchList_Reload
 
 		case key.Matches(msg, ui.KeyMap.MainMenu):
+			if m.ui.list.FilterState() > list.Unfiltered {
+				break
+			}
 			return m, exitToMenu
 
 		}
@@ -116,6 +136,10 @@ func (m WatchList_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m, cmd = m.UpdateDrop(msg)
 		cmds = append(cmds, cmd)
 
+	case WatchList_FileBinding:
+		m, cmd = m.UpdateFileBinding(msg)
+		cmds = append(cmds, cmd)
+
 	case WatchList_Complete:
 		m, cmd = m.UpdateCompleted(msg)
 		cmds = append(cmds, cmd)
@@ -139,10 +163,12 @@ func (m WatchList_Model) View() (string, *tea.Cursor) {
 		return m.ViewMenu(), nil
 	case WatchList_Reload:
 		return m.ViewReload(), nil
-	case WatchList_Delete:
-		return m.ViewDeleting(), nil
 	case WatchList_Drop:
 		return m.ViewDrop(), nil
+	case WatchList_Delete:
+		return m.ViewDeleting(), nil
+	case WatchList_FileBinding:
+		return m.ViewFileBinding(), nil
 	case WatchList_Complete:
 		return m.ViewCompleted(), nil
 	default:
@@ -151,11 +177,15 @@ func (m WatchList_Model) View() (string, *tea.Cursor) {
 }
 
 func (m WatchList_Model) ShortHelp() []key.Binding {
+	keys := []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down}
+
+	if m.state.bindingMode < ConfirmSelection {
+		return nil
+	}
+
 	if m.state.view > WatchList_Menu {
 		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
 	}
-
-	keys := []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down}
 
 	if len(m.state.anime) > 0 {
 		switch {
@@ -174,6 +204,10 @@ func (m WatchList_Model) ShortHelp() []key.Binding {
 }
 
 func (m WatchList_Model) FullHelp() [][]key.Binding {
+	// Prevent conflicts with list component
+	if m.state.view == WatchList_FileBinding {
+		return nil
+	}
 	return [][]key.Binding{
 		{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Prev, ui.KeyMap.Next, ui.KeyMap.Select},
 		{m.keys.reload, ui.KeyMap.MainMenu, ui.KeyMap.HelpLess},
@@ -203,11 +237,13 @@ func (m WatchList_Model) UpdateMenu(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 	case ui.MenuIndexMsg:
 		switch msg {
 		case 0:
-			m.state.view = WatchList_Delete
-		case 1:
 			m.state.view = WatchList_Drop
+		case 1:
+			m.state.view = WatchList_FileBinding
 		case 2:
 			m.state.view = WatchList_Complete
+		case 3:
+			m.state.view = WatchList_Delete
 		}
 	}
 
@@ -370,6 +406,132 @@ accurate.`,
 		ui.TextStyle.Render(m.ui.consent.View(utils.ColorText(";b;Are you sure?"))),
 	)
 	return view
+}
+
+func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	if len(m.ui.list.VisibleItems()) == 0 {
+		var ff lib.FansubFilter
+		fileStream, err := fileSys.NewFilenameStream(fileSys.GetWorkingDir())
+		if err != nil {
+			m.state.err = err
+			return m, nil
+		}
+
+		fansubs, err := ff.All(fileStream)
+		if err != nil {
+			m.state.err = err
+			return m, nil
+		}
+
+		listItems := make([]list.Item, len(fansubs))
+		for i, item := range fansubs {
+			listItems[i] = ui.NewListItem(item.Title, item.Filename, i)
+		}
+
+		m.ui.list = ui.NewList(ui.ListOptions{
+			Items:        listItems,
+			Width:        m.windowSize.Width - 5,
+			MaxHeight:    m.windowSize.Height,
+			ItemsPerPage: 5,
+			EnableFilter: true,
+		})
+	}
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.Submit):
+			if m.ui.list.FilterState() == list.Filtering {
+				break
+			}
+
+			switch m.state.bindingMode {
+			case SelectFile:
+				item := m.ui.list.SelectedItem().(ui.ListItem)
+				m.state.selectedFileTitle = item.Title()
+				listItems := make([]list.Item, len(m.state.anime))
+				for i, item := range m.state.anime {
+					if item.EngTitle == "" {
+						item.EngTitle = item.JpnTitle
+						item.JpnTitle = ""
+					}
+					listItems[i] = ui.NewListItem(item.EngTitle, item.JpnTitle, i)
+				}
+
+				m.ui.list = ui.NewList(ui.ListOptions{
+					Items:        listItems,
+					Width:        m.windowSize.Width - 5,
+					MaxHeight:    m.windowSize.Height,
+					ItemsPerPage: 5,
+					EnableFilter: true,
+				})
+				m.state.bindingMode = SelectAnime
+
+			case SelectAnime:
+				item := m.ui.list.SelectedItem().(ui.ListItem)
+				m.state.selectedAnime = m.state.anime[item.Index()]
+				m.state.bindingMode = ConfirmSelection
+
+			case ConfirmSelection:
+				if m.ui.consent.Select() == ui.No {
+					m.ui.list = list.Model{}
+					m.state.bindingMode = SelectFile
+					m.state.view = WatchList_Menu
+					return m, nil
+				}
+
+				m.db.AddFileBinding(m.state.selectedFileTitle, m.state.selectedAnime.LibID)
+				m.ui.list = list.Model{}
+				m.state.bindingMode = SelectFile
+				m.state.view = WatchList_Menu
+				return m, nil
+			}
+		}
+	}
+
+	if m.state.bindingMode == ConfirmSelection {
+		m.ui.consent = m.ui.consent.Update(msg)
+	}
+
+	m.ui.list, cmd = m.ui.list.Update(msg)
+	return m, cmd
+}
+
+func (m WatchList_Model) ViewFileBinding() string {
+	switch m.state.bindingMode {
+	case SelectFile:
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplayTitle("File Binding"),
+			ui.DisplayText([]string{";m;Select a file you want to bind"}, 0, 1),
+			m.ui.list.View(),
+		)
+
+	case SelectAnime:
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplayTitle("File Binding"),
+			ui.DisplayText([]string{";m;Select the anime you'd like to bind"}, 0, 1),
+			m.ui.list.View(),
+		)
+
+	case ConfirmSelection:
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplayTitle("File Binding"),
+			ui.DisplayText([]string{
+				"Selected File: ;y;" + m.state.selectedFileTitle,
+				"   Binding To: ;g;" + m.state.selectedAnime.JpnTitle + ";x;",
+			}, 0, 1, 1),
+			ui.TextStyle.Render(
+				m.ui.consent.View(utils.ColorText(";b;Is the above correct?")),
+			),
+		)
+	}
+
+	return "missing file binding view"
 }
 
 func (m WatchList_Model) UpdateCompleted(msg tea.Msg) (WatchList_Model, tea.Cmd) {

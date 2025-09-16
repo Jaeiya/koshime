@@ -26,6 +26,8 @@ type LibraryIndex int
 type Data struct {
 	Profile kitsu.Profile
 	Library []kitsu.LibraryEntry
+	// Binds an anime fansub title to its library ID
+	FileBindings map[string]string
 }
 
 type Database struct {
@@ -119,6 +121,16 @@ func (db Database) FindLibAnimeIndex(query string) ([]LibraryIndex, error) {
 	return indexes, nil
 }
 
+func (db Database) FindAnimeByLibId(id string) (kitsu.LibraryEntry, bool) {
+	for _, entry := range db.data.Library {
+		if entry.LibID == id {
+			return entry, true
+		}
+	}
+
+	return kitsu.LibraryEntry{}, false
+}
+
 // AnimeByIndex will retrieve library anime using the specified
 // library indexes.
 func (db Database) AnimeByIndex(libIndexes ...LibraryIndex) ([]kitsu.LibraryEntry, error) {
@@ -207,6 +219,21 @@ func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) err
 	// it ourselves by adding the unix time.
 	db.data.Profile.TokenExpirationSec = int64(expiresIn) + time.Now().Unix()
 	return db.SaveProfile(db.data.Profile)
+}
+
+func (db *Database) AddFileBinding(title, libraryID string) error {
+	if db.data.FileBindings == nil {
+		db.data.FileBindings = map[string]string{}
+	}
+	db.data.FileBindings[title] = libraryID
+	return db.Save()
+}
+
+func (db *Database) FindFileBinding(title string) (string, bool) {
+	if val, ok := db.data.FileBindings[title]; ok {
+		return val, ok
+	}
+	return "", false
 }
 
 func (db Database) Save() error {

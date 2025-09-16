@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/utils"
 )
@@ -18,12 +19,40 @@ type AnimeTitleMap map[string]map[string]struct{}
 
 type FansubFilter struct{}
 
+// All parses all possible fansubs from the provided stream and
+// returns their info.
+func (ff FansubFilter) All(stream utils.FilenameIterator) ([]FansubFileInfo, error) {
+	fp := FansubParser{}
+	fansubs := []FansubFileInfo{}
+
+	for {
+		fileName, ok := stream.Next()
+		if !ok {
+			break
+		}
+
+		if !fp.IsSupported(fileName) {
+			continue
+		}
+
+		fansub, err := fp.Parse(fileName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse filename: %w", err)
+		}
+
+		fansubs = append(fansubs, fansub)
+	}
+
+	return fansubs, nil
+}
+
 func (ff FansubFilter) FilterByLibEntry(
 	stream utils.FilenameIterator,
-	animeLibrary []kitsu.LibraryEntry,
+	db *database.Database,
 ) ([]FilteredAnime, error) {
 	fp := FansubParser{}
-	animeWordMap := ff.buildAnimeWordMap(animeLibrary)
+	animeLib := db.Anime()
+	animeWordMap := ff.buildAnimeWordMap(animeLib)
 	foundStore := map[string]struct{}{}
 	filteredAnime := []FilteredAnime{}
 
@@ -42,10 +71,25 @@ func (ff FansubFilter) FilterByLibEntry(
 			return nil, fmt.Errorf("failed to parse filename: %w", err)
 		}
 
+		libID, bindingExists := db.FindFileBinding(fansub.Title)
+		if bindingExists {
+			entry, entryExists := db.FindAnimeByLibId(libID)
+			if !entryExists {
+				return nil, fmt.Errorf("missing anime in library with ID: %s", libID)
+			}
+
+			filteredAnime = append(filteredAnime, FilteredAnime{
+				LibEntry: entry,
+				FileInfo: fansub,
+				Score:    100,
+			})
+			continue
+		}
+
 		found := FilteredAnime{}
 		titleWords := strings.Fields(ff.normalizeTitle(fansub.Title))
 
-		for _, anime := range animeLibrary {
+		for _, anime := range animeLib {
 			if _, exists := foundStore[anime.ID]; exists {
 				continue
 			}
