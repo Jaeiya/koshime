@@ -78,11 +78,17 @@ func (ff FansubFilter) FilterByLibEntry(
 				return nil, fmt.Errorf("missing anime in library with ID: %s", libID)
 			}
 
+			if _, exists := foundStore[entry.ID]; exists {
+				continue
+			}
+
 			filteredAnime = append(filteredAnime, FilteredAnime{
 				LibEntry: entry,
 				FileInfo: fansub,
 				Score:    100,
 			})
+
+			foundStore[entry.ID] = struct{}{}
 			continue
 		}
 
