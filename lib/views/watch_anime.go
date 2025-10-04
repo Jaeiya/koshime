@@ -186,6 +186,10 @@ func (m WatchAnime_Model) ShortHelp() []key.Binding {
 	}
 
 	switch m.state.view {
+	case WatchAnime_Selection:
+		if len(m.state.filteredAnime) == 0 {
+			return []key.Binding{ui.KeyMap.EscBack}
+		}
 	case WatchAnime_Progress:
 		if m.state.progress.isUpdated {
 			return []key.Binding{ui.KeyMap.Select}
@@ -218,6 +222,11 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 			return m, func() tea.Msg { return "forceUpdateToReload" }
 
 		case key.Matches(msg, ui.KeyMap.Submit):
+			// do not allow submission of nothing
+			if len(m.state.filteredAnime) == 0 {
+				return m, nil
+			}
+
 			if m.ui.list.FilterState() != list.Filtering {
 				item := m.ui.list.SelectedItem().(ui.ListItem)
 				m.state.selection.anime = m.state.filteredAnime[item.Index()]
@@ -258,6 +267,14 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 }
 
 func (m WatchAnime_Model) ViewSelection() (string, *tea.Cursor) {
+	if len(m.state.filteredAnime) == 0 {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplayTitle("Watch Anime"),
+			"",
+			ui.DisplayText([]string{";y;No Anime Fansubs Detected"}),
+		), nil
+	}
 	view := lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplayTitle("Watch Anime"),
