@@ -15,11 +15,15 @@ build:
 	@echo "   Commit:  $(COMMIT)"
 	@go build $(LDFLAGS) -o $(APP_NAME) ./...
 
-install:
+install: tidy
 	@echo "📦 Installing $(APP_NAME)"
 	@echo "   Version: $(DISPLAY_VERSION)"
 	@echo "   Commit:  $(COMMIT)"
 	@go install $(LDFLAGS) ./...
+
+tidy:
+	@echo "🧩 Running go mod tidy"
+	@go mod tidy
 
 clean:
 	@echo "🧹 Cleaning"
