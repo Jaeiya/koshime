@@ -1,4 +1,4 @@
-# Changelog (10/4/2025)
+# Changelog v1.4.0 (10/4/2025)
 
 ## Feat
 
