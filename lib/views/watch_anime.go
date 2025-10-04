@@ -535,11 +535,9 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 		return fmt.Errorf("failed to update Kitsu progress: %w", err)
 	}
 
-	// 🟢 At the beginning of an Anime season, Kitsu does not always know
-	// the total episodes for each series.
-	if libEntry.Episodes == 0 {
-		libEntry.Episodes = progResp.Included[0].Attributes.EpisodeCount
-	}
+	// 🟢 Kitsu does not always know the correct total episodes for a series
+	// until the series is about to end.
+	libEntry.Episodes = progResp.Included[0].Attributes.EpisodeCount
 
 	// 🟢 When an anime is completed (progress updated to match total episodes), the
 	// anime status is automatically updated by Kitsu, unless the episode count
