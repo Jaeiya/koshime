@@ -1,3 +1,7 @@
+### File Binding
+
+When a series is completed, we need to delete any existing file bindings
+
 ### Rating
 
 When an anime is completed, the user should be prompted to set a rating
@@ -37,34 +41,3 @@ without a little help. (after this port, that should be very rare)
 - Choice to update with name and episode number
   - Can also choose to just update the episode progress
 - Choice to confirm the changes about to be made
-
-### Drop
-
-1. Lookup an anime saved in cache
-1. Confirmation to drop anime
-
-### RSS Lookup
-
-1. Choose optional Fansub and Resolution.
-1. Provide input for manual entry
-1. Display basic results
-1. Allow selection for full details (or on hover)
-
-### Maintenance
-
-**Cache**
-Should allow users to view or rebuild their cache info. This is useful if the
-user needs to make manual changes to their kitsu library and have those changes
-reflected in Koshime.
-
-- Viewing the cache should display all stored information about the anime in a users library
-- Rebuilding the cache should replace the users currently stored anime library with the one from Kitsu. Incremental updates don't make sense on such a small amount of data.
-
-**Directory**
-Should allow users to manage their watch directory. The watch directory will get
-very full and should be cleaned out regularly.
-
-- Choice to view directory stats (size, oldest, latest, largest, etc...)
-- Choice to adjust the interval of when files are deleted (keep most recent)
-- Choice to delete entire contents
-- Choice to keep the most recent episode of each anime
