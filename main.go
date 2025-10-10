@@ -38,7 +38,7 @@ func main() {
 	// 	panic(err)
 	// }
 
-	// f, err := ff.FilterByLibEntry(stream, db.Anime())
+	// f, err := ff.FilterByLibEntry(stream, db)
 	// if err != nil {
 	// 	panic(err)
 	// }
