@@ -243,7 +243,7 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 				case fileEp == 0:
 					m.state.selection.fileState = Pilot
 
-				case fileEp > anime.LibEntry.Episodes:
+				case anime.LibEntry.Episodes > 0 && fileEp > anime.LibEntry.Episodes:
 					m.state.selection.fileState = NonSeasonalCount
 
 				case fileEp > nextProgress:
