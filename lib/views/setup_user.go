@@ -172,7 +172,7 @@ func (m SetupUserModel) View() (string, *tea.Cursor) {
 		view := lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("User Setup", "Error"),
-			ui.DisplayError(m.state.err),
+			ui.DisplayError(m.err),
 		)
 		return view, nil
 	}
