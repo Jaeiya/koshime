@@ -46,6 +46,12 @@ func (ff FansubFilter) All(stream utils.FilenameIterator) ([]FansubFileInfo, err
 	return fansubs, nil
 }
 
+// FilterByLibEntry returns a slice of anime data by how closely a file name
+// can be matched against an anime in the users library. A score of greater
+// than 50 is required to be considered a match.
+//
+// 🔵 Redundant episodic file names are ignored; file names will
+// match in ascending order: '04' matches before '06'
 func (ff FansubFilter) FilterByLibEntry(
 	stream utils.FilenameIterator,
 	db *database.Database,
@@ -54,6 +60,7 @@ func (ff FansubFilter) FilterByLibEntry(
 	animeLib := db.Anime()
 	animeWordMap := ff.buildAnimeWordMap(animeLib)
 	foundStore := map[string]struct{}{}
+	fileFoundStore := map[string]struct{}{}
 	filteredAnime := []FilteredAnime{}
 
 	for {
@@ -69,6 +76,11 @@ func (ff FansubFilter) FilterByLibEntry(
 		fansub, err := fp.Parse(fileName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse filename: %w", err)
+		}
+
+		// Do not try score the same fansub file
+		if _, exists := fileFoundStore[fansub.Title]; exists {
+			continue
 		}
 
 		libID, bindingExists := db.FindFileBinding(fansub.Title)
@@ -115,6 +127,7 @@ func (ff FansubFilter) FilterByLibEntry(
 
 		if found.Score > 50 {
 			foundStore[found.LibEntry.ID] = struct{}{}
+			fileFoundStore[fansub.Title] = struct{}{}
 			filteredAnime = append(filteredAnime, found)
 		}
 
