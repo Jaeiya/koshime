@@ -623,10 +623,19 @@ func (m SetupUserModel) getAuthToken() tea.Msg {
 
 func (m SetupUserModel) createWatchDir() tea.Msg {
 	wd := fileSys.GetWorkingDir()
-	err := os.Mkdir(filepath.Join(wd, "(watched)"), 0o755)
+	watchPath := filepath.Join(wd, "(watched)")
+	_, err := os.Stat(watchPath)
+	if errors.Is(err, os.ErrNotExist) {
+		if err = os.Mkdir(watchPath, 0o755); err != nil {
+			return DefaultErrorMsg{err}
+		}
+		return nil
+	}
+
 	if err != nil {
 		return DefaultErrorMsg{err}
 	}
+
 	return nil
 }
 
