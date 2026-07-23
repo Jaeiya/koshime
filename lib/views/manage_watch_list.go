@@ -179,7 +179,8 @@ func (m WatchList_Model) View() (string, *tea.Cursor) {
 func (m WatchList_Model) ShortHelp() []key.Binding {
 	keys := []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down}
 
-	if m.state.bindingMode < ConfirmSelection {
+	// List has its own keymap help
+	if m.state.view == WatchList_FileBinding {
 		return nil
 	}
 
@@ -351,7 +352,8 @@ func (m WatchList_Model) ViewDeleting() string {
 			[]string{
 				fmt.Sprintf(
 					`;dc;%s ;x;will be deleted from your Kitsu library and
-the local database.`, m.state.anime[m.state.animeIndex].EngTitle),
+the local database.`, m.state.anime[m.state.animeIndex].EngTitle,
+				),
 				`;y;[this action cannot be undone]`,
 			}, 1,
 		),
