@@ -205,7 +205,8 @@ func (fp FansubParser) Parse(fileName string) (FansubFileInfo, error) {
 
 		// Assume title is always before meta-data
 		if !hasMetaData() {
-			title.WriteString(t + " ")
+			title.WriteString(t)
+			title.WriteString(" ")
 		}
 
 	}

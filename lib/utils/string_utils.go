@@ -34,13 +34,16 @@ func RemoveBrackets(s string) string {
 		return s
 	}
 
-	if s[0] == '[' || s[0] == '(' {
+	switch s[0] {
+	case '[', '(':
 		s = s[1:]
 	}
 
-	if s[len(s)-1] == ']' || s[len(s)-1] == ')' {
+	switch s[len(s)-1] {
+	case ']', ')':
 		s = s[:len(s)-1]
 	}
+
 	return s
 }
 

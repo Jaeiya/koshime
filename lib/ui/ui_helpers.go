@@ -124,13 +124,10 @@ func DisplayPropValue(props []string, values []string) string {
 	valStyle := Style.Width(60)
 
 	for i, prop := range props {
-		sb.WriteString(
-			lipgloss.JoinHorizontal(
-				lipgloss.Left,
-				propStyle.Render(prop)+": ",
-				valStyle.Render(utils.ColorText(values[i])),
-			) + "\n",
-		)
+		sb.WriteString(propStyle.Render(prop))
+		sb.WriteString(": ")
+		sb.WriteString(valStyle.Render(utils.ColorText(values[i])))
+		sb.WriteRune('\n')
 	}
 
 	return Style.MarginLeft(5).Render(strings.TrimRight(sb.String(), "\n"))

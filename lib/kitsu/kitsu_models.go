@@ -150,7 +150,7 @@ func (ed APIErrorData) String() string {
 		if detail == "" {
 			detail = err.Title
 		}
-		sb.WriteString(fmt.Sprintf("%s: [HTTP %d] %s\n", errType, err.Status, detail))
+		fmt.Fprintf(&sb, "%s: [HTTP %d] %s\n", errType, err.Status, detail)
 	}
 	if sb.Len() > 0 {
 		return sb.String()
@@ -178,7 +178,7 @@ func (ed APIErrorDataV2) String() string {
 		if detail == "" {
 			detail = err.Title
 		}
-		sb.WriteString(fmt.Sprintf("%s: [HTTP %d] %s\n", errType, status, detail))
+		fmt.Fprintf(&sb, "%s: [HTTP %d] %s\n", errType, status, detail)
 	}
 	if sb.Len() > 0 {
 		return sb.String()
