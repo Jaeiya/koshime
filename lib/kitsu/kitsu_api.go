@@ -8,7 +8,7 @@ import (
 )
 
 func GetProfile(userName string) (Profile, error) {
-	qurl, err := profileURL(userName)
+	queryUrl, err := profileURL(userName)
 	if err != nil {
 		return Profile{}, err
 	}
@@ -16,7 +16,7 @@ func GetProfile(userName string) (Profile, error) {
 	var respData ProfileData
 	_, err = newAPIRequest(APIReqOptions{
 		method:      apiGet,
-		url:         qurl,
+		url:         queryUrl,
 		contentType: vndAPIContent,
 	}, &respData)
 	if err != nil {

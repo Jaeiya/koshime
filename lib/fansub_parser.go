@@ -9,11 +9,6 @@ import (
 	"github.com/Jaeiya/koshime/lib/utils"
 )
 
-var fansubReplaceMap = map[string]string{
-	"][": " ",
-	")(": " ",
-}
-
 var fansubEncodingMap = map[string]string{
 	"1920x1080":  "1080p",
 	"1920x1080i": "1080i",
@@ -34,8 +29,8 @@ var fansubEncodingMap = map[string]string{
 	"x264":       "H.264",
 
 	"hdr": "HDR",
-	"sdr": "SDR",
 
+	"sdr":    "SDR",
 	"ddp":    "DolbyDigital+",
 	"ddp2.0": "DolbyDigital+2.0",
 	"ddp5.1": "DolbyDigital+5.1",

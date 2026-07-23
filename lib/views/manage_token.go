@@ -298,6 +298,6 @@ func (m TokenModel) resetToken() tea.Msg {
 }
 
 func (m TokenModel) HasBeenRenewed() bool {
-	rtu := utils.NewRelativeTimeUnits(m.db.Profile().TokenExpirationSec)
-	return rtu.Weeks == 4 && rtu.Days > 0
+	timeUnits := utils.NewRelativeTimeUnits(m.db.Profile().TokenExpirationSec)
+	return timeUnits.Weeks == 4 && timeUnits.Days > 0
 }

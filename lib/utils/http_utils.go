@@ -88,7 +88,7 @@ func (h Http) PostForm(url string, values url.Values) (HttpResponse, error) {
 }
 
 func (Http) ReadResponseBody(resp *http.Response) ([]byte, error) {
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	reader := io.Reader(resp.Body)
 
@@ -97,7 +97,7 @@ func (Http) ReadResponseBody(resp *http.Response) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		defer gzReader.Close()
+		defer func() { _ = gzReader.Close() }()
 		reader = gzReader
 	}
 

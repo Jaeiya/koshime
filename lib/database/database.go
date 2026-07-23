@@ -215,8 +215,10 @@ func (db *Database) UpdateAnime(updatedEntry kitsu.LibraryEntry) error {
 func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) error {
 	db.data.Profile.AccessToken = token
 	db.data.Profile.RefreshToken = refreshToken
-	// Because this is a duration and not a time stamp, we stamp
-	// it ourselves by adding the unix time.
+	/*
+		INFO: Because this is a duration and not a time stamp, we stamp
+		it ourselves by adding the unix time.
+	*/
 	db.data.Profile.TokenExpirationSec = int64(expiresIn) + time.Now().Unix()
 	return db.SaveProfile(db.data.Profile)
 }
@@ -250,7 +252,10 @@ func (db Database) Save() error {
 		return err
 	}
 
-	os.WriteFile(dbFileName, compressed, 0o644)
+	err = os.WriteFile(dbFileName, compressed, 0o644)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -287,7 +292,7 @@ func compressData(data []byte) ([]byte, error) {
 
 func decompressData(data []byte) ([]byte, error) {
 	reader := flate.NewReader(bytes.NewReader(data))
-	defer reader.Close()
+	defer func() { _ = reader.Close() }()
 
 	var out bytes.Buffer
 	if _, err := io.Copy(&out, reader); err != nil {

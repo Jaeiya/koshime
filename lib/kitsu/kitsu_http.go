@@ -9,8 +9,6 @@ import (
 	"github.com/Jaeiya/koshime/lib/utils"
 )
 
-var client = &http.Client{}
-
 type KitsuMethod string
 
 const (

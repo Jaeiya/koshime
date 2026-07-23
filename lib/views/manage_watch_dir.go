@@ -264,7 +264,8 @@ func (m WatchDir_Model) ViewCleaned() string {
 		if m.state.view == WatchDir_CleanAll {
 			typeStr = "Folder is already empty"
 		}
-		viewLines = append(viewLines,
+		viewLines = append(
+			viewLines,
 			ui.DisplayText([]string{
 				typeStr,
 			}),
@@ -277,7 +278,8 @@ func (m WatchDir_Model) ViewCleaned() string {
 		)
 	}
 
-	viewLines = append(viewLines,
+	viewLines = append(
+		viewLines,
 		ui.DisplayPropValue(
 			[]string{
 				";dc;Deleted",
@@ -298,7 +300,7 @@ func (m WatchDir_Model) ViewCleaned() string {
 	)
 }
 
-// FIX  Loading files on an empty directory probably has some caveats...
+// FIX: Loading files on an empty directory probably has some caveats...
 func (m WatchDir_Model) loadFiles() tea.Msg {
 	var fileSys utils.FileSys
 	dirPath := fileSys.WatchDir()

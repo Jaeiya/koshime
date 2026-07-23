@@ -142,12 +142,12 @@ func (m Rss_Model) UpdateSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 		}
 
 	case lib.RSSResult:
-		var fsp lib.FansubParser
+		var parser lib.FansubParser
 		m.state.rssResult = msg
 		items := []list.Item{}
 
 		for i, entry := range m.state.rssResult.Entries {
-			info, err := fsp.Parse(entry.Title)
+			info, err := parser.Parse(entry.Title)
 			if err != nil {
 				if errors.Is(err, lib.ErrBatchFile) {
 					continue
@@ -160,7 +160,8 @@ func (m Rss_Model) UpdateSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 			if info.Season != "" {
 				seasonStr = " | S" + info.Season
 			}
-			items = append(items,
+			items = append(
+				items,
 				ui.NewListItem(
 					fmt.Sprintf("[%s] %s - %s", info.Fansub, info.Title, info.Episode),
 					fmt.Sprintf("%s | %s | %s%s", dateStr, entry.Size, info.Encoding, seasonStr),

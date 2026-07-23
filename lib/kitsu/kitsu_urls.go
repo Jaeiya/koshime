@@ -134,7 +134,7 @@ func animeInfoURL(query string, status AnimeStatus, maxItems int) (APIUrl, error
 			},
 		)
 
-	return APIUrl(u.Build()), nil
+	return APIUrl(u.String()), nil
 }
 
 // func getAnimeLibInfoQURL(libIDs []string) (APIUrl, error) {
@@ -172,7 +172,7 @@ func userAnimeURL(userID string, status LibAnimeStatus) (APIUrl, error) {
 		PageLimit(200).
 		IncludeCategory([]DataCategory{AnimeCategory})
 
-	return APIUrl(u.Build()), nil
+	return APIUrl(u.String()), nil
 }
 
 func profileURL(profileSlug string) (APIUrl, error) {
@@ -185,7 +185,7 @@ func profileURL(profileSlug string) (APIUrl, error) {
 		IncludeCategory([]DataCategory{StatsCategory}).
 		PageLimit(1)
 
-	return APIUrl(u.Build()), nil
+	return APIUrl(u.String()), nil
 }
 
 func progressURL(libID string) (APIUrl, error) {
@@ -198,7 +198,7 @@ func progressURL(libID string) (APIUrl, error) {
 		QueryAnimeFields([]AnimeField{EpisodeCountField}).
 		JoinPath(libID)
 
-	return APIUrl(url.Build()), nil
+	return APIUrl(url.String()), nil
 }
 
 type KitsuURL struct {
@@ -206,11 +206,13 @@ type KitsuURL struct {
 	query url.Values
 }
 
-func newQURL(uType URLType) (*KitsuURL, error) {
+// newQURL creates a URL object to query Kitsu, using the
+// specified URL type.
+func newQURL(urlType URLType) (*KitsuURL, error) {
 	var u *url.URL
 	var err error
 
-	switch uType {
+	switch urlType {
 	case LibraryURL:
 		u, err = url.Parse(string(apiLibraryURL))
 	case AnimeURL:
@@ -315,7 +317,7 @@ func (k *KitsuURL) QueryAnimeFields(fields []AnimeField) *KitsuURL {
 	return k
 }
 
-func (k *KitsuURL) Build() string {
+func (k *KitsuURL) String() string {
 	k.url.RawQuery = k.query.Encode()
 	return k.url.String()
 }

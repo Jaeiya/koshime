@@ -79,9 +79,9 @@ func WithMinInputLen(len int) AnimeSearchOption {
 	}
 }
 
-func WithItemsPerPage(ipp int) AnimeSearchOption {
+func WithItemsPerPage(itemsPerPage int) AnimeSearchOption {
 	return func(fac *AnimeSearchConfig) {
-		fac.itemsPerPage = ipp
+		fac.itemsPerPage = itemsPerPage
 	}
 }
 
