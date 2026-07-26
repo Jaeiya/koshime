@@ -36,8 +36,8 @@ func (Http) GetUserAgent() string {
 // and Content-Type headers, which can be left empty.
 //
 // 🟡 If accept is empty, it will use text/plain
-//
 // 🟡 If contentType is empty, it will not be used
+// 🟡 All cookies will be saved and sent with subsequent requests
 func (h Http) Do(req *http.Request, accept, contentType string) (HttpResponse, error) {
 	if contentType != "" {
 		req.Header.Set("Content-Type", contentType)
