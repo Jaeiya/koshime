@@ -17,6 +17,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea/v2"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/cli/browser"
 )
 
 type (
@@ -33,6 +34,7 @@ type SetupUserView int
 
 const (
 	SetupConsentView = SetupUserView(iota)
+	SetupBittorrentView
 	SetupUsernameView
 	SetupPasswordView
 	SetupLibraryView
@@ -48,9 +50,14 @@ type SetupUserModel struct {
 	helpMap SetupUserHelpMap
 	err     error
 	state   struct {
-		data     database.Data
-		view     SetupUserView
-		err      error
+		data        database.Data
+		view        SetupUserView
+		err         error
+		qBittorrent struct {
+			accepted    bool
+			tutorialPos int
+			page0Sel    int
+		}
 		username struct {
 			notFound bool
 			found    bool
@@ -84,6 +91,17 @@ func newSetupUserModel() SetupUserModel {
 					ui.KeyMap.Up,
 					ui.KeyMap.Down,
 					ui.KeyMap.Select,
+					ui.KeyMap.Abort,
+				}
+			},
+		},
+		SetupBittorrentView: {
+			ShortHelp: func(usm SetupUserModel) []key.Binding {
+				return []key.Binding{
+					ui.KeyMap.Up,
+					ui.KeyMap.Down,
+					ui.KeyMap.Select,
+					ui.KeyMap.Back,
 					ui.KeyMap.Abort,
 				}
 			},
@@ -150,6 +168,9 @@ func (m SetupUserModel) Update(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 	case SetupConsentView:
 		m, cmd = m.UpdateConsent(msg)
 		cmds = append(cmds, cmd)
+	case SetupBittorrentView:
+		m, cmd = m.UpdateQBittorrent(msg)
+		cmds = append(cmds, cmd)
 	case SetupUsernameView:
 		m, cmd = m.UpdateUsername(msg)
 		cmds = append(cmds, cmd)
@@ -193,6 +214,8 @@ your anime, from the command line.`,
 				ui.ConsentStyle.Render("Would you like to setup in this directory?"),
 			),
 		), nil
+	case SetupBittorrentView:
+		view = m.ViewQBittorrent()
 	case SetupUsernameView:
 		view, c = m.ViewUsername()
 	case SetupPasswordView:
@@ -239,12 +262,213 @@ func (m SetupUserModel) UpdateConsent(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 			if ui.No == m.ui.consent.Select() {
 				return m, m.abort
 			}
-			m.state.view = SetupUsernameView
+			m.state.view = SetupBittorrentView
 			return m, tea.Batch(textinput.Blink, m.createWatchDir)
 		}
 	}
 
 	return m, nil
+}
+
+func (m SetupUserModel) UpdateQBittorrent(msg tea.Msg) (SetupUserModel, tea.Cmd) {
+	if !m.state.qBittorrent.accepted {
+		m.ui.consent = m.ui.consent.Update(msg)
+	}
+
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.Select):
+			if !m.state.qBittorrent.accepted {
+				if ui.No == m.ui.consent.Select() {
+					m.state.view = SetupUsernameView
+					return m, nil
+				}
+				m.state.qBittorrent.accepted = true
+				return m, nil
+			}
+
+			switch m.state.qBittorrent.tutorialPos {
+			case 0:
+				/*
+				 INFO: We ignore the error because the user will just move
+				 on and search themselves if it doesn't work.
+				*/
+				switch m.state.qBittorrent.page0Sel {
+				case 0:
+					_ = browser.OpenURL("https://qbittorrent.org/download")
+				case 1:
+					_ = browser.OpenURL("https://github.com/qbittorrent/qBittorrent")
+				case 2:
+					m.state.qBittorrent.tutorialPos++
+				}
+			case 1, 2, 3:
+				m.state.qBittorrent.tutorialPos++
+			}
+
+		case key.Matches(msg, ui.KeyMap.Down):
+			if !m.state.qBittorrent.accepted {
+				return m, nil
+			}
+
+			switch m.state.qBittorrent.tutorialPos {
+			case 0:
+				if m.state.qBittorrent.page0Sel+1 <= 2 {
+					m.state.qBittorrent.page0Sel++
+				}
+			}
+
+		case key.Matches(msg, ui.KeyMap.Up):
+			if !m.state.qBittorrent.accepted {
+				return m, nil
+			}
+
+			switch m.state.qBittorrent.tutorialPos {
+			case 0:
+				if m.state.qBittorrent.page0Sel-1 >= 0 {
+					m.state.qBittorrent.page0Sel--
+				}
+			}
+
+		case key.Matches(msg, ui.KeyMap.Back):
+			if m.state.qBittorrent.tutorialPos-1 >= 0 {
+				m.state.qBittorrent.tutorialPos--
+			}
+
+		}
+	}
+
+	return m, nil
+}
+
+func (m SetupUserModel) ViewQBittorrent() string {
+	setupView := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("qBittorrent", "Setup"),
+		ui.DisplayText([]string{
+			`To make things easier, we can setup a torrent client called
+;dg;qBittorrent;x;, to automatically download your anime for you. It is
+a ;g;free;x; and ;g;open source;x; program.`,
+			`It works on ;y;Linux;x;, ;c;MacOS;x;, and ;m;Windows;x;.`,
+		}, 1, 1),
+	)
+
+	if !m.state.qBittorrent.accepted {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			setupView,
+			m.ui.consent.View(ui.ConsentStyle.Render("Would you like to use qBittorrent?")),
+		)
+	}
+
+	optStyle := ui.Style.MarginLeft(5)
+	selStyle := ui.Style.MarginLeft(3).Foreground(ansi.BrightGreen)
+
+	page1 := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("qBittorrent", "Tutorial Page 1"),
+		ui.DisplayText([]string{
+			`First you'll need to download the ;dg;qBittorrent;x; client
+if you don't already have it installed. Once you have it downloaded,
+you can install it using all its default settings.`,
+			";b;Here are some options to get you started:;x;",
+		}, 1, 1),
+	)
+
+	page2 := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("qBittorrent", "Tutorial Page 2"),
+		ui.DisplayText([]string{
+			`In order for ;g;Koshime;x; to connect to qBittorrent,
+we need to enable its ;w;WebUI;x; component.`,
+			`This can be done by opening ;w;qBittorrent;x; and clicking the
+;c;gear icon;x;. This can also be done by opening its ;c;tools;x; menu and
+selecting ;c;options;x; from the list.`,
+			`The options window should now be visible. On the left side, find
+the icon named ;w;WebUI;x; and click it. The icon will look like a ringed
+planet.`,
+		}, 1, 1),
+	)
+
+	page3 := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("qBittorrent", "Tutorial Page 3"),
+		ui.DisplayText([]string{
+			`You should now see all the options for the ;w;WebUI;x; on the right side
+of the options window.`,
+			`At the top, you'll see the text ;c;Web User Interface;x;, with a checkbox
+next to it. Go ahead and click the checkbox. This will enable the ;w;WebUI;x;.`,
+			`The line below that one, shows an ;c;IP Address;x; and ;c;Port;x;. The only
+thing we care about is the ;c;Port;x;. The default is ;w;8080;x; but if you run other
+services on that port, you'll need to change it.`,
+			`If you want to make sure there are no conflicts, I would suggest changing the port
+to ;g;8567;x;. This port is known to have virtually Zero conflicts.`,
+		}, 1, 1),
+	)
+
+	page4 := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("qBittorrent", "Tutorial Page 4"),
+		ui.DisplayText([]string{
+			`Now that you have the ;c;Port;x; set, we need to set a ;c;Username;x; and
+;c;Password;x;. Scan down a few lines from the port and you should see an ;w;Authentication;x;
+and ;w;User;x; section.`,
+			`The ;c;Username;x; should default to ;g;admin;x; which is fine. You can change this if you
+want. The ;c;Password;x; however, definitely needs to be changed because it defaults to
+;g;admin;x; as well.`,
+			`Go ahead and click in the ;c;Password;x; box and change the password to something
+you'll remember. Once you're done, click the ;w;Apply;x; button at the bottom right of the window.`,
+		}, 1, 1),
+	)
+
+	page1Opts := [...]string{
+		"Open Download Website",
+		"Open Source-code Website",
+		"Continue",
+	}
+
+	switch m.state.qBittorrent.tutorialPos {
+	case 0:
+		var sb strings.Builder
+		sb.Grow(15 * 3)
+		for i, opt := range page1Opts {
+			if i > 0 {
+				sb.WriteByte('\n')
+			}
+			if i == m.state.qBittorrent.page0Sel {
+				sb.WriteString(selStyle.Render("> " + opt))
+			} else {
+				sb.WriteString(optStyle.Render(opt))
+			}
+		}
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			page1,
+			sb.String(),
+		)
+
+	case 1:
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			page2,
+			selStyle.Render("> Continue"),
+		)
+
+	case 2:
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			page3,
+			selStyle.Render("> Continue"),
+		)
+
+	case 3:
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			page4,
+			selStyle.Render("> Continue"),
+		)
+	}
+	return ""
 }
 
 func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
@@ -469,7 +693,8 @@ func (m SetupUserModel) ViewPassword() (string, *tea.Cursor) {
 			";bk;" + m.state.data.Profile.RefreshToken,
 		})
 
-		return lipgloss.JoinVertical(lipgloss.Left,
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
 			ui.DisplaySubTitle("User Setup", "Credentials"),
 			"",
 			ui.DisplayText([]string{
