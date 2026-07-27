@@ -166,6 +166,11 @@ func (qb qBittorrentAPI) DeleteRuleFeed(name, feed string) error {
 	return nil
 }
 
+func (qb qBittorrentAPI) Rule(name string) (RSSRule, bool) {
+	rule, exists := ruleCache[name]
+	return rule, exists
+}
+
 func (qb qBittorrentAPI) Rules() (RSSRulesMap, error) {
 	req, _ := http.NewRequest("GET", buildApiUrl(apiRulesURI), nil)
 	resp, err := httpUtils.Do(req, "application/json", "")
