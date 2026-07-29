@@ -25,10 +25,11 @@ const (
 	apiLogoutURI = ApiUri("auth/logout")
 
 	// RSS
-	apiRulesURI     = ApiUri("rss/rules")
-	apiSaveRuleURI  = ApiUri("rss/setRule")
-	apiFeedItemsURI = ApiUri("rss/items")
-	apiAddFeedURI   = ApiUri("rss/addFeed")
+	apiRulesURI      = ApiUri("rss/rules")
+	apiSaveRuleURI   = ApiUri("rss/setRule")
+	apiRemoveRuleURI = ApiUri("rss/removeRule")
+	apiFeedItemsURI  = ApiUri("rss/items")
+	apiAddFeedURI    = ApiUri("rss/addFeed")
 )
 
 var (
@@ -83,6 +84,15 @@ func NewLogin(password string, port string) (*qBittorrentAPI, error) {
 	return qb, nil
 }
 
+func CheckConn(port string) error {
+	req, _ := http.NewRequest("HEAD", "http://localhost:"+port+"/api/v2/", nil)
+	_, err := httpUtils.Do(req, "", "")
+	if err != nil {
+		return errConnFailed
+	}
+	return nil
+}
+
 func (qb qBittorrentAPI) AddFeed(name, feedURL string) error {
 	resp, err := httpUtils.PostForm(buildApiUrl(apiAddFeedURI), url.Values{
 		"url":  {feedURL},
@@ -130,6 +140,21 @@ func (qb qBittorrentAPI) AddRule(name string, rule RSSRule) error {
 		return fmt.Errorf("failed to add rule: %w", err)
 	}
 	ruleCache[name] = rule
+	return nil
+}
+
+func (qb qBittorrentAPI) DeleteRule(name string) error {
+	resp, err := httpUtils.PostForm(buildApiUrl(apiRemoveRuleURI), url.Values{
+		"ruleName": {name},
+	})
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("failed remove rule: %s", string(resp.Body))
+	}
+
 	return nil
 }
 
