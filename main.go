@@ -8,16 +8,16 @@ import (
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
 
-var (
-	errUserAborted = fmt.Errorf("user aborted initialization")
-	dbFilePath     = filepath.Join("./", "koshime.db")
-)
+var dbFilePath = filepath.Join("./", "koshime.db")
 
 func main() {
 	m, err := views.New(dbFilePath)
 	if err != nil {
 		panic(err)
 	}
+
+	// Cleanup residual cursor issues
+	defer fmt.Print("\x1b[0 q")
 
 	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
