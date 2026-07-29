@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
+	"github.com/Jaeiya/koshime/lib/qbittorrent"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/key"
@@ -26,6 +28,7 @@ type (
 	FetchedLibAnimeMsg   = []kitsu.LibraryEntry
 	SetupUserFinishedMsg = database.Data
 	SetupUserAbortMsg    struct{}
+	QbtLoginTestMsg      int
 )
 
 type SetupUserHelpMap map[SetupUserView]ui.KeyHelpInfo[SetupUserModel]
@@ -42,10 +45,13 @@ const (
 
 type SetupUserModel struct {
 	ui struct {
-		consent  ui.ConsentModel
-		loader   ui.LoaderModel
-		username textinput.Model
-		password textinput.Model
+		consent     ui.ConsentModel
+		loader      ui.LoaderModel
+		qbtPort     textinput.Model
+		qbtUsername textinput.Model
+		qbtPassword textinput.Model
+		username    textinput.Model
+		password    textinput.Model
 	}
 	helpMap SetupUserHelpMap
 	err     error
@@ -54,9 +60,14 @@ type SetupUserModel struct {
 		view        SetupUserView
 		err         error
 		qBittorrent struct {
-			accepted    bool
-			tutorialPos int
-			page0Sel    int
+			login struct {
+				port   int
+				failed bool
+				passed bool
+			}
+			accepted bool
+			setupPos int
+			page0Sel int
 		}
 		username struct {
 			notFound bool
@@ -76,6 +87,16 @@ type SetupUserModel struct {
 func newSetupUserModel() SetupUserModel {
 	m := SetupUserModel{}
 	m.ui.loader = ui.NewLoader()
+
+	m.ui.qbtPort = ui.NewTextInput()
+	m.ui.qbtPort.Placeholder = "<port number>"
+
+	m.ui.qbtUsername = ui.NewTextInput()
+	m.ui.qbtUsername.Placeholder = "<username>"
+
+	m.ui.qbtPassword = ui.NewTextInput()
+	m.ui.qbtPassword.EchoMode = textinput.EchoPassword
+	m.ui.qbtPassword.Placeholder = "<password>"
 
 	m.ui.username = ui.NewTextInput()
 	m.ui.username.Placeholder = "<profile-url-name>"
@@ -101,7 +122,6 @@ func newSetupUserModel() SetupUserModel {
 					ui.KeyMap.Up,
 					ui.KeyMap.Down,
 					ui.KeyMap.Select,
-					ui.KeyMap.Back,
 					ui.KeyMap.Abort,
 				}
 			},
@@ -215,7 +235,7 @@ your anime, from the command line.`,
 			),
 		), nil
 	case SetupBittorrentView:
-		view = m.ViewQBittorrent()
+		view, c = m.ViewQBittorrent()
 	case SetupUsernameView:
 		view, c = m.ViewUsername()
 	case SetupPasswordView:
@@ -271,11 +291,23 @@ func (m SetupUserModel) UpdateConsent(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 }
 
 func (m SetupUserModel) UpdateQBittorrent(msg tea.Msg) (SetupUserModel, tea.Cmd) {
+	var cmds []tea.Cmd
+	var cmd tea.Cmd
+
 	if !m.state.qBittorrent.accepted {
 		m.ui.consent = m.ui.consent.Update(msg)
 	}
 
 	switch msg := msg.(type) {
+	case QbtLoginTestMsg:
+		m.ui.loader.Stop()
+		if msg == 0 {
+			m.state.qBittorrent.login.failed = true
+		} else {
+			m.state.qBittorrent.login.passed = true
+			m.state.qBittorrent.login.port = int(msg)
+		}
+
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
@@ -288,7 +320,7 @@ func (m SetupUserModel) UpdateQBittorrent(msg tea.Msg) (SetupUserModel, tea.Cmd)
 				return m, nil
 			}
 
-			switch m.state.qBittorrent.tutorialPos {
+			switch m.state.qBittorrent.setupPos {
 			case 0:
 				/*
 				 INFO: We ignore the error because the user will just move
@@ -300,10 +332,27 @@ func (m SetupUserModel) UpdateQBittorrent(msg tea.Msg) (SetupUserModel, tea.Cmd)
 				case 1:
 					_ = browser.OpenURL("https://github.com/qbittorrent/qBittorrent")
 				case 2:
-					m.state.qBittorrent.tutorialPos++
+					m.state.qBittorrent.setupPos++
 				}
-			case 1, 2, 3:
-				m.state.qBittorrent.tutorialPos++
+
+			case 1, 3:
+				m.state.qBittorrent.setupPos++
+
+			case 2:
+				loginState := m.state.qBittorrent.login
+
+				if !loginState.passed && !m.ui.loader.IsLoading() {
+					m.state.qBittorrent.login.failed = false
+					m.ui.loader, cmd = m.ui.loader.Start("Testing Port")
+					port := m.ui.qbtPort.Value()
+					m.ui.qbtPort.Reset()
+					return m, tea.Batch(cmd, m.testQbtLogin(port))
+				}
+
+				if loginState.passed {
+					m.state.view = SetupUsernameView
+				}
+
 			}
 
 		case key.Matches(msg, ui.KeyMap.Down):
@@ -311,7 +360,7 @@ func (m SetupUserModel) UpdateQBittorrent(msg tea.Msg) (SetupUserModel, tea.Cmd)
 				return m, nil
 			}
 
-			switch m.state.qBittorrent.tutorialPos {
+			switch m.state.qBittorrent.setupPos {
 			case 0:
 				if m.state.qBittorrent.page0Sel+1 <= 2 {
 					m.state.qBittorrent.page0Sel++
@@ -323,25 +372,43 @@ func (m SetupUserModel) UpdateQBittorrent(msg tea.Msg) (SetupUserModel, tea.Cmd)
 				return m, nil
 			}
 
-			switch m.state.qBittorrent.tutorialPos {
+			switch m.state.qBittorrent.setupPos {
 			case 0:
 				if m.state.qBittorrent.page0Sel-1 >= 0 {
 					m.state.qBittorrent.page0Sel--
 				}
 			}
+		}
 
-		case key.Matches(msg, ui.KeyMap.Back):
-			if m.state.qBittorrent.tutorialPos-1 >= 0 {
-				m.state.qBittorrent.tutorialPos--
-			}
+	}
 
+	switch m.state.qBittorrent.setupPos {
+	case 2:
+		m.ui.qbtPort, cmd = m.ui.qbtPort.Update(msg)
+		cmds = append(cmds, cmd)
+	case 4:
+		m.ui.qbtUsername, cmd = m.ui.qbtUsername.Update(msg)
+		cmds = append(cmds, cmd)
+	case 5:
+		if !m.state.qBittorrent.login.failed {
+			m.ui.qbtPassword, cmd = m.ui.qbtPassword.Update(msg)
+			cmds = append(cmds, cmd)
 		}
 	}
 
-	return m, nil
+	if m.ui.loader.IsLoading() {
+		m.ui.loader, cmd = m.ui.loader.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
-func (m SetupUserModel) ViewQBittorrent() string {
+func (m SetupUserModel) ViewQBittorrent() (string, *tea.Cursor) {
+	if m.ui.loader.IsLoading() {
+		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+	}
+
 	setupView := lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("qBittorrent", "Setup"),
@@ -358,7 +425,7 @@ a ;g;free;x; and ;g;open source;x; program.`,
 			lipgloss.Left,
 			setupView,
 			m.ui.consent.View(ui.ConsentStyle.Render("Would you like to use qBittorrent?")),
-		)
+		), nil
 	}
 
 	optStyle := ui.Style.MarginLeft(5)
@@ -366,7 +433,7 @@ a ;g;free;x; and ;g;open source;x; program.`,
 
 	page1 := lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplaySubTitle("qBittorrent", "Tutorial Page 1"),
+		ui.DisplaySubTitle("qBittorrent", "Setup Page 1"),
 		ui.DisplayText([]string{
 			`First you'll need to download the ;dg;qBittorrent;x; client
 if you don't already have it installed. Once you have it downloaded,
@@ -377,7 +444,7 @@ you can install it using all its default settings.`,
 
 	page2 := lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplaySubTitle("qBittorrent", "Tutorial Page 2"),
+		ui.DisplaySubTitle("qBittorrent", "Setup Page 2"),
 		ui.DisplayText([]string{
 			`In order for ;g;Koshime;x; to connect to qBittorrent,
 we need to enable its ;w;WebUI;x; component.`,
@@ -392,7 +459,7 @@ planet.`,
 
 	page3 := lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplaySubTitle("qBittorrent", "Tutorial Page 3"),
+		ui.DisplaySubTitle("qBittorrent", "Setup Page 3"),
 		ui.DisplayText([]string{
 			`You should now see all the options for the ;w;WebUI;x; on the right side
 of the options window.`,
@@ -401,23 +468,36 @@ next to it. Go ahead and click the checkbox. This will enable the ;w;WebUI;x;.`,
 			`The line below that one, shows an ;c;IP Address;x; and ;c;Port;x;. The only
 thing we care about is the ;c;Port;x;. The default is ;w;8080;x; but if you run other
 services on that port, you'll need to change it.`,
-			`If you want to make sure there are no conflicts, I would suggest changing the port
-to ;g;8567;x;. This port is known to have virtually Zero conflicts.`,
+			`  - A safe port to use is ;g;8567;x;.`,
+			`Next, if you read further down, you'll see the ;w;Authentication;x; section.
+;m;Check;x; the ;c;Bypass authentication for clients on localhost;x; box. This allows
+me to connect to ;dg;qBittorrent;x; without having to prompt you for a password
+every time.`,
+			`Once you're done, hit the ;c;Apply;x; button on the bottom right
+of the options window.`,
+			`;b;Enter the port you chose:;x;`,
 		}, 1, 1),
 	)
 
-	page4 := lipgloss.JoinVertical(
+	page3PortFail := lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplaySubTitle("qBittorrent", "Tutorial Page 4"),
+		ui.DisplaySubTitle("qBittorrent", "Conn Failed"),
 		ui.DisplayText([]string{
-			`Now that you have the ;c;Port;x; set, we need to set a ;c;Username;x; and
-;c;Password;x;. Scan down a few lines from the port and you should see an ;w;Authentication;x;
-and ;w;User;x; section.`,
-			`The ;c;Username;x; should default to ;g;admin;x; which is fine. You can change this if you
-want. The ;c;Password;x; however, definitely needs to be changed because it defaults to
-;g;admin;x; as well.`,
-			`Go ahead and click in the ;c;Password;x; box and change the password to something
-you'll remember. Once you're done, click the ;w;Apply;x; button at the bottom right of the window.`,
+			`I could not establish a connection with ;dg;qBittorrent;x;. Here are some
+things to check:`,
+			`  - Make sure ;dg;qBittorrent;x; is open.`,
+			`  - You've picked a port in a safe range: ;c;8080;x; - ;c;8999;x;`,
+			`  - The ;c;Bypass authentication;x; checkbox must be checked.`,
+			`;b;Enter the port again:;x;`,
+		}, 1, 1),
+	)
+
+	page3PortSuccess := lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("qBittorrent", "Setup Complete"),
+		ui.DisplayText([]string{
+			`Your ;dg;qBittorrent;x; client is ;g;Online;x; and working as expected!`,
+			`;g;> Continue;x;`,
 		}, 1, 1),
 	)
 
@@ -427,7 +507,7 @@ you'll remember. Once you're done, click the ;w;Apply;x; button at the bottom ri
 		"Continue",
 	}
 
-	switch m.state.qBittorrent.tutorialPos {
+	switch m.state.qBittorrent.setupPos {
 	case 0:
 		var sb strings.Builder
 		sb.Grow(15 * 3)
@@ -445,30 +525,42 @@ you'll remember. Once you're done, click the ;w;Apply;x; button at the bottom ri
 			lipgloss.Left,
 			page1,
 			sb.String(),
-		)
+		), nil
 
 	case 1:
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			page2,
 			selStyle.Render("> Continue"),
-		)
+		), nil
 
 	case 2:
+		c := m.ui.qbtPort.Cursor()
+		c.Shape = tea.CursorBar
+		if m.state.qBittorrent.login.failed {
+			return lipgloss.JoinVertical(
+				lipgloss.Left,
+				page3PortFail,
+				m.ui.qbtPort.View(),
+			), c
+		}
+		if m.state.qBittorrent.login.passed {
+			return lipgloss.JoinVertical(
+				lipgloss.Left,
+				page3PortSuccess,
+			), nil
+		}
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			page3,
-			selStyle.Render("> Continue"),
-		)
+			m.ui.qbtPort.View(),
+		), c
 
 	case 3:
-		return lipgloss.JoinVertical(
-			lipgloss.Left,
-			page4,
-			selStyle.Render("> Continue"),
-		)
+
 	}
-	return ""
+
+	return "", nil
 }
 
 func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
@@ -521,6 +613,7 @@ func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 
 	case KitsuProfileMsg:
 		m.state.data.Profile = msg
+		m.state.data.Profile.QbtPort = m.state.qBittorrent.login.port
 		state.found = true
 		m.ui.loader.Stop()
 
@@ -811,6 +904,26 @@ func (m SetupUserModel) ViewLibAnime() string {
 	}
 
 	return ""
+}
+
+func (m SetupUserModel) testQbtLogin(port string) tea.Cmd {
+	return func() tea.Msg {
+		n, err := strconv.Atoi(port)
+		if err != nil {
+			return QbtLoginTestMsg(0)
+		}
+		if n < 1_025 || n > 65_535 {
+			return QbtLoginTestMsg(0)
+		}
+
+		qb, err := qbittorrent.NewLogin(port)
+		if err != nil {
+			return QbtLoginTestMsg(0)
+		}
+		_ = qb.Logout()
+
+		return QbtLoginTestMsg(n)
+	}
 }
 
 func (m SetupUserModel) getProfile(profileSlug string) tea.Cmd {

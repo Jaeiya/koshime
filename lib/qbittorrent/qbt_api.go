@@ -43,7 +43,7 @@ type qBittorrentAPI struct {
 	Port string
 }
 
-func NewLogin(password string, port string) (*qBittorrentAPI, error) {
+func NewLogin(port string) (*qBittorrentAPI, error) {
 	if port != "" {
 		qbtPort = port
 	}
@@ -57,7 +57,8 @@ func NewLogin(password string, port string) (*qBittorrentAPI, error) {
 
 	resp, err = httpUtils.PostForm(
 		buildApiUrl(apiLoginURI),
-		url.Values{"username": {"admin"}, "password": {password}},
+		// We assume auth-bypass for localhost
+		url.Values{"username": {""}, "password": {"penis"}},
 	)
 	if err != nil {
 		return nil, err
@@ -65,10 +66,6 @@ func NewLogin(password string, port string) (*qBittorrentAPI, error) {
 
 	if resp.StatusCode >= 400 {
 		return nil, fmt.Errorf("could not login: %s", string(resp.Body))
-	}
-
-	if len(resp.Cookies) == 0 {
-		return nil, fmt.Errorf("missing session ID cookie")
 	}
 
 	qb := &qBittorrentAPI{Port: port}

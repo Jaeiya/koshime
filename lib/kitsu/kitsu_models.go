@@ -37,6 +37,7 @@ type Profile struct {
 	CreatedAt       string
 	AccessToken     string
 	RefreshToken    string
+	QbtPort         int
 	// Unix timestamp in seconds
 	TokenExpirationSec int64
 	// Unix timestamp in seconds
