@@ -33,11 +33,10 @@ const (
 )
 
 var (
-	qbtPort        = "8080"
-	errNotLoggedIn = fmt.Errorf("you need to be logged into qbittorrent")
-	errConnFailed  = fmt.Errorf("cannot connect to qbittorrent")
-	httpUtils      = utils.Http{}
-	ruleCache      = map[string]RSSRule{}
+	qbtPort       = "8080"
+	errConnFailed = fmt.Errorf("cannot connect to qbittorrent")
+	httpUtils     = utils.Http{}
+	ruleCache     = map[string]RSSRule{}
 )
 
 type qBittorrentAPI struct {
