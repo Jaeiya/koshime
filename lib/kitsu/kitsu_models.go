@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+const RssRuleName = "(anime)"
+
 type LibraryEntry struct {
 	// Anime ID
 	ID string
