@@ -32,6 +32,7 @@ const (
 type (
 	QbtSavedMsg       struct{ err error }
 	QbtRemovedFeedMsg bool
+	QbtConnMsg        bool
 )
 
 type Rss_Model struct {
@@ -58,6 +59,7 @@ type Rss_State struct {
 	refinedResult lib.RSSResult
 	parsedFansubs []lib.FansubFileInfo
 	selAnimeIdx   int
+	isOffline     bool
 	isRssRefined  bool
 	saveStatus    struct {
 		anime kitsu.LibraryEntry
@@ -229,16 +231,40 @@ func (m Rss_Model) UpdateSelection(msg tea.Msg) (Rss_Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.EscBack):
 			return m, exitToMenu
+
+		case key.Matches(msg, ui.KeyMap.Select):
+			if m.state.isOffline {
+				if m.ui.consent.Select() == ui.No {
+					m.state.view = Rss_Search
+					return m, nil
+				}
+				return m, m.testConn()
+			}
+
 		}
+
+	case QbtConnMsg:
+		if !msg {
+			m.state.isOffline = true
+			return m, nil
+		}
+		m.state.view = Rss_QbtSearch
+		m.ui.animeList = m.createAnimeList()
 
 	case ui.MenuIndexMsg:
 		switch msg {
 		case 0:
 			m.state.view = Rss_Search
 		case 1:
-			m.state.view = Rss_QbtSearch
-			m.ui.animeList = m.createAnimeList()
+			return m, m.testConn()
+			// m.state.view = Rss_QbtSearch
+			// m.ui.animeList = m.createAnimeList()
 		}
+	}
+
+	if m.state.isOffline {
+		m.ui.consent = m.ui.consent.Update(msg)
+		return m, nil
 	}
 
 	var cmd tea.Cmd
@@ -248,7 +274,21 @@ func (m Rss_Model) UpdateSelection(msg tea.Msg) (Rss_Model, tea.Cmd) {
 }
 
 func (m Rss_Model) ViewSelection() string {
-	view := lipgloss.JoinVertical(
+	var view string
+
+	if m.state.isOffline {
+		return lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplaySubTitle("RSS", "Offline"),
+			ui.DisplayText([]string{
+				`It appears that your qBittorrent client is ;r;Offline;x;,
+which means you can't currently use the ;dc;automatic;x; rss option.`,
+			}, 1, 1),
+			m.ui.consent.View(ui.ConsentStyle.Render("Would you like to try again?")),
+		)
+	}
+
+	view = lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("RSS", "Lookup Method"),
 		"",
@@ -265,6 +305,7 @@ downloading immediately.`,
 		}, 1),
 		m.ui.selMenu.View(),
 	)
+
 	return view
 }
 
@@ -879,4 +920,15 @@ func (m *Rss_Model) resetFlowState() {
 		saved bool
 		err   error
 	}{}
+}
+
+func (m Rss_Model) testConn() tea.Cmd {
+	return func() tea.Msg {
+		port := strconv.Itoa(m.db.Profile().QbtPort)
+		err := qbittorrent.CheckConn(port)
+		if err != nil {
+			return QbtConnMsg(false)
+		}
+		return QbtConnMsg(true)
+	}
 }
