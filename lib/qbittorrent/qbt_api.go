@@ -131,6 +131,11 @@ func (qb qBittorrentAPI) Feeds() ([]RSSFeedItem, error) {
 }
 
 func (qb qBittorrentAPI) AddRule(name string, rule RSSRule) error {
+	// assume the rule was created by us
+	if _, exists := ruleCache[name]; exists {
+		return nil
+	}
+
 	err := qb.saveRule(name, rule, CreateRule)
 	if err != nil {
 		return fmt.Errorf("failed to add rule: %w", err)
