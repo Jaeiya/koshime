@@ -28,7 +28,10 @@ type (
 	FetchedLibAnimeMsg   = []kitsu.LibraryEntry
 	SetupUserFinishedMsg = database.Data
 	SetupUserAbortMsg    struct{}
-	QbtLoginTestMsg      int
+	QbtSetupMsg          struct {
+		err  error
+		port int
+	}
 )
 
 type SetupUserHelpMap map[SetupUserView]ui.KeyHelpInfo[SetupUserModel]
@@ -45,13 +48,11 @@ const (
 
 type SetupUserModel struct {
 	ui struct {
-		consent     ui.ConsentModel
-		loader      ui.LoaderModel
-		qbtPort     textinput.Model
-		qbtUsername textinput.Model
-		qbtPassword textinput.Model
-		username    textinput.Model
-		password    textinput.Model
+		consent  ui.ConsentModel
+		loader   ui.LoaderModel
+		qbtPort  textinput.Model
+		username textinput.Model
+		password textinput.Model
 	}
 	helpMap SetupUserHelpMap
 	err     error
@@ -62,6 +63,7 @@ type SetupUserModel struct {
 		qBittorrent struct {
 			login struct {
 				port   int
+				err    error
 				failed bool
 				passed bool
 			}
@@ -90,13 +92,6 @@ func newSetupUserModel() SetupUserModel {
 
 	m.ui.qbtPort = ui.NewTextInput()
 	m.ui.qbtPort.Placeholder = "<port number>"
-
-	m.ui.qbtUsername = ui.NewTextInput()
-	m.ui.qbtUsername.Placeholder = "<username>"
-
-	m.ui.qbtPassword = ui.NewTextInput()
-	m.ui.qbtPassword.EchoMode = textinput.EchoPassword
-	m.ui.qbtPassword.Placeholder = "<password>"
 
 	m.ui.username = ui.NewTextInput()
 	m.ui.username.Placeholder = "<profile-url-name>"
@@ -299,18 +294,20 @@ func (m SetupUserModel) UpdateQBittorrent(msg tea.Msg) (SetupUserModel, tea.Cmd)
 	}
 
 	switch msg := msg.(type) {
-	case QbtLoginTestMsg:
+	case QbtSetupMsg:
 		m.ui.loader.Stop()
-		if msg == 0 {
+		if msg.err != nil {
 			m.state.qBittorrent.login.failed = true
-		} else {
-			m.state.qBittorrent.login.passed = true
-			m.state.qBittorrent.login.port = int(msg)
+			m.state.qBittorrent.login.err = msg.err
+			return m, nil
 		}
+		m.state.qBittorrent.login.port = int(msg.port)
+		m.state.qBittorrent.login.passed = true
 
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
+			// Check user consent to setup qBittorrent
 			if !m.state.qBittorrent.accepted {
 				if ui.No == m.ui.consent.Select() {
 					m.state.view = SetupUsernameView
@@ -346,7 +343,7 @@ func (m SetupUserModel) UpdateQBittorrent(msg tea.Msg) (SetupUserModel, tea.Cmd)
 					m.ui.loader, cmd = m.ui.loader.Start("Testing Port")
 					port := m.ui.qbtPort.Value()
 					m.ui.qbtPort.Reset()
-					return m, tea.Batch(cmd, m.testQbtLogin(port))
+					return m, tea.Batch(cmd, m.setupQbtLogin(port))
 				}
 
 				if loginState.passed {
@@ -386,14 +383,6 @@ func (m SetupUserModel) UpdateQBittorrent(msg tea.Msg) (SetupUserModel, tea.Cmd)
 	case 2:
 		m.ui.qbtPort, cmd = m.ui.qbtPort.Update(msg)
 		cmds = append(cmds, cmd)
-	case 4:
-		m.ui.qbtUsername, cmd = m.ui.qbtUsername.Update(msg)
-		cmds = append(cmds, cmd)
-	case 5:
-		if !m.state.qBittorrent.login.failed {
-			m.ui.qbtPassword, cmd = m.ui.qbtPassword.Update(msg)
-			cmds = append(cmds, cmd)
-		}
 	}
 
 	if m.ui.loader.IsLoading() {
@@ -483,8 +472,7 @@ of the options window.`,
 		lipgloss.Left,
 		ui.DisplaySubTitle("qBittorrent", "Conn Failed"),
 		ui.DisplayText([]string{
-			`I could not establish a connection with ;dg;qBittorrent;x;. Here are some
-things to check:`,
+			fmt.Sprintf(`;y;Error Occurred: ;r;%s;x;`, m.state.qBittorrent.login.err),
 			`  - Make sure ;dg;qBittorrent;x; is open.`,
 			`  - You've picked a port in a safe range: ;c;8080;x; - ;c;8999;x;`,
 			`  - The ;c;Bypass authentication;x; checkbox must be checked.`,
@@ -537,6 +525,7 @@ things to check:`,
 	case 2:
 		c := m.ui.qbtPort.Cursor()
 		c.Shape = tea.CursorBar
+
 		if m.state.qBittorrent.login.failed {
 			return lipgloss.JoinVertical(
 				lipgloss.Left,
@@ -544,20 +533,19 @@ things to check:`,
 				m.ui.qbtPort.View(),
 			), c
 		}
+
 		if m.state.qBittorrent.login.passed {
 			return lipgloss.JoinVertical(
 				lipgloss.Left,
 				page3PortSuccess,
 			), nil
 		}
+
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			page3,
 			m.ui.qbtPort.View(),
 		), c
-
-	case 3:
-
 	}
 
 	return "", nil
@@ -906,23 +894,36 @@ func (m SetupUserModel) ViewLibAnime() string {
 	return ""
 }
 
-func (m SetupUserModel) testQbtLogin(port string) tea.Cmd {
+func (m SetupUserModel) setupQbtLogin(port string) tea.Cmd {
 	return func() tea.Msg {
 		n, err := strconv.Atoi(port)
 		if err != nil {
-			return QbtLoginTestMsg(0)
+			return QbtSetupMsg{err: errors.New("not a number")}
 		}
 		if n < 1_025 || n > 65_535 {
-			return QbtLoginTestMsg(0)
+			return QbtSetupMsg{err: errors.New("port must be between 1025 and 65535")}
 		}
 
 		qb, err := qbittorrent.NewLogin(port)
 		if err != nil {
-			return QbtLoginTestMsg(0)
+			return QbtSetupMsg{err: err}
 		}
+
+		err = qb.AddRule(
+			kitsu.RssRuleName, qbittorrent.RSSRule{
+				Enabled:        true,
+				MustNotContain: "batch|BATCH",
+				UseRegex:       true,
+				SavePath:       fileSys.GetWorkingDir(),
+			},
+		)
+		if err != nil {
+			return QbtSetupMsg{err: err}
+		}
+
 		_ = qb.Logout()
 
-		return QbtLoginTestMsg(n)
+		return QbtSetupMsg{port: n, err: nil}
 	}
 }
 
