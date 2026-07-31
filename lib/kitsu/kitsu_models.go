@@ -22,6 +22,10 @@ type LibraryEntry struct {
 	AvgRating string
 	Synopsis  string
 	Slug      string
+	QbtFeed   struct {
+		Name    string
+		RuleURI string
+	}
 }
 
 type Profile struct {

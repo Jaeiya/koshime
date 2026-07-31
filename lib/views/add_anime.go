@@ -318,6 +318,10 @@ func (m AddAnime_Model) addAnime(animeID string) tea.Cmd {
 			AvgRating: anime.AvgRating,
 			Synopsis:  anime.Synopsis,
 			Slug:      anime.Slug,
+			QbtFeed: struct {
+				Name    string
+				RuleURI string
+			}{},
 		})
 		if err != nil {
 			return FetchErrorMsg{
