@@ -28,8 +28,9 @@ const (
 	apiRulesURI      = ApiUri("rss/rules")
 	apiSaveRuleURI   = ApiUri("rss/setRule")
 	apiRemoveRuleURI = ApiUri("rss/removeRule")
-	apiFeedItemsURI  = ApiUri("rss/items")
+	apiFeedItemsURI  = ApiUri("rss/items") // Gets folders and feeds
 	apiAddFeedURI    = ApiUri("rss/addFeed")
+	apiRemoveItemURI = ApiUri("rss/removeItem") // Can remove folder or feed
 )
 
 var (
@@ -91,8 +92,8 @@ func CheckConn(port string) error {
 
 func (qb qBittorrentAPI) AddFeed(name, feedURL string) error {
 	resp, err := httpUtils.PostForm(buildApiUrl(apiAddFeedURI), url.Values{
-		"url":  {feedURL},
 		"path": {name},
+		"url":  {feedURL},
 	})
 	if err != nil {
 		return err
@@ -101,6 +102,21 @@ func (qb qBittorrentAPI) AddFeed(name, feedURL string) error {
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("failed to add feed: %s", string(resp.Body))
 	}
+	return nil
+}
+
+func (qb qBittorrentAPI) DeleteFeed(name string) error {
+	resp, err := httpUtils.PostForm(buildApiUrl(apiRemoveItemURI), url.Values{
+		"path": {name},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to delete feed: %w", err)
+	}
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("failed to delete feed: %s", string(resp.Body))
+	}
+
 	return nil
 }
 
