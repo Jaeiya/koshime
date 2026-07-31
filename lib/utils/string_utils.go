@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -57,4 +59,34 @@ func ReplaceCutset(s, cutset, replacement string) string {
 		}
 	}
 	return sb.String()
+}
+
+func OrdinalString(s string) (string, error) {
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return "", fmt.Errorf("ordinal: invalid integer string %q: %w", s, err)
+	}
+
+	absN := n
+	if absN < 0 {
+		absN = -absN
+	}
+
+	// Rule 1: Special cases 11th, 12th, 13th
+	remainder100 := absN % 100
+	if remainder100 >= 11 && remainder100 <= 13 {
+		return s + "th", nil
+	}
+
+	// Rule 2: Last digit checks
+	switch absN % 10 {
+	case 1:
+		return s + "st", nil
+	case 2:
+		return s + "nd", nil
+	case 3:
+		return s + "rd", nil
+	default:
+		return s + "th", nil
+	}
 }
