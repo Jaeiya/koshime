@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/qbittorrent"
@@ -213,13 +214,18 @@ func (m SetupUserModel) View() (string, *tea.Cursor) {
 		return view, nil
 	}
 
+	version := lib.Version
+	if version == "" {
+		version = lib.CommitHash
+	}
+
 	switch m.state.view {
 	case SetupConsentView:
 		return lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplayTitle("User Setup"),
 			ui.DisplayText([]string{
-				`Welcome to ;g;Koshime;x;!`,
+				fmt.Sprintf(`Welcome to ;g;Koshime;x; ;c;%s;x;!`, version),
 				`You'll be able to easily ;dc;add;x;, ;dc;update;x;, and ;dc;watch;x;
 your anime, from the command line.`,
 				`Some operations can even be ;w;automated;x;, like ;dc;updating;x; your
