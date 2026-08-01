@@ -1,0 +1,36 @@
+version: 2
+
+builds:
+  - id: "koshime"
+    main: .
+    binary: koshime
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    gcflags:
+      - "all=-B -l=120"
+    ldflags:
+      - -s -w
+      - -X github.com/Jaeiya/koshime/lib.Version={{ .Version }}
+      - -X github.com/Jaeiya/koshime/lib.CommitHash={{ .ShortCommit }}
+      - -X github.com/Jaeiya/koshime/lib.BuildDate={{ .Date }}
+    goos:
+      - windows
+      - linux
+      - darwin
+    goarch:
+      - amd64
+      - arm64
+    goamd64:
+      - v1
+
+archives:
+  - id: default
+    format_overrides:
+      - goos: windows
+        formats:
+           - zip
+
+checksum:
+  name_template: "checksums.txt"
