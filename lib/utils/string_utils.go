@@ -41,6 +41,10 @@ func RemoveBrackets(s string) string {
 		s = s[1:]
 	}
 
+	if s == "" {
+		return s
+	}
+
 	switch s[len(s)-1] {
 	case ']', ')':
 		s = s[:len(s)-1]
