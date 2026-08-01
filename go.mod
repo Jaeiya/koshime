@@ -9,7 +9,7 @@ require (
 	github.com/charmbracelet/bubbletea/v2 v2.0.0-beta.3
 	github.com/charmbracelet/lipgloss/v2 v2.0.0-beta1
 	github.com/charmbracelet/x/ansi v0.8.0
-	github.com/shamaton/msgpack/v2 v2.1.0
+	github.com/shamaton/msgpack/v2 v2.4.1
 	github.com/stretchr/testify v1.10.0
 )
 
