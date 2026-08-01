@@ -24,6 +24,10 @@ type AnimeInfo struct {
 	AvgRating string
 	Episodes  int
 	Slug      string
+	QbtFeed   struct {
+		Name    string
+		RuleURI string
+	}
 }
 
 // DisplayCharLimit returns a string that indicates how many
@@ -87,6 +91,15 @@ func DisplayAnimeInfo(info AnimeInfo, showSynopsis bool) string {
 	}
 	headers = append(headers, utils.ColorText(";dc;AvgRating"))
 	items = append(items, avgRating)
+
+	hasFeed := info.QbtFeed.Name != ""
+
+	headers = append(headers, utils.ColorText(";dc;RSSFeed"))
+	if hasFeed {
+		items = append(items, utils.ColorText(";g;Yes"))
+	} else {
+		items = append(items, utils.ColorText(";m;No"))
+	}
 
 	link, _ := url.JoinPath(kitsu.KitsuDomain, "anime", info.Slug)
 	if showSynopsis {
@@ -205,6 +218,7 @@ func ToAnimeInfo(entries []kitsu.LibraryEntry) []AnimeInfo {
 			AvgRating: utils.CalcRating(entry.AvgRating),
 			Episodes:  entry.Episodes,
 			Slug:      entry.Slug,
+			QbtFeed:   entry.QbtFeed,
 		}
 	}
 	return infoEntries

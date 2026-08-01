@@ -7,6 +7,8 @@ import (
 	"strings"
 )
 
+const RssRuleName = "(anime)"
+
 type LibraryEntry struct {
 	// Anime ID
 	ID string
@@ -22,6 +24,10 @@ type LibraryEntry struct {
 	AvgRating string
 	Synopsis  string
 	Slug      string
+	QbtFeed   struct {
+		Name    string
+		RuleURI string
+	}
 }
 
 type Profile struct {
@@ -37,6 +43,7 @@ type Profile struct {
 	CreatedAt       string
 	AccessToken     string
 	RefreshToken    string
+	QbtPort         int
 	// Unix timestamp in seconds
 	TokenExpirationSec int64
 	// Unix timestamp in seconds

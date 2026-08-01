@@ -1,10 +1,12 @@
 package views
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
 	"github.com/Jaeiya/koshime/lib/kitsu"
+	"github.com/Jaeiya/koshime/lib/qbittorrent"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/bubbles/v2/help"
@@ -185,6 +187,7 @@ func (m MenuModel) DisplayProfile() string {
 		utils.ColorText(";dc;Token Expiration"),
 		utils.ColorText(";dc;Last Updated"),
 	}
+
 	values := []string{
 		ui.Style.Foreground(ansi.BrightWhite).Render(p.Username),
 		strconv.Itoa(p.CompletedSeries),
@@ -192,6 +195,28 @@ func (m MenuModel) DisplayProfile() string {
 			ToShortString(),
 		expStyle.Render(tokenExpiration.ToPrecisionString(utils.Days)),
 		utils.NewRelativeTimeUnits(p.LastUpdateSec).String(),
+	}
+
+	// Add qBittorrent display
+	if p.QbtPort > 0 {
+		props = append(props, utils.ColorText(";dc;qBittorrent"))
+
+		strPort := strconv.Itoa(p.QbtPort)
+		qbtState := ui.Style.Foreground(ansi.BrightGreen).Render("Online")
+		/*
+		  INFO: typically you don't want to have a request in a display
+		  method, but this is effectively a zero-cost check, since it's
+		  localhost only.
+		*/
+		if err := qbittorrent.CheckConn(strPort); err != nil {
+			qbtState = ui.Style.Foreground(ansi.BrightRed).Render("Offline")
+		}
+
+		values = append(
+			values,
+			ui.Style.Foreground(ansi.BrightBlue).
+				Render(fmt.Sprintf(utils.ColorText(";dy;Port;x; ;c;%s;x;, ;dy;Status;x; %s"), strPort, qbtState)),
+		)
 	}
 
 	return lipgloss.JoinVertical(
