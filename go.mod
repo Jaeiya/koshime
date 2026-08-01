@@ -4,7 +4,7 @@ go 1.24
 
 require (
 	github.com/antchfx/xmlquery v1.4.4
-	github.com/antchfx/xpath v1.3.3
+	github.com/antchfx/xpath v1.3.6
 	github.com/charmbracelet/bubbles/v2 v2.0.0-beta.1.0.20250603123720-56bbc4a1ba66
 	github.com/charmbracelet/bubbletea/v2 v2.0.0-beta.3
 	github.com/charmbracelet/lipgloss/v2 v2.0.0-beta1
