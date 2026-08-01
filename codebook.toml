@@ -40,3 +40,7 @@ words = [
     "vnd",
     "webrip",
 ]
+
+ignore_paths = [
+    "*.yml"
+]
