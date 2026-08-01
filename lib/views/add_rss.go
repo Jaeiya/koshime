@@ -741,7 +741,7 @@ based on that selection.`,
 
 func (m Rss_Model) parseRssResult(r lib.RSSResult) (list.Model, []lib.FansubFileInfo, error) {
 	var parser lib.FansubParser
-	items := make([]list.Item, 0, len(m.state.rssResult.Entries))
+	items := make([]list.Item, 0, len(r.Entries))
 	rssFansubs := make([]lib.FansubFileInfo, 0, len(r.Entries))
 
 	count := 0
