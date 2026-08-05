@@ -248,6 +248,9 @@ func (m WatchList_Model) UpdateMenu(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 		}
 	}
 
+	if m.ui.animeDisplay != nil {
+		m.ui.animeDisplay.Update(msg)
+	}
 	m.ui.menu, cmd = m.ui.menu.Update(msg)
 	return m, cmd
 }
