@@ -2,16 +2,13 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
 
 	"github.com/Jaeiya/koshime/lib/views"
 	tea "github.com/charmbracelet/bubbletea/v2"
 )
 
-var dbFilePath = filepath.Join("./", "koshime.db")
-
 func main() {
-	m, err := views.New(dbFilePath)
+	m, err := views.New()
 	if err != nil {
 		panic(err)
 	}

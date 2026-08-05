@@ -59,7 +59,7 @@ type Model struct {
 	view       UIView
 }
 
-func New(dbPath string) (Model, error) {
+func New() (Model, error) {
 	m := Model{}
 
 	m.help = help.New()
@@ -71,9 +71,8 @@ func New(dbPath string) (Model, error) {
 	// Initialize empty database
 	db, _ := database.NewDatabase(nil)
 	m.db = db
-	fs := utils.FileSys{}
 
-	if !fs.FileExists(dbPath) {
+	if !db.Exists() {
 		m.setupUser = newSetupUserModel()
 		return m, nil
 	}

@@ -52,6 +52,11 @@ func NewDatabase(data *Data) (*Database, error) {
 	return db, nil
 }
 
+func (db *Database) Exists() bool {
+	dbPath := filepath.Join(fileSys.GetWorkingDir(), dbFileName)
+	return fileSys.FileExists(dbPath)
+}
+
 // Load an existing database. In order to initialize the database
 // properly, you can either pass the data directly to the
 // constructor or use this function to load it from file.
