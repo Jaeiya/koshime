@@ -185,7 +185,12 @@ func (m WatchList_Model) ShortHelp() []key.Binding {
 	}
 
 	if m.state.view > WatchList_Menu {
-		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
+		return []key.Binding{
+			ui.KeyMap.Up,
+			ui.KeyMap.Down,
+			ui.KeyMap.Select,
+			ui.KeyMap.EscBack,
+		}
 	}
 
 	if len(m.state.anime) > 0 {
@@ -210,7 +215,14 @@ func (m WatchList_Model) FullHelp() [][]key.Binding {
 		return nil
 	}
 	return [][]key.Binding{
-		{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Prev, ui.KeyMap.Next, ui.KeyMap.Select},
+		{
+			ui.KeyMap.Up,
+			ui.KeyMap.Down,
+			ui.KeyMap.Prev,
+			ui.KeyMap.Next,
+			m.ui.animeDisplay.ShortHelp()[0],
+			ui.KeyMap.Select,
+		},
 		{m.keys.reload, ui.KeyMap.MainMenu, ui.KeyMap.HelpLess},
 	}
 }
