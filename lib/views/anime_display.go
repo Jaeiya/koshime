@@ -8,19 +8,14 @@ import (
 
 type AnimeDisplayModel struct {
 	keys struct {
-		openSynopsis  key.Binding
-		closeSynopsis key.Binding
+		displayMode key.Binding
 	}
-	showSynopsis bool
+	displayMode ui.DisplayMode
 }
 
 func NewAnimeDisplayModel() *AnimeDisplayModel {
 	m := &AnimeDisplayModel{}
-	m.keys.openSynopsis = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "open synopsis"))
-	m.keys.closeSynopsis = key.NewBinding(
-		key.WithKeys("s"),
-		key.WithHelp("s", "close synopsis"),
-	)
+	m.keys.displayMode = key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "display mode"))
 	return m
 }
 
@@ -28,19 +23,23 @@ func (m *AnimeDisplayModel) Update(msg tea.Msg) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, m.keys.openSynopsis):
-			m.showSynopsis = !m.showSynopsis
+		case key.Matches(msg, m.keys.displayMode):
+			switch m.displayMode {
+			case ui.Simple:
+				m.displayMode = ui.Extended
+			case ui.Extended:
+				m.displayMode = ui.All
+			case ui.All:
+				m.displayMode = ui.Simple
+			}
 		}
 	}
 }
 
 func (m AnimeDisplayModel) View(ai ui.AnimeInfo) string {
-	return ui.DisplayAnimeInfo(ai, m.showSynopsis)
+	return ui.DisplayAnimeInfo(ai, m.displayMode)
 }
 
 func (m AnimeDisplayModel) ShortHelp() []key.Binding {
-	if m.showSynopsis {
-		return []key.Binding{m.keys.closeSynopsis}
-	}
-	return []key.Binding{m.keys.openSynopsis}
+	return []key.Binding{m.keys.displayMode}
 }

@@ -3,13 +3,37 @@ package ui
 import (
 	"fmt"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/utils"
 	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/charmbracelet/x/term"
 )
+
+type DisplayMode uint8
+
+const (
+	Simple = DisplayMode(iota)
+	Extended
+	All
+)
+
+var MaxSynopsisLen = func() int {
+	_, h, err := term.GetSize(os.Stdout.Fd())
+	if err != nil {
+		return 500
+	}
+
+	const menuSize = 23.0 // Estimation of menu size
+	const padding = 0.20  // Prevent filling entire screen
+	const charsPerLine = 40
+
+	ratio := (1.0 - (menuSize / float64(h))) - padding
+	return int((float64(h) * ratio)) * charsPerLine
+}()
 
 type AnimeInfo struct {
 	ID        string
@@ -49,20 +73,65 @@ func DisplayCharLimit(min int, text string) string {
 	return charLimit
 }
 
-func DisplayAnimeInfo(info AnimeInfo, showSynopsis bool) string {
+func DisplayAnimeInfo(info AnimeInfo, mode DisplayMode) string {
 	headers := []string{
 		utils.ColorText(";g;Title"),
 		utils.ColorText(";dc;English"),
 	}
+
 	items := []string{
 		info.JpnTitle,
 		info.EngTitle,
 	}
 
-	for range len(info.AltTitles) {
+	if items[1] == "" {
+		items[1] = utils.ColorText(";bk;None")
+	}
+
+	if len(info.AltTitles) > 0 {
+		for i := range len(info.AltTitles) {
+			if utils.HasNonASCII(info.AltTitles[i]) {
+				continue
+			}
+			headers = append(headers, utils.ColorText(";db;AltTitle"))
+		}
+	} else {
 		headers = append(headers, utils.ColorText(";db;AltTitle"))
 	}
-	items = append(items, info.AltTitles...)
+
+	if Simple == mode {
+		for i, item := range items {
+			if len(item) > 40 {
+				items[i] = item[:37] + "..."
+			}
+		}
+		if len(info.AltTitles) > 0 {
+			for _, title := range info.AltTitles {
+				if utils.HasNonASCII(title) {
+					continue
+				}
+				if len(title) > 40 {
+					title = title[:37] + "..."
+				}
+				items = append(items, title)
+			}
+		} else {
+			items = append(items, utils.ColorText(";bk;None"))
+		}
+	}
+
+	if Extended == mode || All == mode {
+		if len(info.AltTitles) > 0 {
+			for _, title := range info.AltTitles {
+				if utils.HasNonASCII(title) {
+					continue
+				}
+				items = append(items, title)
+			}
+		} else {
+			items = append(items, utils.ColorText(";bk;None"))
+		}
+	}
 
 	headers = append(headers, utils.ColorText(";dc;Status"))
 	items = append(items, utils.ColorText(";b;"+info.Status))
@@ -102,12 +171,21 @@ func DisplayAnimeInfo(info AnimeInfo, showSynopsis bool) string {
 	}
 
 	link, _ := url.JoinPath(kitsu.KitsuDomain, "anime", info.Slug)
-	if showSynopsis {
-		headers = append(headers, utils.ColorText(";dc;Synopsis"), utils.ColorText(";x;Link"))
-		items = append(items, info.Synopsis, utils.ColorText(";bk;"+link))
-	} else {
-		headers = append(headers, utils.ColorText(";x;Link"))
-		items = append(items, utils.ColorText(";dy;"+link))
+
+	if All == mode {
+		headers = append(
+			headers,
+			utils.ColorText(";x;Link"),
+			utils.ColorText(";dc;Synopsis"),
+		)
+		if len(info.Synopsis) > MaxSynopsisLen {
+			info.Synopsis = info.Synopsis[:MaxSynopsisLen-3] + "..."
+		}
+		items = append(
+			items,
+			utils.ColorText(";dy;"+link),
+			info.Synopsis,
+		)
 	}
 
 	return DisplayPropValue(headers, items)
