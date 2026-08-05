@@ -94,3 +94,7 @@ func OrdinalString(s string) (string, error) {
 		return s + "th", nil
 	}
 }
+
+func HasNonASCII(s string) bool {
+	return !utf8.ValidString(s) || len(s) != utf8.RuneCountInString(s)
+}
