@@ -128,8 +128,8 @@ func (m AnimeDisplayModel) DisplayAnimeInfo(info ui.AnimeInfo, mode DisplayMode)
 	}
 
 	if Extended == mode || All == mode {
-		if len(info.AltTitles) > 0 {
-			for _, title := range info.AltTitles {
+		if len(altTitles) > 0 {
+			for _, title := range altTitles {
 				if utils.HasNonASCII(title) {
 					continue
 				}
