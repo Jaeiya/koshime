@@ -5,14 +5,14 @@ import (
 	"strconv"
 	"time"
 
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/qbittorrent"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/help"
-	"github.com/charmbracelet/bubbles/v2/key"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -130,14 +130,16 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m MenuModel) View() (string, *tea.Cursor) {
+func (m MenuModel) View() tea.View {
 	if m.selectedModel != nil {
-		v, c := m.selectedModel.View()
-		return lipgloss.JoinVertical(
+		mv := m.selectedModel.View()
+		v := tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
-			v,
+			mv.Content,
 			ui.HelpStyle.Render(m.help.View(m.selectedModel)),
-		), c
+		))
+		v.Cursor = mv.Cursor
+		return v
 	}
 
 	title := ui.DisplayTitle("Menu")
@@ -145,7 +147,7 @@ func (m MenuModel) View() (string, *tea.Cursor) {
 		title = ui.DisplaySubTitle("Menu", m.menuItems[m.menuIndex].Name)
 	}
 
-	return lipgloss.JoinVertical(
+	v := tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplayTitle("Koshime Profile"),
 		"",
@@ -154,7 +156,9 @@ func (m MenuModel) View() (string, *tea.Cursor) {
 		"",
 		m.menu.View(),
 		ui.HelpStyle.Render(m.help.View(m)),
-	), nil
+	))
+
+	return v
 }
 
 func (m MenuModel) ShortHelp() []key.Binding {

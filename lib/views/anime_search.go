@@ -3,16 +3,16 @@ package views
 import (
 	"fmt"
 
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/key"
-	"github.com/charmbracelet/bubbles/v2/list"
-	"github.com/charmbracelet/bubbles/v2/textinput"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -298,7 +298,7 @@ func (m *AnimeSearchModel) Update(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m AnimeSearchModel) View() (string, *tea.Cursor) {
+func (m AnimeSearchModel) View() tea.View {
 	switch m.state.view {
 	case AnimeSearch_Query:
 		return m.ViewQuery()
@@ -307,7 +307,7 @@ func (m AnimeSearchModel) View() (string, *tea.Cursor) {
 	case AnimeSearch_Selected:
 		return m.ViewSelection()
 	}
-	return "", nil
+	return tea.NewView("missing AnimeSearch view")
 }
 
 func (m AnimeSearchModel) ShortHelp() []key.Binding {
@@ -354,7 +354,7 @@ func (m *AnimeSearchModel) UpdateQuery(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m AnimeSearchModel) ViewQuery() (string, *tea.Cursor) {
+func (m AnimeSearchModel) ViewQuery() tea.View {
 	c := m.ui.input.Cursor()
 	c.Shape = tea.CursorBar
 
@@ -394,26 +394,28 @@ It only contains anime that you're currently watching.`,
 		)),
 	)
 
-	view := header
+	view := tea.NewView(header)
 	if m.config.source == lib.NoSource {
 		sourceName, sourceEmoji := m.state.source.Name()
 		search := ui.TextStyle.Foreground(ansi.BrightBlack).
 			Render(utils.ColorText(fmt.Sprintf(";bk;Source: ;dgu;%s;x;%s", sourceName, sourceEmoji)))
 
-		view = lipgloss.JoinVertical(
+		view.Content = lipgloss.JoinVertical(
 			lipgloss.Left,
-			view,
+			view.Content,
 			search,
 		)
 	}
 
-	view = lipgloss.JoinVertical(
+	view.Content = lipgloss.JoinVertical(
 		lipgloss.Left,
-		view,
+		view.Content,
 		footer,
 	)
-	c.Y += lipgloss.Height(view) - 1
-	return view, c
+
+	view.Cursor = c
+	view.Cursor.Y += lipgloss.Height(view.Content) - 1
+	return view
 }
 
 func (m *AnimeSearchModel) UpdateResults(msg tea.Msg) tea.Cmd {
@@ -476,18 +478,18 @@ func (m *AnimeSearchModel) UpdateResults(msg tea.Msg) tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
-func (m AnimeSearchModel) ViewResults() (string, *tea.Cursor) {
+func (m AnimeSearchModel) ViewResults() tea.View {
 	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
 
 	if m.state.fetchErr != nil {
-		return ui.DisplayError(m.state.fetchErr), nil
+		return tea.NewView(ui.DisplayError(m.state.fetchErr))
 	}
 
 	if len(m.ui.list.Items()) == 0 {
 		sourceName, _ := m.state.source.Name()
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle(m.config.header, "Results"),
 			ui.DisplayText([]string{
@@ -497,21 +499,24 @@ func (m AnimeSearchModel) ViewResults() (string, *tea.Cursor) {
 					m.ui.input.Value(),
 				),
 			}, 0, 1),
-		), nil
+		))
 	}
 
 	h := ui.DisplaySubTitle(m.config.header, "Results")
-	var c *tea.Cursor
-	// The filter has no margin, so we enforce
+	view := tea.NewView("")
+
 	if m.ui.list.FilterState() == list.Filtering {
+		// The filter has no margin, so we enforce
 		h = ui.Style.MarginBottom(1).Render(h)
-		c = m.ui.list.FilterInput.Cursor()
-		c.Shape = tea.CursorBlock
-		c.Color = ansi.Yellow
-		c.Y += lipgloss.Height(h)
-		c.X += 2 // Adjust for custom margin
+		view.Cursor = m.ui.list.FilterInput.Cursor()
+		view.Cursor.Shape = tea.CursorBlock
+		view.Cursor.Color = ansi.Yellow
+		view.Cursor.Y += lipgloss.Height(h)
+		view.Cursor.X += 2 // Adjust for custom margin
 	}
-	return lipgloss.JoinVertical(lipgloss.Left, h, m.ui.list.View()), c
+
+	view.Content = lipgloss.JoinVertical(lipgloss.Left, h, m.ui.list.View())
+	return view
 }
 
 func (m *AnimeSearchModel) UpdateSelection(msg tea.Msg) tea.Cmd {
@@ -542,31 +547,32 @@ func (m *AnimeSearchModel) UpdateSelection(msg tea.Msg) tea.Cmd {
 	return nil
 }
 
-func (m AnimeSearchModel) ViewSelection() (string, *tea.Cursor) {
+func (m AnimeSearchModel) ViewSelection() tea.View {
 	if m.state.results != nil {
 		consentStyle := ui.TextStyle.Foreground(ansi.BrightBlue)
 
-		body := lipgloss.JoinVertical(
+		view := tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle(m.config.header, "Entry Info"),
 			"",
 			m.ui.animeDisplay.View(m.state.selectedAnime),
-		)
+		))
 
 		if m.config.consentHeader != "" {
-			return lipgloss.JoinVertical(
+			view.Content = lipgloss.JoinVertical(
 				lipgloss.Left,
-				body,
+				view.Content,
 				"",
 				m.ui.consent.View(consentStyle.Render(m.config.consentHeader)),
-			), nil
+			)
+			return view
 		}
 
-		return body, nil
+		return view
 	}
 
 	sourceName, _ := m.state.source.Name()
-	return fmt.Sprintf("missing [%s] results to display", sourceName), nil
+	return tea.NewView(fmt.Sprintf("missing [%s] results to display", sourceName))
 }
 
 func (m *AnimeSearchModel) Reset() {

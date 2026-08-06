@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/key"
-	"github.com/charmbracelet/bubbles/v2/textinput"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -141,13 +141,13 @@ func (m TokenModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m TokenModel) View() (string, *tea.Cursor) {
+func (m TokenModel) View() tea.View {
 	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
 
 	if m.err != nil {
-		return ui.DisplayError(m.err), nil
+		return tea.NewView(ui.DisplayError(m.err))
 	}
 
 	if m.isResetting {
@@ -178,7 +178,7 @@ func (m TokenModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m TokenModel) ViewDefault() (string, *tea.Cursor) {
+func (m TokenModel) ViewDefault() tea.View {
 	p := m.db.Profile()
 
 	tokenExpiration := utils.NewRelativeTimeUnits(p.TokenExpirationSec)
@@ -208,7 +208,7 @@ func (m TokenModel) ViewDefault() (string, *tea.Cursor) {
 		}
 	}
 
-	view := lipgloss.JoinVertical(
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplayTitle("Manage Token"),
 		"",
@@ -218,13 +218,11 @@ func (m TokenModel) ViewDefault() (string, *tea.Cursor) {
 		tokenStyle.Render(at),
 		ui.TextStyle.Foreground(ansi.Green).Render("Refresh Token"),
 		tokenStyle.Render(rt),
-	)
-
-	return view, nil
+	))
 }
 
-func (m TokenModel) ViewReset() (string, *tea.Cursor) {
-	view := lipgloss.JoinVertical(
+func (m TokenModel) ViewReset() tea.View {
+	view := tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Manage Token", "Reset"),
 		"",
@@ -237,19 +235,22 @@ service/app is using it.`,
 			1, 0, 0,
 		),
 		"",
-	)
-	c := m.ui.input.Cursor()
-	c.Shape = tea.CursorBar
-	c.Y = lipgloss.Height(view)
-	return lipgloss.JoinVertical(
+	))
+
+	view.Cursor = m.ui.input.Cursor()
+	view.Cursor.Shape = tea.CursorBar
+	view.Cursor.Y = lipgloss.Height(view.Content)
+	view.Content = lipgloss.JoinVertical(
 		lipgloss.Left,
-		view,
+		view.Content,
 		m.ui.input.View(),
-	), c
+	)
+
+	return view
 }
 
-func (m TokenModel) ViewRenew() (string, *tea.Cursor) {
-	return lipgloss.JoinVertical(
+func (m TokenModel) ViewRenew() tea.View {
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Manage Token", "Renew"),
 		"",
@@ -262,7 +263,7 @@ option, which requires your password.`,
 		ui.TextStyle.Render(
 			m.ui.consent.View(utils.ColorText(";b;Are you sure you want to renew?")),
 		),
-	), nil
+	))
 }
 
 func (m TokenModel) RefreshToken() tea.Msg {

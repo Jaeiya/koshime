@@ -7,12 +7,12 @@ import (
 	"slices"
 	"strconv"
 
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/key"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 )
 
 type WatchDir_View int
@@ -112,22 +112,22 @@ func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m WatchDir_Model) View() (string, *tea.Cursor) {
+func (m WatchDir_Model) View() tea.View {
 	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
 
 	if m.state.err != nil {
-		return ui.DisplayError(m.state.err), nil
+		return tea.NewView(ui.DisplayError(m.state.err))
 	}
 
 	switch m.state.view {
 	case WatchDir_Menu:
-		return m.ViewMenu(), nil
+		return m.ViewMenu()
 	case WatchDir_CleanRecent, WatchDir_CleanAll:
-		return m.ViewCleaned(), nil
+		return m.ViewCleaned()
 	default:
-		return "unknown view", nil
+		return tea.NewView("missing ManageWatchDir view")
 	}
 }
 
@@ -185,9 +185,9 @@ func (m WatchDir_Model) UpdateMenu(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m WatchDir_Model) ViewMenu() string {
+func (m WatchDir_Model) ViewMenu() tea.View {
 	if m.state.folderInfo.size == 0 {
-		view := lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplayTitle("Watch Directory"),
 			"",
@@ -199,11 +199,10 @@ func (m WatchDir_Model) ViewMenu() string {
 			ui.DisplayText([]string{
 				`;m;Watch directory is currently empty.`,
 			}),
-		)
-		return view
+		))
 	}
 
-	view := lipgloss.JoinVertical(
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplayTitle("Watch Directory"),
 		"",
@@ -229,9 +228,7 @@ typically a good idea after each season.`,
 series. If you've watched ;dy;5;x; different series, this will leave ;dy;5;x; files.`,
 		}, 1),
 		m.ui.menu.View(),
-	)
-
-	return view
+	))
 }
 
 func (m WatchDir_Model) UpdateCleaned(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
@@ -251,7 +248,7 @@ func (m WatchDir_Model) UpdateCleaned(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m WatchDir_Model) ViewCleaned() string {
+func (m WatchDir_Model) ViewCleaned() tea.View {
 	viewLines := []string{
 		ui.DisplaySubTitle("Manage Watch Directory", "Cleaned Recent"),
 		"",
@@ -272,10 +269,10 @@ func (m WatchDir_Model) ViewCleaned() string {
 			"",
 			continueStr,
 		)
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			viewLines...,
-		)
+		))
 	}
 
 	viewLines = append(
@@ -294,10 +291,10 @@ func (m WatchDir_Model) ViewCleaned() string {
 		continueStr,
 	)
 
-	return lipgloss.JoinVertical(
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		viewLines...,
-	)
+	))
 }
 
 // FIX: Loading files on an empty directory probably has some caveats...

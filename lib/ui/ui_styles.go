@@ -1,8 +1,8 @@
 package ui
 
 import (
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 

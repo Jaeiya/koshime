@@ -8,15 +8,15 @@ import (
 	"strconv"
 	"strings"
 
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/key"
-	"github.com/charmbracelet/bubbles/v2/list"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -154,20 +154,20 @@ func (m WatchAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m WatchAnime_Model) View() (string, *tea.Cursor) {
+func (m WatchAnime_Model) View() tea.View {
 	state := m.state
 
 	if state.err != nil {
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("Watch Anime", "Error"),
 			"",
 			ui.DisplayError(state.err),
-		), nil
+		))
 	}
 
 	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
 
 	switch state.view {
@@ -177,7 +177,7 @@ func (m WatchAnime_Model) View() (string, *tea.Cursor) {
 		return m.ViewProgress()
 	}
 
-	return "watch::missing view", nil
+	return tea.NewView("missing WatchAnime view")
 }
 
 func (m WatchAnime_Model) ShortHelp() []key.Binding {
@@ -266,22 +266,21 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 	return m, cmd
 }
 
-func (m WatchAnime_Model) ViewSelection() (string, *tea.Cursor) {
+func (m WatchAnime_Model) ViewSelection() tea.View {
 	if len(m.state.filteredAnime) == 0 {
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplayTitle("Watch Anime"),
 			"",
 			ui.DisplayText([]string{";y;No Anime Fansubs Detected"}),
-		), nil
+		))
 	}
-	view := lipgloss.JoinVertical(
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplayTitle("Watch Anime"),
 		"",
 		m.ui.list.View(),
-	)
-	return view, nil
+	))
 }
 
 func (m WatchAnime_Model) UpdateProgress(msg tea.Msg) (WatchAnime_Model, tea.Cmd) {
@@ -323,11 +322,11 @@ func (m WatchAnime_Model) UpdateProgress(msg tea.Msg) (WatchAnime_Model, tea.Cmd
 	return m, nil
 }
 
-func (m WatchAnime_Model) ViewProgress() (string, *tea.Cursor) {
+func (m WatchAnime_Model) ViewProgress() tea.View {
 	if m.state.progress.isUpdated {
-		return m.displayUpdatedProgress(), nil
+		return tea.NewView(m.displayUpdatedProgress())
 	}
-	return m.displayProgress(), nil
+	return tea.NewView(m.displayProgress())
 }
 
 func (m WatchAnime_Model) displayUpdatedProgress() string {

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/key"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 )
 
 type AboutModel struct {
@@ -47,7 +47,7 @@ func (m AboutModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m AboutModel) View() (string, *tea.Cursor) {
+func (m AboutModel) View() tea.View {
 	viewList := []string{
 		ui.DisplayTitle("About"),
 		"",
@@ -86,10 +86,10 @@ application...and the rest is history.`,
 
 	if m.showHistory {
 		viewList = append(viewList, history)
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			viewList...,
-		), nil
+		))
 	}
 
 	version := utils.ColorText(fmt.Sprintf(";c;%s", lib.Version))
@@ -105,7 +105,7 @@ application...and the rest is history.`,
 	if lib.BuildDate != "" {
 		buildTime, err := utils.ToISO8601(lib.BuildDate)
 		if err != nil {
-			return ui.DisplayError(err), nil
+			return tea.NewView(ui.DisplayError(err))
 		}
 		releaseDate = buildTime.Local().Format("Jan 2, 2006 at 3:04pm")
 	}
@@ -128,11 +128,10 @@ application...and the rest is history.`,
 		),
 	)
 
-	view := lipgloss.JoinVertical(
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		viewList...,
-	)
-	return view, nil
+	))
 }
 
 func (m AboutModel) ShortHelp() []key.Binding {

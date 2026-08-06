@@ -1,6 +1,6 @@
 package ui
 
-import "github.com/charmbracelet/bubbles/v2/key"
+import "charm.land/bubbles/v2/key"
 
 type MainKeyMap struct {
 	Up       key.Binding

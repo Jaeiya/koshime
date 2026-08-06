@@ -9,16 +9,16 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/qbittorrent"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/key"
-	"github.com/charmbracelet/bubbles/v2/textinput"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/cli/browser"
 )
@@ -201,17 +201,15 @@ func (m SetupUserModel) Update(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m SetupUserModel) View() (string, *tea.Cursor) {
-	var view string
-	var c *tea.Cursor
+func (m SetupUserModel) View() tea.View {
+	var view tea.View
 
 	if m.err != nil {
-		view := lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("User Setup", "Error"),
 			ui.DisplayError(m.err),
-		)
-		return view, nil
+		))
 	}
 
 	version := lib.Version
@@ -221,7 +219,7 @@ func (m SetupUserModel) View() (string, *tea.Cursor) {
 
 	switch m.state.view {
 	case SetupConsentView:
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplayTitle("User Setup"),
 			ui.DisplayText([]string{
@@ -234,24 +232,24 @@ your anime, from the command line.`,
 			m.ui.consent.View(
 				ui.ConsentStyle.Render("Would you like to setup in this directory?"),
 			),
-		), nil
+		))
+
 	case SetupBittorrentView:
-		view, c = m.ViewQBittorrent()
+		view = m.ViewQBittorrent()
 	case SetupUsernameView:
-		view, c = m.ViewUsername()
+		view = m.ViewUsername()
 	case SetupPasswordView:
-		view, c = m.ViewPassword()
+		view = m.ViewPassword()
 	case SetupLibraryView:
 		view = m.ViewLibAnime()
 	}
 
-	view = ui.Style.Render(view)
-	if c != nil {
+	if view.Cursor != nil {
 		// -1 for the text input
 		// (this obviously breaks for more than one input)
-		c.Y += lipgloss.Height(view) - 1
+		view.Cursor.Y += lipgloss.Height(view.Content) - 1
 	}
-	return view, c
+	return view
 }
 
 func (m SetupUserModel) ShortHelp() []key.Binding {
@@ -399,9 +397,9 @@ func (m SetupUserModel) UpdateQBittorrent(msg tea.Msg) (SetupUserModel, tea.Cmd)
 	return m, tea.Batch(cmds...)
 }
 
-func (m SetupUserModel) ViewQBittorrent() (string, *tea.Cursor) {
+func (m SetupUserModel) ViewQBittorrent() tea.View {
 	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
 
 	setupView := lipgloss.JoinVertical(
@@ -416,11 +414,11 @@ a ;g;free;x; and ;g;open source;x; program.`,
 	)
 
 	if !m.state.qBittorrent.accepted {
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			setupView,
 			m.ui.consent.View(ui.ConsentStyle.Render("Would you like to use qBittorrent?")),
-		), nil
+		))
 	}
 
 	optStyle := ui.Style.MarginLeft(5)
@@ -515,46 +513,51 @@ of the options window.`,
 				sb.WriteString(optStyle.Render(opt))
 			}
 		}
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			page1,
 			sb.String(),
-		), nil
+		))
 
 	case 1:
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			page2,
 			selStyle.Render("> Continue"),
-		), nil
+		))
 
 	case 2:
-		c := m.ui.qbtPort.Cursor()
-		c.Shape = tea.CursorBar
+		v := tea.NewView("")
+		v.Cursor = m.ui.qbtPort.Cursor()
+		v.Cursor.Shape = tea.CursorBar
 
 		if m.state.qBittorrent.login.failed {
-			return lipgloss.JoinVertical(
+			v.Content = lipgloss.JoinVertical(
 				lipgloss.Left,
 				page3PortFail,
 				m.ui.qbtPort.View(),
-			), c
+			)
+			return v
 		}
 
 		if m.state.qBittorrent.login.passed {
-			return lipgloss.JoinVertical(
+			v.Content = lipgloss.JoinVertical(
 				lipgloss.Left,
 				page3PortSuccess,
-			), nil
+			)
+			v.Cursor = nil
+			return v
 		}
 
-		return lipgloss.JoinVertical(
+		v.Content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			page3,
 			m.ui.qbtPort.View(),
-		), c
+		)
+		return v
 	}
 
-	return "", nil
+	return tea.NewView("missing view")
 }
 
 func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
@@ -627,25 +630,25 @@ func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m SetupUserModel) ViewUsername() (string, *tea.Cursor) {
+func (m SetupUserModel) ViewUsername() tea.View {
 	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
 
 	if m.state.username.notFound {
-		return m.ui.consent.View(
+		return tea.NewView(m.ui.consent.View(
 			ui.DisplayText([]string{`;y;Profile not found; ;g;try again?`}, 0, 1),
-		), nil
+		))
 	}
 
 	if m.state.err != nil {
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.TextStyle.Foreground(ansi.BrightRed).Render("Fetch Error"),
 			ui.TextStyle.PaddingLeft(2).
 				Foreground(ansi.BrightYellow).
 				Render(m.state.err.Error()),
-		), nil
+		))
 	}
 
 	if m.state.username.found {
@@ -664,17 +667,18 @@ func (m SetupUserModel) ViewUsername() (string, *tea.Cursor) {
 			kitsu.GetProfileLink(p.ID),
 		})
 
-		return m.ui.consent.View(
+		return tea.NewView(m.ui.consent.View(
 			ui.DisplaySubTitle("Setup User", "Select User"),
 			"",
 			profileStr,
 			ui.DisplayText([]string{`;b;Does that look like your profile?`}, 0, 1),
-		), nil
+		))
 	}
 
 	c := m.ui.username.Cursor()
 	c.Shape = tea.CursorBar
-	view := lipgloss.JoinVertical(
+
+	view := tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("User Setup", "Username"),
 		ui.DisplayText([]string{
@@ -688,8 +692,10 @@ in that box and click ;w;update profile;x; at the bottom of the page.`,
 			`;b;Enter the profile URL name you applied`,
 		}, 1, 1),
 		m.ui.username.View(),
-	)
-	return view, c
+	))
+
+	view.Cursor = c
+	return view
 }
 
 func (m SetupUserModel) UpdatePassword(msg tea.Msg) (SetupUserModel, tea.Cmd) {
@@ -752,13 +758,13 @@ func (m SetupUserModel) UpdatePassword(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 	return m, cmd
 }
 
-func (m SetupUserModel) ViewPassword() (string, *tea.Cursor) {
+func (m SetupUserModel) ViewPassword() tea.View {
 	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
 
 	if m.state.password.failed {
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("User Setup", "Password"),
 			ui.DisplayText(
@@ -768,7 +774,7 @@ func (m SetupUserModel) ViewPassword() (string, *tea.Cursor) {
 				1, 1,
 			),
 			m.ui.consent.View(ui.DisplayText([]string{";b;Would you like to try again?"}, 0)),
-		), nil
+		))
 	}
 
 	if m.state.password.success {
@@ -780,7 +786,7 @@ func (m SetupUserModel) ViewPassword() (string, *tea.Cursor) {
 			";bk;" + m.state.data.Profile.RefreshToken,
 		})
 
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("User Setup", "Credentials"),
 			"",
@@ -796,12 +802,13 @@ transparency purposes only.`,
 			}, 1, 1),
 			ui.TextStyle.Foreground(ansi.BrightGreen).Render("> Continue"),
 			"",
-		), nil
+		))
 	}
 
 	c := m.ui.password.Cursor()
 	c.Shape = tea.CursorBar
-	view := lipgloss.JoinVertical(
+
+	view := tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("User Setup", "Password"),
 		ui.DisplayText([]string{
@@ -813,8 +820,10 @@ to renew it.`,
 			`;b;Enter your password below to finish logging in.`,
 		}, 1, 1),
 		m.ui.password.View(),
-	)
-	return view, c
+	))
+
+	view.Cursor = c
+	return view
 }
 
 func (m SetupUserModel) UpdateLibAnime(msg tea.Msg) (SetupUserModel, tea.Cmd) {
@@ -860,16 +869,16 @@ func (m SetupUserModel) UpdateLibAnime(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m SetupUserModel) ViewLibAnime() string {
+func (m SetupUserModel) ViewLibAnime() tea.View {
 	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View())
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
 
 	if m.state.libAnime.failed {
-		return m.ui.consent.View(
+		return tea.NewView(m.ui.consent.View(
 			ui.DisplayError(m.state.err),
 			ui.DisplayText([]string{`;b;Would you like to try again?`}, 1, 1, 0),
-		)
+		))
 	}
 
 	if m.state.libAnime.passed {
@@ -887,17 +896,17 @@ func (m SetupUserModel) ViewLibAnime() string {
 			Foreground(ansi.BrightGreen).
 			Render("> Continue")
 
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("User Setup", "Success"),
 			"",
 			loadedStr,
 			"",
 			continueStr,
-		)
+		))
 	}
 
-	return ""
+	return tea.NewView("missing view")
 }
 
 func (m SetupUserModel) setupQbtLogin(port string) tea.Cmd {

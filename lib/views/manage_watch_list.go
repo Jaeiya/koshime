@@ -3,15 +3,15 @@ package views
 import (
 	"fmt"
 
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/key"
-	"github.com/charmbracelet/bubbles/v2/list"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 )
 
 type WatchList_View int
@@ -149,30 +149,30 @@ func (m WatchList_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m WatchList_Model) View() (string, *tea.Cursor) {
+func (m WatchList_Model) View() tea.View {
 	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
 
 	if m.state.err != nil {
-		return ui.DisplayError(m.state.err), nil
+		return tea.NewView(ui.DisplayError(m.state.err))
 	}
 
 	switch m.state.view {
 	case WatchList_Menu:
-		return m.ViewMenu(), nil
+		return m.ViewMenu()
 	case WatchList_Reload:
-		return m.ViewReload(), nil
+		return m.ViewReload()
 	case WatchList_Drop:
-		return m.ViewDrop(), nil
+		return m.ViewDrop()
 	case WatchList_Delete:
-		return m.ViewDeleting(), nil
+		return m.ViewDeleting()
 	case WatchList_FileBinding:
-		return m.ViewFileBinding(), nil
+		return m.ViewFileBinding()
 	case WatchList_Complete:
-		return m.ViewCompleted(), nil
+		return m.ViewCompleted()
 	default:
-		return "unknown view", nil
+		return tea.NewView("missing ManageWatchList view")
 	}
 }
 
@@ -267,8 +267,8 @@ func (m WatchList_Model) UpdateMenu(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m WatchList_Model) ViewMenu() string {
-	view := lipgloss.JoinVertical(
+func (m WatchList_Model) ViewMenu() tea.View {
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplayTitle("Watch List"),
 		"",
@@ -284,8 +284,7 @@ func (m WatchList_Model) ViewMenu() string {
 		}),
 		"",
 		m.ui.menu.View(),
-	)
-	return view
+	))
 }
 
 func (m WatchList_Model) UpdateReload(msg tea.Msg) (WatchList_Model, tea.Cmd) {
@@ -312,8 +311,8 @@ func (m WatchList_Model) UpdateReload(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m WatchList_Model) ViewReload() string {
-	view := lipgloss.JoinVertical(
+func (m WatchList_Model) ViewReload() tea.View {
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Watch List", "Reloading"),
 		"",
@@ -330,8 +329,7 @@ manually update your Kitsu watch list from the website.`,
 		ui.TextStyle.Render(
 			m.ui.consent.View(utils.ColorText(";b;Are you sure you want to reload?")),
 		),
-	)
-	return view
+	))
 }
 
 func (m WatchList_Model) UpdateDelete(msg tea.Msg) (WatchList_Model, tea.Cmd) {
@@ -358,8 +356,8 @@ func (m WatchList_Model) UpdateDelete(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m WatchList_Model) ViewDeleting() string {
-	view := lipgloss.JoinVertical(
+func (m WatchList_Model) ViewDeleting() tea.View {
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Watch List", "Deleting Entry"),
 		"",
@@ -375,8 +373,7 @@ the local database.`, m.state.anime[m.state.animeIndex].EngTitle,
 		ui.TextStyle.Render(
 			m.ui.consent.View(utils.ColorText(";b;Are you sure?")),
 		),
-	)
-	return view
+	))
 }
 
 func (m WatchList_Model) UpdateDrop(msg tea.Msg) (WatchList_Model, tea.Cmd) {
@@ -404,8 +401,8 @@ func (m WatchList_Model) UpdateDrop(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m WatchList_Model) ViewDrop() string {
-	view := lipgloss.JoinVertical(
+func (m WatchList_Model) ViewDrop() tea.View {
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Watch List", "Drop"),
 		"",
@@ -421,8 +418,7 @@ track of the episodes you ;w;did;x; watch. This makes your watch time stats more
 accurate.`,
 		}, 1),
 		ui.TextStyle.Render(m.ui.consent.View(utils.ColorText(";b;Are you sure?"))),
-	)
-	return view
+	))
 }
 
 func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cmd) {
@@ -516,26 +512,26 @@ func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cm
 	return m, cmd
 }
 
-func (m WatchList_Model) ViewFileBinding() string {
+func (m WatchList_Model) ViewFileBinding() tea.View {
 	switch m.state.bindingMode {
 	case SelectFile:
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplayTitle("File Binding"),
 			ui.DisplayText([]string{";m;Select a file you want to bind"}, 0, 1),
 			m.ui.list.View(),
-		)
+		))
 
 	case SelectAnime:
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplayTitle("File Binding"),
 			ui.DisplayText([]string{";m;Select the anime you'd like to bind"}, 0, 1),
 			m.ui.list.View(),
-		)
+		))
 
 	case ConfirmSelection:
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplayTitle("File Binding"),
 			ui.DisplayText([]string{
@@ -545,10 +541,10 @@ func (m WatchList_Model) ViewFileBinding() string {
 			ui.TextStyle.Render(
 				m.ui.consent.View(utils.ColorText(";b;Is the above correct?")),
 			),
-		)
+		))
 	}
 
-	return "missing file binding view"
+	return tea.NewView("missing FileBinding view")
 }
 
 func (m WatchList_Model) UpdateCompleted(msg tea.Msg) (WatchList_Model, tea.Cmd) {
@@ -576,9 +572,9 @@ func (m WatchList_Model) UpdateCompleted(msg tea.Msg) (WatchList_Model, tea.Cmd)
 	return m, nil
 }
 
-func (m WatchList_Model) ViewCompleted() string {
+func (m WatchList_Model) ViewCompleted() tea.View {
 	animeTitle := m.state.anime[m.state.animeIndex].EngTitle
-	view := lipgloss.JoinVertical(
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Watch List", "Complete"),
 		"",
@@ -588,8 +584,7 @@ func (m WatchList_Model) ViewCompleted() string {
 Updating the progress of an anime will auto-complete it on the last episode of a season.`,
 		}, 1),
 		ui.TextStyle.Render(m.ui.consent.View(utils.ColorText(";b;Are you sure?"))),
-	)
-	return view
+	))
 }
 
 func (m WatchList_Model) reloadLibrary() tea.Msg {

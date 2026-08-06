@@ -3,12 +3,12 @@ package views
 import (
 	"fmt"
 
+	"charm.land/bubbles/v2/help"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/help"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 )
 
 type UIView int
@@ -39,9 +39,9 @@ func (e DefaultErrorMsg) Error() string {
 }
 
 type ViewModel interface {
-	tea.CursorModel
 	help.KeyMap
 	Update(msg tea.Msg) (ViewModel, tea.Cmd)
+	View() tea.View
 	Init() tea.Cmd
 }
 
@@ -138,29 +138,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Model) View() (string, *tea.Cursor) {
+func (m Model) View() tea.View {
 	switch m.view {
 	case Menu:
 		return m.menu.View()
 
 	case SetupUser:
-		v, c := m.setupUser.View()
-		return lipgloss.JoinVertical(
+		v := m.setupUser.View()
+		v.Content = lipgloss.JoinVertical(
 			lipgloss.Left,
-			v,
+			v.Content,
 			ui.HelpStyle.Render(m.help.View(m.setupUser)),
-		), c
+		)
+		return v
 
 	case Exit:
-		return "", nil
+		return tea.NewView("")
 
 	case Abort:
-		return ui.AbortStyle.Render(
+		return tea.NewView(ui.AbortStyle.Render(
 			utils.ColorText(";g;>>> ;y;User Aborted Operation ;g;<<<"),
-		), nil
+		))
 
 	default:
-		return "missing view", nil
+		return tea.NewView("missing view")
 
 	}
 }

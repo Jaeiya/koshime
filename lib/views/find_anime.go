@@ -1,10 +1,10 @@
 package views
 
 import (
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/ui"
-	"github.com/charmbracelet/bubbles/v2/key"
-	tea "github.com/charmbracelet/bubbletea/v2"
 )
 
 type Find_AnimeView int
@@ -37,7 +37,8 @@ type Find_AnimeState struct {
 func newFindAnimeModel(db *database.Database) Find_AnimeModel {
 	m := Find_AnimeModel{db: db}
 
-	m.ui.animeSearch = NewAnimeSearchModel(db,
+	m.ui.animeSearch = NewAnimeSearchModel(
+		db,
 		WithHeader("Find Anime"),
 		WithExit(),
 		WithMinInputLen(4),
@@ -80,13 +81,13 @@ func (m Find_AnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Find_AnimeModel) View() (string, *tea.Cursor) {
+func (m Find_AnimeModel) View() tea.View {
 	switch m.state.view {
 	case Find_QueryEntry:
 		return m.ui.animeSearch.View()
 	}
 
-	return "missing view", nil
+	return tea.NewView("missing FindAnime model view")
 }
 
 func (m Find_AnimeModel) ShortHelp() []key.Binding {

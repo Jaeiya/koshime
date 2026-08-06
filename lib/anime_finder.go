@@ -1,11 +1,11 @@
 package lib
 
 import (
+	"charm.land/bubbles/v2/list"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/list"
 )
 
 type AnimeFinder interface {

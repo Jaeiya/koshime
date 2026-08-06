@@ -3,14 +3,14 @@ package views
 import (
 	"fmt"
 
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/key"
-	"github.com/charmbracelet/bubbles/v2/textinput"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -121,7 +121,7 @@ func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m AddAnime_Model) View() (string, *tea.Cursor) {
+func (m AddAnime_Model) View() tea.View {
 	switch m.state.view {
 	case AddAnime_Selection:
 		return m.ViewSelection()
@@ -130,7 +130,7 @@ func (m AddAnime_Model) View() (string, *tea.Cursor) {
 	case AddAnime_Review:
 		return m.ViewReview()
 	}
-	return "AddAnime::missing view", nil
+	return tea.NewView("missing AddAnime view")
 }
 
 func (m AddAnime_Model) ShortHelp() []key.Binding {
@@ -194,7 +194,7 @@ func (m AddAnime_Model) UpdateSelection(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m AddAnime_Model) ViewSelection() (string, *tea.Cursor) {
+func (m AddAnime_Model) ViewSelection() tea.View {
 	menu := ""
 	menuStyle := ui.Style.MarginLeft(3).
 		Width(15).
@@ -227,7 +227,8 @@ then it's probably ;dc;completed;x;.`,
 		}, 1),
 		menu,
 	)
-	return view, nil
+
+	return tea.NewView(view)
 }
 
 func (m AddAnime_Model) UpdateReview(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
@@ -256,13 +257,13 @@ func (m AddAnime_Model) UpdateReview(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m AddAnime_Model) ViewReview() (string, *tea.Cursor) {
+func (m AddAnime_Model) ViewReview() tea.View {
 	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
 
 	if m.state.fetchErr != nil {
-		return ui.DisplayError(m.state.fetchErr), nil
+		return tea.NewView(ui.DisplayError(m.state.fetchErr))
 	}
 
 	str := lipgloss.JoinVertical(
@@ -271,7 +272,7 @@ func (m AddAnime_Model) ViewReview() (string, *tea.Cursor) {
 		ui.TextStyle.MarginTop(1).Render(utils.ColorText("Anime Successfully Added")),
 		ui.TextStyle.MarginTop(1).Foreground(ansi.BrightGreen).Render("> Continue"),
 	)
-	return str, nil
+	return tea.NewView(str)
 }
 
 func (m *AddAnime_Model) InitAnimeSearch(animeStatus []kitsu.AnimeStatus) {

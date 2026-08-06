@@ -6,17 +6,17 @@ import (
 	"strconv"
 	"strings"
 
+	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/database"
 	"github.com/Jaeiya/koshime/lib/kitsu"
 	"github.com/Jaeiya/koshime/lib/qbittorrent"
 	"github.com/Jaeiya/koshime/lib/ui"
 	"github.com/Jaeiya/koshime/lib/utils"
-	"github.com/charmbracelet/bubbles/v2/key"
-	"github.com/charmbracelet/bubbles/v2/list"
-	"github.com/charmbracelet/bubbles/v2/textinput"
-	tea "github.com/charmbracelet/bubbletea/v2"
-	"github.com/charmbracelet/lipgloss/v2"
 )
 
 type Rss_View int
@@ -164,29 +164,29 @@ func (m Rss_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Rss_Model) View() (string, *tea.Cursor) {
+func (m Rss_Model) View() tea.View {
 	if m.state.err != nil {
-		return ui.DisplayError(m.state.err), nil
+		return tea.NewView(ui.DisplayError(m.state.err))
 	}
 
 	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
 
 	switch m.state.view {
 	case Rss_Selection:
-		return m.ViewSelection(), nil
+		return m.ViewSelection()
 	case Rss_Search:
 		return m.ViewSearch()
 	case Rss_Review:
-		return m.ViewReview(), nil
+		return m.ViewReview()
 	case Rss_QbtSearch:
 		return m.ViewQbtSearch()
 	case Rss_QbtReview:
-		return m.ViewQbtReview(), nil
+		return m.ViewQbtReview()
 
 	default:
-		return "Unknown view", nil
+		return tea.NewView("missing RSS model view")
 	}
 }
 
@@ -273,11 +273,9 @@ func (m Rss_Model) UpdateSelection(msg tea.Msg) (Rss_Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Rss_Model) ViewSelection() string {
-	var view string
-
+func (m Rss_Model) ViewSelection() tea.View {
 	if m.state.isOffline {
-		return lipgloss.JoinVertical(
+		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("RSS", "Offline"),
 			ui.DisplayText([]string{
@@ -285,10 +283,10 @@ func (m Rss_Model) ViewSelection() string {
 which means you can't currently use the ;dc;automatic;x; rss option.`,
 			}, 1, 1),
 			m.ui.consent.View(ui.ConsentStyle.Render("Would you like to try again?")),
-		)
+		))
 	}
 
-	view = lipgloss.JoinVertical(
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("RSS", "Lookup Method"),
 		"",
@@ -304,9 +302,7 @@ you want, you can auto-add it to ;dg;qBittorrent;x; and it will begin
 downloading immediately.`,
 		}, 1),
 		m.ui.selMenu.View(),
-	)
-
-	return view
+	))
 }
 
 func (m Rss_Model) UpdateSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
@@ -341,11 +337,12 @@ func (m Rss_Model) UpdateSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Rss_Model) ViewSearch() (string, *tea.Cursor) {
-	c := m.ui.input.Cursor()
-	c.Shape = tea.CursorBar
+func (m Rss_Model) ViewSearch() tea.View {
+	view := tea.NewView("")
+	view.Cursor = m.ui.input.Cursor()
+	view.Cursor.Shape = tea.CursorBar
 
-	view := lipgloss.JoinVertical(
+	view.Content = lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("RSS", "Manual Lookup"),
 		"",
@@ -362,8 +359,9 @@ line would give you those results.`,
 			ui.DisplayCharLimit(m.config.minInputLen, m.ui.input.Value()),
 		)),
 	)
-	c.Y = lipgloss.Height(view) - 1
-	return view, c
+
+	view.Cursor.Y = lipgloss.Height(view.Content) - 1
+	return view
 }
 
 func (m Rss_Model) UpdateReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
@@ -382,8 +380,8 @@ func (m Rss_Model) UpdateReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Rss_Model) ViewReview() string {
-	view := lipgloss.JoinVertical(
+func (m Rss_Model) ViewReview() tea.View {
+	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("RSS", "Selection"),
 		"",
@@ -395,8 +393,7 @@ func (m Rss_Model) ViewReview() string {
 		"",
 		ui.Style.MarginLeft(3).Render(m.ui.list.View()),
 		"",
-	)
-	return view
+	))
 }
 
 func (m Rss_Model) UpdateQbtSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
@@ -492,13 +489,14 @@ func (m Rss_Model) UpdateQbtSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Rss_Model) ViewQbtSearch() (string, *tea.Cursor) {
-	var c *tea.Cursor
+func (m Rss_Model) ViewQbtSearch() tea.View {
+	view := tea.NewView("")
+
 	if m.ui.animeList.FilterState() == list.Filtering {
-		c = m.ui.animeList.FilterInput.Cursor()
-		c.Color = lipgloss.Cyan
-		c.Y += 4
-		c.X += 5
+		view.Cursor = m.ui.animeList.FilterInput.Cursor()
+		view.Cursor.Color = lipgloss.Cyan
+		view.Cursor.Y += 4
+		view.Cursor.X += 5
 	}
 
 	anime := m.state.saveStatus.anime
@@ -506,7 +504,7 @@ func (m Rss_Model) ViewQbtSearch() (string, *tea.Cursor) {
 	switch {
 	// Anime selection view
 	case m.state.selAnimeIdx == -1:
-		return lipgloss.JoinVertical(
+		view.Content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("RSS", "Auto Lookup"),
 			"",
@@ -514,11 +512,12 @@ func (m Rss_Model) ViewQbtSearch() (string, *tea.Cursor) {
 				`;b;Select the anime you want to bind to an RSS feed:;x;`,
 			}),
 			ui.Style.MarginLeft(3).Render(m.ui.animeList.View()),
-		), c
+		)
+		return view
 
 	// Anime feed conflict view
 	case m.state.selAnimeIdx > -1 && anime.QbtFeed.Name != "":
-		return lipgloss.JoinVertical(
+		view.Content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("RSS", "Feed Conflict"),
 			ui.DisplayText([]string{
@@ -532,7 +531,8 @@ auto-download rule. If you continue, the feed will be removed.`,
 			m.ui.consent.View(
 				ui.ConsentStyle.Render("Do you want to override its existing feed?"),
 			),
-		), nil
+		)
+		return view
 
 	// Anime lookup view
 	case m.state.selAnimeIdx > -1:
@@ -559,11 +559,11 @@ leveling;x;, the season ;dc;s2;x; and even the resolution ;dc;1080p;x;.`,
 			ui.DisplayText(text, 1, 1),
 		)
 
-		c := m.ui.input.Cursor()
-		c.Shape = tea.CursorBar
-		c.Y += lipgloss.Height(display)
+		view.Cursor = m.ui.input.Cursor()
+		view.Cursor.Shape = tea.CursorBar
+		view.Cursor.Y += lipgloss.Height(display)
 
-		return lipgloss.JoinVertical(
+		view.Content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			display,
 			lipgloss.JoinHorizontal(
@@ -571,10 +571,11 @@ leveling;x;, the season ;dc;s2;x; and even the resolution ;dc;1080p;x;.`,
 				m.ui.input.View(),
 				ui.DisplayCharLimit(m.config.minInputLen, m.ui.input.Value()),
 			),
-		), c
+		)
+		return view
 	}
 
-	return "missing view", nil
+	return tea.NewView("missing RSS QbtSearch view")
 }
 
 func (m Rss_Model) UpdateQbtReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
@@ -676,12 +677,12 @@ func (m Rss_Model) UpdateQbtReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Rss_Model) ViewQbtReview() string {
-	var view string
+func (m Rss_Model) ViewQbtReview() tea.View {
+	view := tea.NewView("")
 
 	switch {
 	case m.state.saveStatus.err != nil:
-		view = lipgloss.JoinVertical(
+		view.Content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("RSS", "Save Error"),
 			ui.DisplayText([]string{
@@ -690,7 +691,7 @@ func (m Rss_Model) ViewQbtReview() string {
 		)
 
 	case m.state.saveStatus.saved:
-		view = lipgloss.JoinVertical(
+		view.Content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("RSS", "Feed Saved"),
 			ui.DisplayText([]string{
@@ -704,7 +705,7 @@ every week!`,
 		)
 
 	case m.state.isRssRefined:
-		view = lipgloss.JoinVertical(
+		view.Content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("RSS", "Save Feed"),
 			"",
@@ -722,7 +723,7 @@ releases you're looking for.`,
 		)
 
 	default:
-		view = lipgloss.JoinVertical(
+		view.Content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("RSS", "Feed Finder"),
 			"",
