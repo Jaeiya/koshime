@@ -71,10 +71,16 @@ func GetUserAnime(userID string, status LibAnimeStatus) ([]LibraryEntry, error) 
 	entries := make([]LibraryEntry, len(respData.Data))
 	for i, item := range respData.Data {
 		anime := respData.Included[i]
+
+		jpnTitle := anime.Attributes.Titles.Romaji
+		if jpnTitle == "" { // Check for non-japanese titles
+			jpnTitle = anime.Attributes.CanonicalTitle
+		}
+
 		entries[i] = LibraryEntry{
 			ID:        respData.Included[i].ID,
 			LibID:     item.LibID,
-			JPN_Title: anime.Attributes.Titles.Romaji,
+			JPN_Title: jpnTitle,
 			ENG_Title: anime.Attributes.Titles.English,
 			AltTitles: anime.Attributes.AltTitles,
 			Episodes:  anime.Attributes.EpCount,
