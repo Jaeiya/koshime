@@ -495,7 +495,10 @@ func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cm
 					return m, nil
 				}
 
-				m.db.AddFileBinding(m.state.selectedFileTitle, m.state.selectedAnime.LibID)
+				err := m.db.AddFileBinding(m.state.selectedFileTitle, m.state.selectedAnime.LibID)
+				if err != nil {
+					return m, func() tea.Msg { return DefaultErrorMsg{err} }
+				}
 				m.ui.list = list.Model{}
 				m.state.bindingMode = SelectFile
 				m.state.view = WatchList_Menu
