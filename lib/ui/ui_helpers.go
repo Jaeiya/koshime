@@ -104,8 +104,8 @@ func DisplaySubTitle(title string, subtitle string) string {
 // DisplayText creates a string from multiple lines
 // separated by specified margins.
 //
-//	1st margin sets size of bottom margin
-//	2nd margin sets size of top margin
+//	1st margin sets size of every lines bottom margin
+//	2nd margin sets size of text-block top margin
 //	3rd margin sets size of text-block bottom margin
 func DisplayText(lines []string, margins ...int) string {
 	marginLen := len(margins)
