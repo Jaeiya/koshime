@@ -48,50 +48,61 @@ func (m AboutModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 }
 
 func (m AboutModel) View() tea.View {
-	viewList := []string{
+	header := []string{
 		ui.DisplayTitle("About"),
 		"",
 	}
 
-	creator := ui.DisplayText(
-		[]string{`Koshime was created by ;y;Jaeiya;x; with ❤️ for Anime.`},
-	)
 	if m.showHistory {
-		creator = ui.DisplayText([]string{
-			`Koshime was created by me (;y;Jaeiya;x;) because I ❤️ Anime`,
-		})
+		return m.displayHistory(header)
 	}
 
-	viewList = append(viewList, creator, "")
+	return m.displayAbout(header)
+}
 
-	history := ui.DisplayText([]string{
-		`I didn't enjoy navigating ;dm;Kitsu's;x; convoluted interface just
+func (m AboutModel) ShortHelp() []key.Binding {
+	if m.showHistory {
+		return []key.Binding{m.keys.closeHistory, ui.KeyMap.MainMenu}
+	}
+	return []key.Binding{m.keys.openHistory, ui.KeyMap.MainMenu}
+}
+
+func (m AboutModel) FullHelp() [][]key.Binding {
+	return [][]key.Binding{}
+}
+
+func (m AboutModel) displayHistory(header []string) tea.View {
+	header = append(
+		header,
+		ui.DisplayText([]string{`Koshime was created by me (;y;Jaeiya;x;) because I ❤️ Anime`}),
+		ui.DisplayText([]string{
+			`I didn't enjoy navigating ;dm;Kitsu's;x; convoluted interface just
 to update the progress of anime I was watching. `,
-		`That friction turned into an obsession. I was driven to make the
+			`That friction turned into an obsession. I was driven to make the
 process of ;w;watching;x; and ;w;updating;x; anime as simple as possible.`,
-		`;b;Wakitsu;x; was born. It was my first attempt at solving this
+			`;b;Wakitsu;x; was born. It was my first attempt at solving this
 problem and it did a great job, but it wasn't good enough.`,
-		`Eventually I learned a new programming language and used it as an
+			`Eventually I learned a new programming language and used it as an
 excuse to completely re-write ;b;Wakitsu;x;. ;g;Koshime;x; is technically
 ;b;Wakitsu;x; ;w;v2.0;x;.`,
-		`Though as ;b;Wakitsu;x; was the flawed first iteration of my vision,
+			`Though as ;b;Wakitsu;x; was the flawed first iteration of my vision,
 the name of the program was also a rough draft: `,
-		`   ;dc;wa ;bk;(watch);x; ;dc;kitsu ;bk;(https://kitsu.app);x;`,
-		`;g;Koshime;x; combines ;w;Koshin;x; and ;w;Anime;x;, where Koshin
+			`   ;dc;wa ;bk;(watch);x; ;dc;kitsu ;bk;(https://kitsu.app);x;`,
+			`;g;Koshime;x; combines ;w;Koshin;x; and ;w;Anime;x;, where Koshin
 is the Japanese word for update or renewal:`,
-		`   ;dc;Kosh ;bk;(Kosh-in) ;dc;ime ;bk;(an-ime);x;`,
-		`This new name completely captures the intended purpose of the
+			`   ;dc;Kosh ;bk;(Kosh-in) ;dc;ime ;bk;(an-ime);x;`,
+			`This new name completely captures the intended purpose of the
 application...and the rest is history.`,
-	}, 1)
+		}, 1, 1),
+	)
 
-	if m.showHistory {
-		viewList = append(viewList, history)
-		return tea.NewView(lipgloss.JoinVertical(
-			lipgloss.Left,
-			viewList...,
-		))
-	}
+	return tea.NewView(lipgloss.JoinVertical(
+		lipgloss.Left,
+		header...,
+	))
+}
 
+func (m AboutModel) displayAbout(header []string) tea.View {
 	version := utils.ColorText(fmt.Sprintf(";c;%s", lib.Version))
 	if lib.Version == "" || strings.Contains(lib.Version, "build-") {
 		version = utils.ColorText(fmt.Sprintf(";bk;0x;m;%s", lib.CommitHash))
@@ -114,8 +125,10 @@ application...and the rest is history.`,
 		releaseDate = utils.ColorText(";r;Now")
 	}
 
-	viewList = append(
-		viewList,
+	header = append(
+		header,
+		ui.DisplayText([]string{`Koshime was created by ;y;Jaeiya;x; with ❤️ for Anime.`}),
+		"",
 		ui.TextStyle.Render(utils.ColorText(fmt.Sprintf(";dc; Version:;x; %s", version))),
 		ui.TextStyle.Render(utils.ColorText(fmt.Sprintf(";dc;Released:;x; %s", releaseDate))),
 		"",
@@ -130,17 +143,6 @@ application...and the rest is history.`,
 
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
-		viewList...,
+		header...,
 	))
-}
-
-func (m AboutModel) ShortHelp() []key.Binding {
-	if m.showHistory {
-		return []key.Binding{m.keys.closeHistory, ui.KeyMap.MainMenu}
-	}
-	return []key.Binding{m.keys.openHistory, ui.KeyMap.MainMenu}
-}
-
-func (m AboutModel) FullHelp() [][]key.Binding {
-	return [][]key.Binding{}
 }
