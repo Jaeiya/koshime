@@ -4,10 +4,21 @@ import (
 	"fmt"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/Jaeiya/koshime/lib"
 	"github.com/Jaeiya/koshime/lib/views"
 )
 
+var (
+	version   string
+	commitSha string
+	buildDate string
+)
+
 func main() {
+	lib.Version = version
+	lib.CommitHash = commitSha
+	lib.BuildDate = buildDate
+
 	m, err := views.New()
 	if err != nil {
 		panic(err)

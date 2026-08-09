@@ -1,20 +1,16 @@
 version: 2
 
 builds:
-  - id: "koshime"
-    main: .
-    binary: koshime
+  - binary: koshime
     env:
       - CGO_ENABLED=0
-    flags:
-      - -trimpath
-    gcflags:
-      - "all=-B -l=120"
     ldflags:
       - -s -w
-      - -X github.com/Jaeiya/koshime/lib.Version={{ .Version }}
-      - -X github.com/Jaeiya/koshime/lib.CommitHash={{ .ShortCommit }}
-      - -X github.com/Jaeiya/koshime/lib.BuildDate={{ .Date }}
+      - -X main.version={{ .Version }}
+      - -X main.commitSha={{ .ShortCommit }}
+      - -X main.buildDate={{ .Date }}
+    flags:
+      - -trimpath
     goos:
       - windows
       - linux
@@ -22,11 +18,14 @@ builds:
     goarch:
       - amd64
       - arm64
-    goamd64:
-      - v1
 
 archives:
-  - id: default
+  - name_template: >-
+      {{- .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
     format_overrides:
       - goos: windows
         formats:
@@ -34,3 +33,38 @@ archives:
 
 checksum:
   name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^tdd"
+      - "^test"
+  groups:
+    - title: New
+      regexp: "^.*feat[(\\w)]*:+.*$"
+      order: 100
+
+    - title: Changes
+      regexp: "^.*upd[(\\w)]*:+.*$"
+      order: 200
+
+    - title: "Fixes"
+      regexp: "^.*fix[(\\w)]*:+.*$"
+      order: 300
+
+    - title: "Docs"
+      regexp: "^.*docs[(\\w)]*:+.*$"
+      order: 400
+
+    - title: "Cleaning"
+      regexp: "^.*clean[(\\w)]*:+.*$"
+      order: 500
+
+    - title: "Maintenance"
+      regexp: "^.*chore[(\\w)]*:+.*$"
+      order: 600
+
+    - title: "Other"
+      order: 999
