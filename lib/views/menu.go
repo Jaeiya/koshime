@@ -16,7 +16,19 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-type ExitToMenuMsg struct{}
+type (
+	ExitToMenuMsg struct{}
+	QbtStateMsg   struct{ Value QbtState }
+)
+
+type QbtState uint8
+
+const (
+	None = QbtState(iota)
+	Pending
+	Offline
+	Online
+)
 
 type MenuView struct {
 	Name      string
@@ -34,6 +46,8 @@ type MenuModel struct {
 	menu          ui.MenuModel
 	menuIndex     int
 	activeIndex   int
+	qbtState      QbtState
+	isQbtInit     bool
 	profile       kitsu.Profile
 	inSubMenu     bool
 }
@@ -47,6 +61,7 @@ func NewMenuModel(views []MenuView, p kitsu.Profile) MenuModel {
 	m.help.Styles.FullKey = m.help.Styles.ShortKey
 	m.help.Styles.ShortDesc = ui.HelpDescStyle
 	m.help.Styles.FullDesc = m.help.Styles.ShortDesc
+	m.qbtState = Pending
 
 	m.menuItems = views
 	m.activeItems = views
@@ -122,6 +137,14 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 			cmds = append(cmds, cmd, m.selectedModel.Init())
 		}
 
+	case QbtStateMsg:
+		m.qbtState = msg.Value
+
+	}
+
+	if !m.isQbtInit {
+		m, cmd = m.initQbtState()
+		cmds = append(cmds, cmd)
 	}
 
 	m.menu, cmd = m.menu.Update(msg)
@@ -202,18 +225,19 @@ func (m MenuModel) DisplayProfile() string {
 	}
 
 	// Add qBittorrent display
-	if p.QbtPort > 0 {
+	if m.qbtState > None {
 		props = append(props, utils.ColorText(";dc;qBittorrent"))
-
 		strPort := strconv.Itoa(p.QbtPort)
-		qbtState := ui.Style.Foreground(ansi.BrightGreen).Render("Online")
-		/*
-		  INFO: typically you don't want to have a request in a display
-		  method, but this is effectively a zero-cost check, since it's
-		  localhost only.
-		*/
-		if err := qbittorrent.CheckConn(strPort); err != nil {
+
+		var qbtState string
+		switch m.qbtState {
+		case Pending:
+			qbtState = ui.Style.Foreground(ansi.BrightMagenta).Render("Pending")
+		case Offline:
 			qbtState = ui.Style.Foreground(ansi.BrightRed).Render("Offline")
+		case Online:
+			qbtState = ui.Style.Foreground(ansi.BrightGreen).Render("Online")
+		default:
 		}
 
 		values = append(
@@ -237,6 +261,24 @@ func (m *MenuModel) updateMenu() {
 		items[i] = item.Name
 	}
 	m.menu = ui.NewMenuModel(items, ui.WithMenuRotation(), ui.WithMenuDescriptions(menuDesc))
+}
+
+func (m MenuModel) initQbtState() (MenuModel, tea.Cmd) {
+	cmd := func() tea.Msg {
+		if m.profile.QbtPort <= 0 {
+			return QbtStateMsg{None}
+		}
+
+		strPort := strconv.Itoa(m.profile.QbtPort)
+		if err := qbittorrent.CheckConn(strPort); err != nil {
+			return QbtStateMsg{Offline}
+		}
+
+		return QbtStateMsg{Online}
+	}
+
+	m.isQbtInit = true
+	return m, cmd
 }
 
 func exitToMenu() tea.Msg {

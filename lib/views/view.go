@@ -82,7 +82,7 @@ func New() (Model, error) {
 		return m, err
 	}
 
-	m.CreateMenuItems()
+	m.CreateMenu()
 	m.view = Menu
 	return m, nil
 }
@@ -113,7 +113,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// This should never happen
 			panic(fmt.Errorf("failed to load new user data: %w", err))
 		}
-		m.CreateMenuItems()
+		m.CreateMenu()
 		m.menu, _ = m.menu.Update(m.windowSize)
 		m.view = Menu
 
@@ -166,7 +166,7 @@ func (m Model) View() tea.View {
 	}
 }
 
-func (m *Model) CreateMenuItems() {
+func (m *Model) CreateMenu() {
 	m.menu = NewMenuModel([]MenuView{
 		{
 			Name:      "Watch",
