@@ -50,13 +50,13 @@ func NewLogin(port string) (*qBittorrentAPI, error) {
 	}
 
 	// Make sure we can connect to the qbittorrent service
-	req, _ := http.NewRequest("HEAD", buildApiUrl(""), nil)
-	resp, err := httpUtils.Do(req, "", "")
+	req, _ := http.NewRequest(http.MethodHead, buildApiUrl(""), nil)
+	_, err := httpUtils.Do(req, "", "")
 	if err != nil {
 		return nil, errConnFailed
 	}
 
-	resp, err = httpUtils.PostForm(
+	resp, err := httpUtils.PostForm(
 		buildApiUrl(apiLoginURI),
 		// We assume auth-bypass for localhost
 		url.Values{"username": {""}, "password": {"penis"}},
@@ -82,7 +82,7 @@ func NewLogin(port string) (*qBittorrentAPI, error) {
 }
 
 func CheckConn(port string) error {
-	req, _ := http.NewRequest("HEAD", "http://localhost:"+port+"/api/v2/", nil)
+	req, _ := http.NewRequest(http.MethodHead, "http://localhost:"+port+"/api/v2/", nil)
 	_, err := httpUtils.Do(req, "", "")
 	if err != nil {
 		return errConnFailed
@@ -121,8 +121,7 @@ func (qb qBittorrentAPI) DeleteFeed(name string) error {
 }
 
 func (qb qBittorrentAPI) Feeds() ([]RSSFeedItem, error) {
-	httpUtils := utils.Http{}
-	req, _ := http.NewRequest("GET", buildApiUrl(apiFeedItemsURI), nil)
+	req, _ := http.NewRequest(http.MethodGet, buildApiUrl(apiFeedItemsURI), nil)
 
 	resp, err := httpUtils.Do(req, "application/json", "")
 	if err != nil {
@@ -214,7 +213,7 @@ func (qb qBittorrentAPI) Rule(name string) (RSSRule, bool) {
 }
 
 func (qb qBittorrentAPI) Rules() (RSSRulesMap, error) {
-	req, _ := http.NewRequest("GET", buildApiUrl(apiRulesURI), nil)
+	req, _ := http.NewRequest(http.MethodGet, buildApiUrl(apiRulesURI), nil)
 	resp, err := httpUtils.Do(req, "application/json", "")
 	if err != nil {
 		return nil, err
@@ -271,7 +270,7 @@ func (qb qBittorrentAPI) saveRule(name string, rule RSSRule, mode RuleMode) erro
 }
 
 func (qb qBittorrentAPI) Logout() error {
-	req, _ := http.NewRequest("POST", buildApiUrl(apiLogoutURI), nil)
+	req, _ := http.NewRequest(http.MethodPost, buildApiUrl(apiLogoutURI), nil)
 	resp, err := httpUtils.Do(req, "", "")
 	if err != nil {
 		return err

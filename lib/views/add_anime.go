@@ -20,9 +20,6 @@ const (
 	AddAnime_Selection = AddAnime_View(iota)
 	AddAnime_Query
 	AddAnime_Review
-	AddAnime_Rss
-	AddAnime_RssResults
-	AddAnime_RssReview
 )
 
 type (
@@ -97,8 +94,8 @@ func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	case SelectedAnimeMsg:
 		m.ui.loader, cmd = m.ui.loader.Start("Adding Anime")
 		m.state.view = AddAnime_Review
-		m.state.selectedAnime = msg
-		return m, tea.Batch(cmd, m.addAnime(msg.ID))
+		m.state.selectedAnime = msg.Value
+		return m, tea.Batch(cmd, m.addAnime(msg.Value.ID))
 	}
 
 	if m.ui.loader.IsLoading() {
@@ -195,7 +192,7 @@ func (m AddAnime_Model) UpdateSelection(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
 }
 
 func (m AddAnime_Model) ViewSelection() tea.View {
-	menu := ""
+	var menu string
 	menuStyle := ui.Style.MarginLeft(3).
 		Width(15).
 		Background(ansi.Black).

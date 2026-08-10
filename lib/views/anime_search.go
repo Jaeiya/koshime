@@ -25,7 +25,9 @@ const (
 )
 
 type (
-	SelectedAnimeMsg   = ui.AnimeInfo
+	SelectedAnimeMsg struct {
+		Value ui.AnimeInfo
+	}
 	AnimeSearchExitMsg struct{}
 	AnimeSearchOption  func(*AnimeSearchConfig)
 	AnimeSearchHelp    map[AnimeSearchView]ui.KeyHelpInfo[AnimeSearchModel]
@@ -446,12 +448,13 @@ func (m *AnimeSearchModel) UpdateResults(msg tea.Msg) tea.Cmd {
 				break
 			}
 			if len(m.state.results) > 0 {
+				//nolint:errcheck // it will ALWAYS be a list item
 				item := m.ui.list.SelectedItem().(ui.ListItem)
 				m.state.selectedAnime = m.state.results[item.Index()]
 				if m.config.useAnimeSelection {
 					m.state.view = AnimeSearch_Selected
 				} else {
-					return func() tea.Msg { return SelectedAnimeMsg(m.state.selectedAnime) }
+					return func() tea.Msg { return SelectedAnimeMsg{m.state.selectedAnime} }
 				}
 			}
 
@@ -535,7 +538,7 @@ func (m *AnimeSearchModel) UpdateSelection(msg tea.Msg) tea.Cmd {
 				m.state.view = AnimeSearch_Results
 				return nil
 			}
-			return func() tea.Msg { return SelectedAnimeMsg(m.state.selectedAnime) }
+			return func() tea.Msg { return SelectedAnimeMsg{m.state.selectedAnime} }
 
 		case key.Matches(msg, ui.KeyMap.EscBack, ui.KeyMap.Back):
 			m.state.view = AnimeSearch_Results
@@ -600,6 +603,7 @@ func (m *AnimeSearchModel) findAnime(query string) tea.Cmd {
 			if err != nil {
 				return err
 			}
+		default:
 		}
 
 		m.state.results = result.InfoItems

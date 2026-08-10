@@ -24,6 +24,8 @@ const (
 // as its associated emoji.
 func (s AnimeFinderSource) Name() (string, string) {
 	switch s {
+	case NoSource:
+		return "None", "⛔"
 	case Kitsu:
 		return "Kitsu", "🌐"
 	case Local:
@@ -105,7 +107,7 @@ func (af LocalAnimeSearch) Search(query string) (AnimeFinderResult, error) {
 			JpnTitle:  item.JPN_Title,
 			EngTitle:  item.ENG_Title,
 			AltTitles: item.AltTitles,
-			ShowType:  string(item.Type),
+			ShowType:  item.Type,
 			Status:    item.Status,
 			Synopsis:  item.Synopsis,
 			Progress:  item.Progress,

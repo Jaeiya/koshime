@@ -72,7 +72,7 @@ func (db *Database) Load() error {
 	if err != nil {
 		return err
 	}
-	err = msgpack.Unmarshal([]byte(uncompressed), &db.data)
+	err = msgpack.Unmarshal(uncompressed, &db.data)
 	if err != nil {
 		return err
 	}
@@ -257,7 +257,7 @@ func (db Database) Save() error {
 		return err
 	}
 
-	err = os.WriteFile(dbFileName, compressed, 0o644)
+	err = os.WriteFile(dbFileName, compressed, 0o600)
 	if err != nil {
 		return err
 	}
@@ -297,9 +297,10 @@ func compressData(data []byte) ([]byte, error) {
 
 func decompressData(data []byte) ([]byte, error) {
 	reader := flate.NewReader(bytes.NewReader(data))
-	defer func() { _ = reader.Close() }()
+	defer reader.Close()
 
 	var out bytes.Buffer
+	//nolint:gosec // DoS bomb impossible since this isn't a web service
 	if _, err := io.Copy(&out, reader); err != nil {
 		return nil, err
 	}

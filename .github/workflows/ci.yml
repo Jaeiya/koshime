@@ -1,0 +1,67 @@
+
+# Runs basic actions to validate that the source code is clean and error free
+# from a linting perspective.
+
+name: ci
+on:
+  push:
+    branches:
+      - dev
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+  actions: read
+  checks: write
+  # Optional: allow read access to pull request. Use with `only-new-issues` option.
+  # pull-requests: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out Code
+        uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: stable
+
+      - name: Verify Dependencies
+        run: |
+          go mod tidy
+          git diff --exit-code
+
+      - name: Install Gotestsum
+        run: go install gotest.tools/gotestsum@latest
+
+      - name: Install Dependencies
+        run: go mod download
+
+      - name: Run tests with gotestsum and generate JUnit report
+        run: gotestsum --junitfile test-results.xml -- -race ./...
+
+      - name: Publish Report
+        uses: mikepenz/action-junit-report@v6
+        if: success() || failure()
+        with:
+          report_paths: "./test-results.xml"
+
+  golanglint:
+    name: lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version: stable
+          cache: false
+
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: latest
+          install-mode: "binary"

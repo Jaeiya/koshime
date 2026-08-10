@@ -462,6 +462,7 @@ func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cm
 
 			switch m.state.bindingMode {
 			case SelectFile:
+				//nolint:errcheck // will ALWAYS be a list
 				item := m.ui.list.SelectedItem().(ui.ListItem)
 				m.state.selectedFileTitle = item.Title()
 				listItems := make([]list.Item, len(m.state.anime))
@@ -483,6 +484,7 @@ func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cm
 				m.state.bindingMode = SelectAnime
 
 			case SelectAnime:
+				//nolint:errcheck // will ALWAYS be a list
 				item := m.ui.list.SelectedItem().(ui.ListItem)
 				m.state.selectedAnime = m.state.anime[item.Index()]
 				m.state.bindingMode = ConfirmSelection

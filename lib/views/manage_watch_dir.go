@@ -143,6 +143,7 @@ func (m WatchDir_Model) ShortHelp() []key.Binding {
 	switch m.state.view {
 	case WatchDir_CleanRecent:
 		return []key.Binding{ui.KeyMap.Submit}
+	default:
 	}
 
 	return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.MainMenu}

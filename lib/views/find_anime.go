@@ -11,7 +11,6 @@ type Find_AnimeView int
 
 const (
 	Find_QueryEntry = Find_AnimeView(iota)
-	Find_Results
 	Find_SelectedAnime
 )
 
@@ -76,6 +75,7 @@ func (m Find_AnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	case Find_QueryEntry:
 		cmd = m.ui.animeSearch.Update(msg)
 		cmds = append(cmds, cmd)
+	default:
 	}
 
 	return m, tea.Batch(cmds...)
@@ -85,6 +85,7 @@ func (m Find_AnimeModel) View() tea.View {
 	switch m.state.view {
 	case Find_QueryEntry:
 		return m.ui.animeSearch.View()
+	default:
 	}
 
 	return tea.NewView("missing FindAnime model view")

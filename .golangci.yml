@@ -1,0 +1,66 @@
+version: "2"
+run:
+    concurrency: 6
+    tests: true
+linters:
+    default: none
+    enable:
+        # - goconst
+        - errcheck
+        - bodyclose
+        - exhaustive
+        - sqlclosecheck
+        - makezero
+        - nolintlint
+        - unparam
+        - unconvert
+        - usestdlibvars
+        - gosec
+        # - errname     # We use msgs for errors which conflicts with this naming convention
+        - tparallel
+        - nakedret
+        - errorlint
+        - govet
+        - ineffassign
+        - staticcheck
+        - wastedassign
+        - unused
+    settings:
+        nakedret:
+          max-func-lines: 0
+        exhaustive:
+            default-signifies-exhaustive: true
+        goconst:
+            ignore-tests: true
+        errcheck:
+            check-type-assertions: true
+            check-blank: false
+        govet:
+            disable:
+                - fieldalignment
+            enable-all: true
+    exclusions:
+        generated: lax
+        presets:
+            - comments
+            - common-false-positives
+            - legacy
+            - std-error-handling
+        paths:
+            - third_party$
+            - builtin$
+            - examples$
+        rules:
+            - linters:
+                - errcheck
+              source: '^\s*defer\s'
+issues:
+    max-issues-per-linter: 0
+    max-same-issues: 0
+formatters:
+    exclusions:
+        generated: lax
+        paths:
+            - third_party$
+            - builtin$
+            - examples$

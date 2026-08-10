@@ -25,9 +25,9 @@ import (
 
 type (
 	FetchedAuthTokenMsg  = kitsu.AuthTokenData
-	KitsuProfileMsg      = kitsu.Profile
+	KitsuProfileMsg      struct{ Value kitsu.Profile }
 	FetchedLibAnimeMsg   = []kitsu.LibraryEntry
-	SetupUserFinishedMsg = database.Data
+	SetupUserFinishedMsg struct{ Value database.Data }
 	SetupUserAbortMsg    struct{}
 	QbtSetupMsg          struct {
 		err  error
@@ -305,7 +305,7 @@ func (m SetupUserModel) UpdateQBittorrent(msg tea.Msg) (SetupUserModel, tea.Cmd)
 			m.state.qBittorrent.login.err = msg.err
 			return m, nil
 		}
-		m.state.qBittorrent.login.port = int(msg.port)
+		m.state.qBittorrent.login.port = msg.port
 		m.state.qBittorrent.login.passed = true
 
 	case tea.KeyPressMsg:
@@ -609,7 +609,7 @@ func (m SetupUserModel) UpdateUsername(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 		}
 
 	case KitsuProfileMsg:
-		m.state.data.Profile = msg
+		m.state.data.Profile = msg.Value
 		m.state.data.Profile.QbtPort = m.state.qBittorrent.login.port
 		state.found = true
 		m.ui.loader.Stop()
@@ -851,7 +851,7 @@ func (m SetupUserModel) UpdateLibAnime(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 			}
 
 			if state.passed {
-				return m, func() tea.Msg { return SetupUserFinishedMsg(m.state.data) }
+				return m, func() tea.Msg { return SetupUserFinishedMsg{m.state.data} }
 			}
 		}
 
@@ -950,7 +950,7 @@ func (m SetupUserModel) getProfile(profileSlug string) tea.Cmd {
 		if err != nil {
 			return FetchErrorMsg{Msg: err.Error()}
 		}
-		return KitsuProfileMsg(p)
+		return KitsuProfileMsg{p}
 	}
 }
 

@@ -87,7 +87,7 @@ func GetUserAnime(userID string, status LibAnimeStatus) ([]LibraryEntry, error) 
 			Progress:  item.Attributes.Progress,
 			Synopsis:  anime.Attributes.Synopsis,
 			AvgRating: anime.Attributes.AvgRating,
-			Type:      AnimeType(anime.Attributes.Type),
+			Type:      anime.Attributes.Type,
 			Status:    anime.Attributes.Status,
 			Slug:      anime.Attributes.Slug,
 			QbtFeed: struct {

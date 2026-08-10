@@ -322,9 +322,9 @@ func (FansubParser) getEpisode(
 	s string,
 	index int,
 	tokens []string,
-) (season string, episode string) {
+) (string, string) {
 	if strings.TrimSpace(s) == "" {
-		return
+		return "", ""
 	}
 
 	trimEpVersion := func(episode string) string {
@@ -383,7 +383,7 @@ func (FansubParser) getEpisode(
 	// Catch "#<suffix> Season - #" for season & episode
 	if len(s) > 2 && len(s) < 5 && index+3 < len(tokens) {
 		if strings.ToLower(tokens[index+1]) == "season" {
-			season = strings.TrimSuffix(s, "st")
+			season := strings.TrimSuffix(s, "st")
 			season = strings.TrimSuffix(season, "nd")
 			season = strings.TrimSuffix(season, "rd")
 			season = strings.TrimSuffix(season, "th")
@@ -409,7 +409,7 @@ func (FansubParser) getEpisode(
 		}
 	}
 
-	return
+	return "", ""
 }
 
 func (FansubParser) getVersion(s string) (int, error) {

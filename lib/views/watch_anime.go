@@ -38,7 +38,7 @@ type (
 		nextEpisode int
 		isCompleted bool
 	}
-	WatchAnimeLoadedAnimeMsg = []lib.FilteredAnime
+	WatchAnimeLoadedAnimeMsg struct{ Value []lib.FilteredAnime }
 )
 
 type WatchAnime_View int
@@ -125,7 +125,7 @@ func (m WatchAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		}
 
 	case WatchAnimeLoadedAnimeMsg:
-		m.state.filteredAnime = msg
+		m.state.filteredAnime = msg.Value
 		m.PopulateAnimeList()
 		m.ui.loader.Stop()
 
@@ -215,8 +215,8 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 			}
 
 		case key.Matches(msg, m.keys.reload):
-			if m.ui.list.FilterState() == list.Filtering {
-				return m, nil
+			if m.ui.list.FilterState() > list.Unfiltered {
+				break
 			}
 			m.state = WatchAnime_State{}
 			return m, func() tea.Msg { return "forceUpdateToReload" }
@@ -228,6 +228,7 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 			}
 
 			if m.ui.list.FilterState() != list.Filtering {
+				//nolint:errcheck // will ALWAYS be a list
 				item := m.ui.list.SelectedItem().(ui.ListItem)
 				m.state.selection.anime = m.state.filteredAnime[item.Index()]
 				anime := m.state.selection.anime
@@ -491,7 +492,7 @@ func (m WatchAnime_Model) LoadAnime() tea.Msg {
 		return fmt.Errorf("failed to filter fansubs: %w", err)
 	}
 
-	return WatchAnimeLoadedAnimeMsg(items)
+	return WatchAnimeLoadedAnimeMsg{items}
 }
 
 func (m WatchAnime_Model) PlayAnime() tea.Msg {
@@ -560,7 +561,7 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 	// is unknown (0).
 	isCompleted := false
 	if libEntry.Episodes == nextProgress {
-		err := m.db.DeleteAnimeById(libEntry.LibID)
+		err = m.db.DeleteAnimeById(libEntry.LibID)
 		if err != nil {
 			return fmt.Errorf("failed to delete completed anime: %w", err)
 		}

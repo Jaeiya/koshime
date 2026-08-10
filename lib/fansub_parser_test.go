@@ -15,6 +15,7 @@ type parseMock struct {
 }
 
 func TestFansubParser(t *testing.T) {
+	t.Parallel()
 	mocks := []parseMock{
 		{
 			should: "support ellipses-separated file names with fansub group",
@@ -432,10 +433,9 @@ func TestFansubParser(t *testing.T) {
 		},
 	}
 
-	t.Parallel()
-
 	for _, mock := range mocks {
 		t.Run("should "+mock.should, func(t *testing.T) {
+			t.Parallel()
 			a := assert.New(t)
 			var fs FansubParser
 			info, err := fs.Parse(mock.actual)

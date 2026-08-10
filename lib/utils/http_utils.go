@@ -51,10 +51,12 @@ func (h Http) Do(req *http.Request, accept, contentType string) (HttpResponse, e
 	req.Header.Set("User-Agent", userAgent)
 	req.Header.Set("Accept-Encoding", "gzip")
 
+	//nolint:gosec // all links urls are internal
 	resp, err := client.Do(req)
 	if err != nil {
 		return HttpResponse{}, err
 	}
+	defer resp.Body.Close()
 
 	body, err := h.ReadResponseBody(resp)
 	if err != nil {
@@ -73,6 +75,7 @@ func (h Http) PostForm(url string, values url.Values) (HttpResponse, error) {
 	if err != nil {
 		return HttpResponse{}, err
 	}
+	defer resp.Body.Close()
 
 	body, err := h.ReadResponseBody(resp)
 	if err != nil {

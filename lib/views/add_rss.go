@@ -466,6 +466,7 @@ func (m Rss_Model) UpdateQbtSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 			}
 
 			// Save selected anime
+			//nolint:errcheck // it will ALWAYS be a list item
 			m.state.selAnimeIdx = m.ui.animeList.SelectedItem().(ui.ListItem).Index()
 			m.state.saveStatus.anime = m.db.Anime()[m.state.selAnimeIdx]
 		}
@@ -636,6 +637,7 @@ func (m Rss_Model) UpdateQbtReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
 				return m, m.saveQbtFeed(m.state.refinedResult.FeedURL)
 			}
 
+			//nolint:errcheck // it will ALWAYS be a list item
 			itemIdx := m.ui.list.SelectedItem().(ui.ListItem).Index()
 			fansubInfo := m.state.parsedFansubs[itemIdx]
 

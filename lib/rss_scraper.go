@@ -1,6 +1,7 @@
 package lib
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -80,18 +81,18 @@ func (rss RSS) FindAnimeFansub(d RSSDomain, query string) (RSSResult, error) {
 			return RSSResult{}, err
 		}
 
-		req, err := http.NewRequest("GET", parsedURL.String(), nil)
+		req, err := http.NewRequest(http.MethodGet, parsedURL.String(), nil)
 		if err != nil {
 			return RSSResult{}, err
 		}
 
 		resp, err := httpUtil.Do(req, "application/xml", "")
 		if err != nil {
-			if ne, ok := err.(net.Error); ok && ne.Timeout() {
+			var ne net.Error
+			if errors.As(err, &ne) && ne.Timeout() {
 				continue
-			} else {
-				return RSSResult{}, err
 			}
+			return RSSResult{}, err
 		}
 
 		// Assume site is temporarily unavailable
@@ -131,7 +132,10 @@ func (RSS) parseAnimeTosho(xml string) ([]RSSEntry, error) {
 	if err != nil {
 		return []RSSEntry{}, err
 	}
-	count := expr.Evaluate(xmlquery.CreateXPathNavigator(doc)).(float64)
+	count, ok := expr.Evaluate(xmlquery.CreateXPathNavigator(doc)).(float64)
+	if !ok {
+		return []RSSEntry{}, fmt.Errorf("could not eval node to float64")
+	}
 
 	results := make([]RSSEntry, int(count))
 
@@ -160,7 +164,10 @@ func (RSS) parseNyaa(xml string) ([]RSSEntry, error) {
 	if err != nil {
 		return []RSSEntry{}, err
 	}
-	count := expr.Evaluate(xmlquery.CreateXPathNavigator(doc)).(float64)
+	count, ok := expr.Evaluate(xmlquery.CreateXPathNavigator(doc)).(float64)
+	if !ok {
+		return []RSSEntry{}, fmt.Errorf("could not eval node to float64")
+	}
 
 	results := make([]RSSEntry, int(count))
 
