@@ -221,7 +221,7 @@ func (m AddAnime_Model) ViewSelection() tea.View {
 ;g;will;x; air in the future, then select ;dc;airing;x;.`,
 			`If you know the anime has already been out for several months or more,
 then it's probably ;dc;completed;x;.`,
-		}, 1),
+		}, 1, 0, 1),
 		menu,
 	)
 
