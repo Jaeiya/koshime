@@ -11,7 +11,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	lib "github.com/Jaeiya/koshime/internal/app"
+	"github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/kitsu"
 	"github.com/Jaeiya/koshime/internal/qbittorrent"
@@ -55,9 +55,9 @@ type Rss_Model struct {
 type Rss_State struct {
 	err           error
 	view          Rss_View
-	rssResult     lib.RSSResult
-	refinedResult lib.RSSResult
-	parsedFansubs []lib.FansubFileInfo
+	rssResult     app.RSSResult
+	refinedResult app.RSSResult
+	parsedFansubs []app.FansubFileInfo
 	selAnimeIdx   int
 	isOffline     bool
 	isRssRefined  bool
@@ -319,7 +319,7 @@ func (m Rss_Model) UpdateSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 			return m, tea.Batch(cmd, m.search(m.ui.input.Value()))
 		}
 
-	case lib.RSSResult:
+	case app.RSSResult:
 		var err error
 		m.state.rssResult = msg
 		m.ui.list, m.state.parsedFansubs, err = m.parseRssResult(msg)
@@ -410,7 +410,7 @@ func (m Rss_Model) UpdateQbtSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 			RuleURI string
 		}{}
 
-	case lib.RSSResult:
+	case app.RSSResult:
 		var err error
 		m.state.rssResult = msg
 		m.ui.list, m.state.parsedFansubs, err = m.parseRssResult(msg)
@@ -591,7 +591,7 @@ func (m Rss_Model) UpdateQbtReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
 		m.state.saveStatus.saved = true
 		return m, nil
 
-	case lib.RSSResult:
+	case app.RSSResult:
 		var err error
 		m.state.refinedResult = msg
 		m.ui.list, m.state.parsedFansubs, err = m.parseRssResult(msg)
@@ -742,16 +742,16 @@ based on that selection.`,
 	return view
 }
 
-func (m Rss_Model) parseRssResult(r lib.RSSResult) (list.Model, []lib.FansubFileInfo, error) {
-	var parser lib.FansubParser
+func (m Rss_Model) parseRssResult(r app.RSSResult) (list.Model, []app.FansubFileInfo, error) {
+	var parser app.FansubParser
 	items := make([]list.Item, 0, len(r.Entries))
-	rssFansubs := make([]lib.FansubFileInfo, 0, len(r.Entries))
+	rssFansubs := make([]app.FansubFileInfo, 0, len(r.Entries))
 
 	count := 0
 	for _, entry := range r.Entries {
 		info, err := parser.Parse(entry.Title)
 		if err != nil {
-			if errors.Is(err, lib.ErrBatchFile) {
+			if errors.Is(err, app.ErrBatchFile) {
 				continue
 			}
 			return list.Model{}, nil, err
@@ -799,8 +799,8 @@ func (m Rss_Model) parseRssResult(r lib.RSSResult) (list.Model, []lib.FansubFile
 
 func (m Rss_Model) search(query string) tea.Cmd {
 	return func() tea.Msg {
-		var rss lib.RSS
-		result, err := rss.FindAnimeFansub(lib.Nyaa, query)
+		var rss app.RSS
+		result, err := rss.FindAnimeFansub(app.Nyaa, query)
 		if err != nil {
 			return DefaultErrorMsg{err}
 		}

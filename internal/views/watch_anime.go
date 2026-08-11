@@ -12,7 +12,7 @@ import (
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	lib "github.com/Jaeiya/koshime/internal/app"
+	"github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/kitsu"
 	"github.com/Jaeiya/koshime/internal/qbittorrent"
@@ -39,7 +39,7 @@ type (
 		nextEpisode int
 		isCompleted bool
 	}
-	WatchAnimeLoadedAnimeMsg struct{ Value []lib.FilteredAnime }
+	WatchAnimeLoadedAnimeMsg struct{ Value []app.FilteredAnime }
 )
 
 type WatchAnime_View int
@@ -67,9 +67,9 @@ type WatchAnime_Model struct {
 type WatchAnime_State struct {
 	view          WatchAnime_View
 	err           error
-	filteredAnime []lib.FilteredAnime
+	filteredAnime []app.FilteredAnime
 	selection     struct {
-		anime     lib.FilteredAnime
+		anime     app.FilteredAnime
 		fileState WatchState
 	}
 	progress struct {
@@ -487,7 +487,7 @@ func (m WatchAnime_Model) LoadAnime() tea.Msg {
 		return fmt.Errorf("failed creating filename stream: %w", err)
 	}
 
-	ff := lib.FansubFilter{}
+	ff := app.FansubFilter{}
 	items, err := ff.FilterByLibEntry(stream, m.db)
 	if err != nil {
 		return fmt.Errorf("failed to filter fansubs: %w", err)

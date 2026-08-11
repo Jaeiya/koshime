@@ -8,7 +8,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	lib "github.com/Jaeiya/koshime/internal/app"
+	"github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/kitsu"
 	"github.com/Jaeiya/koshime/internal/ui"
@@ -40,7 +40,7 @@ type AnimeSearchConfig struct {
 	minInputLen       int
 	itemsPerPage      int
 	maxResults        int
-	source            lib.AnimeFinderSource
+	source            app.AnimeFinderSource
 	kitsuStatus       []kitsu.AnimeStatus
 	useAnimeSelection bool
 	escSendsExit      bool
@@ -95,20 +95,20 @@ func WithMaxResults(max int) AnimeSearchOption {
 
 func WithKitsuSource(s []kitsu.AnimeStatus) AnimeSearchOption {
 	return func(fac *AnimeSearchConfig) {
-		if fac.source != lib.NoSource {
+		if fac.source != app.NoSource {
 			panic("cannot set to [kitsu] source; already using another source")
 		}
 		fac.kitsuStatus = s
-		fac.source = lib.Kitsu
+		fac.source = app.Kitsu
 	}
 }
 
 func WithLocalSource() AnimeSearchOption {
 	return func(fac *AnimeSearchConfig) {
-		if fac.source != lib.NoSource {
+		if fac.source != app.NoSource {
 			panic("cannot set to [local] source; already using another source")
 		}
-		fac.source = lib.Local
+		fac.source = app.Local
 	}
 }
 
@@ -118,7 +118,7 @@ type AnimeSearchModel struct {
 		height int
 	}
 	config struct {
-		source            lib.AnimeFinderSource
+		source            app.AnimeFinderSource
 		header            string
 		consentHeader     string
 		inputWidth        int
@@ -141,13 +141,13 @@ type AnimeSearchModel struct {
 	helpMap        AnimeSearchHelp
 	db             *database.Database
 	state          AnimeSearchState
-	animeFinderMap map[lib.AnimeFinderSource]lib.AnimeFinder
+	animeFinderMap map[app.AnimeFinderSource]app.AnimeFinder
 }
 
 type AnimeSearchState struct {
 	fetchErr      error
 	view          AnimeSearchView
-	source        lib.AnimeFinderSource
+	source        app.AnimeFinderSource
 	results       []ui.AnimeInfo
 	selectedAnime ui.AnimeInfo
 }
@@ -199,19 +199,19 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 	}
 
 	m.config.source = cfg.source
-	if cfg.source != lib.NoSource {
+	if cfg.source != app.NoSource {
 		m.state.source = cfg.source
 	} else {
-		m.state.source = lib.Kitsu
+		m.state.source = app.Kitsu
 	}
 
 	if cfg.kitsuStatus == nil {
 		cfg.kitsuStatus = []kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished}
 	}
 
-	m.animeFinderMap = map[lib.AnimeFinderSource]lib.AnimeFinder{
-		lib.Kitsu: lib.NewKitsuAnimeFinder(m.config.maxResults, cfg.kitsuStatus),
-		lib.Local: lib.NewLocalAnimeFinder(m.config.maxResults, db),
+	m.animeFinderMap = map[app.AnimeFinderSource]app.AnimeFinder{
+		app.Kitsu: app.NewKitsuAnimeFinder(m.config.maxResults, cfg.kitsuStatus),
+		app.Local: app.NewLocalAnimeFinder(m.config.maxResults, db),
 	}
 
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
@@ -220,10 +220,10 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 		AnimeSearch_Query: {
 			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
 				keys := make([]key.Binding, 0, 4)
-				if m.config.source == lib.NoSource {
+				if m.config.source == app.NoSource {
 					keys = append(keys, fam.keys.tab, ui.KeyMap.Submit)
 				}
-				if m.config.source != lib.NoSource {
+				if m.config.source != app.NoSource {
 					keys = append(keys, ui.KeyMap.Submit)
 				}
 				if m.config.escSendsExit {
@@ -340,7 +340,7 @@ func (m *AnimeSearchModel) UpdateQuery(msg tea.Msg) tea.Cmd {
 
 		case key.Matches(msg, m.keys.tab):
 			// Only show tab when defaulting to multi-source search
-			if m.config.source != lib.NoSource {
+			if m.config.source != app.NoSource {
 				break
 			}
 			m.state.source = (m.state.source + 1) % 3
@@ -366,14 +366,14 @@ words that might be in the ;dc;title ;x;or ;dc;description;x;, for
 better results.`,
 	}, 0))
 
-	if m.config.source == lib.NoSource {
+	if m.config.source == app.NoSource {
 		desc = ui.DisplayText(
 			[]string{
 				`;x;You can search for a ;b;full title;x;, ;b;phrase;x;, or just a ;b;single
 word;x;. You can even search for ;b;part ;x;of a word. Your query will be applied to all
 available titles, as well as the synopsis.`,
 				`The ;dgu;Kitsu;x; source searches ;b;all ;x;of Kitsu (not just your Kitsu
-library) for any matches.`,
+app.ary) for any matches.`,
 				`The ;dgu;Local;x; source searches your ;b;Koshime ;x;database for any matches.
 It only contains anime that you're currently watching.`,
 			},
@@ -397,7 +397,7 @@ It only contains anime that you're currently watching.`,
 	)
 
 	view := tea.NewView(header)
-	if m.config.source == lib.NoSource {
+	if m.config.source == app.NoSource {
 		sourceName, sourceEmoji := m.state.source.Name()
 		search := ui.TextStyle.Foreground(ansi.BrightBlack).
 			Render(utils.ColorText(fmt.Sprintf(";bk;Source: ;dgu;%s;x;%s", sourceName, sourceEmoji)))
@@ -460,7 +460,7 @@ func (m *AnimeSearchModel) UpdateResults(msg tea.Msg) tea.Cmd {
 
 		}
 
-	case lib.AnimeFinderResult:
+	case app.AnimeFinderResult:
 		m.ui.loader.Stop()
 		m.state.results = msg.InfoItems
 
@@ -588,18 +588,18 @@ func (m *AnimeSearchModel) Reset() {
 
 func (m *AnimeSearchModel) findAnime(query string) tea.Cmd {
 	return func() tea.Msg {
-		var result lib.AnimeFinderResult
+		var result app.AnimeFinderResult
 		var err error
 
 		switch m.state.source {
-		case lib.Kitsu:
-			result, err = m.animeFinderMap[lib.Kitsu].Search(query)
+		case app.Kitsu:
+			result, err = m.animeFinderMap[app.Kitsu].Search(query)
 			if err != nil {
 				return err
 			}
 
-		case lib.Local:
-			result, err = m.animeFinderMap[lib.Local].Search(query)
+		case app.Local:
+			result, err = m.animeFinderMap[app.Local].Search(query)
 			if err != nil {
 				return err
 			}

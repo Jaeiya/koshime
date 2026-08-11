@@ -10,7 +10,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	lib "github.com/Jaeiya/koshime/internal/app"
+	"github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
 )
@@ -335,13 +335,13 @@ func (m WatchDir_Model) cleanRecentFiles() tea.Msg {
 
 	type MappedInfo struct {
 		modTime int64
-		fansub  lib.FansubFileInfo
+		fansub  app.FansubFileInfo
 		size    int64
 	}
 
 	infoMap := map[string][]MappedInfo{}
 	for _, name := range fileNames {
-		fp := lib.FansubParser{}
+		fp := app.FansubParser{}
 		info, err := fp.Parse(name)
 		if err != nil {
 			return fmt.Errorf("failed to parse fansub file: %w", err)

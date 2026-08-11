@@ -7,7 +7,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	lib "github.com/Jaeiya/koshime/internal/app"
+	"github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
 )
@@ -103,18 +103,18 @@ application...and the rest is history.`,
 }
 
 func (m AboutModel) displayAbout(header []string) tea.View {
-	version := utils.ColorText(fmt.Sprintf(";c;%s", lib.Version))
-	if lib.Version == "" || strings.Contains(lib.Version, "build-") {
-		version = utils.ColorText(fmt.Sprintf(";bk;0x;m;%s", lib.CommitHash))
+	version := utils.ColorText(fmt.Sprintf(";c;%s", app.Version))
+	if app.Version == "" || strings.Contains(app.Version, "build-") {
+		version = utils.ColorText(fmt.Sprintf(";bk;0x;m;%s", app.CommitHash))
 	}
 
-	if lib.CommitHash == "" {
+	if app.CommitHash == "" {
 		version = utils.ColorText(";r;Dev Build")
 	}
 
 	releaseDate := ""
-	if lib.BuildDate != "" {
-		buildTime, err := utils.ToISO8601(lib.BuildDate)
+	if app.BuildDate != "" {
+		buildTime, err := utils.ToISO8601(app.BuildDate)
 		if err != nil {
 			return tea.NewView(ui.DisplayError(err))
 		}

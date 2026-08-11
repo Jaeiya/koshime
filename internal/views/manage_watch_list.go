@@ -7,7 +7,7 @@ import (
 	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	lib "github.com/Jaeiya/koshime/internal/app"
+	"github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/kitsu"
 	"github.com/Jaeiya/koshime/internal/ui"
@@ -425,7 +425,7 @@ func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cm
 	var cmd tea.Cmd
 
 	if len(m.ui.list.VisibleItems()) == 0 {
-		var ff lib.FansubFilter
+		var ff app.FansubFilter
 		fileStream, err := fileSys.NewFilenameStream(fileSys.GetWorkingDir())
 		if err != nil {
 			m.state.err = err
