@@ -343,7 +343,7 @@ func (m WatchList_Model) UpdateDelete(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 				return m, nil
 			}
 			m.ui.loader, cmd = m.ui.loader.Start("Deleting Entry")
-			return m, tea.Batch(cmd, m.deleteEntry)
+			return m, tea.Batch(cmd, m.deleteAnime)
 		}
 
 	case WatchListReloadedMsg:
@@ -598,55 +598,33 @@ func (m WatchList_Model) reloadLibrary() tea.Msg {
 	if err != nil {
 		return err
 	}
-
 	err = m.db.LoadLibrary(watchList)
 	if err != nil {
 		return fmt.Errorf("failed to load data into database library: %w", err)
 	}
-
 	return watchList
 }
 
-func (m WatchList_Model) deleteEntry() tea.Msg {
-	p := m.db.Profile()
+func (m WatchList_Model) deleteAnime() tea.Msg {
 	libID := m.state.anime[m.state.animeIndex].LibID
-	_, err := kitsu.DeleteAnime(libID, p.AccessToken)
-	if err != nil {
+	if err := app.DeleteAnime(m.db, libID); err != nil {
 		return err
 	}
-	err = m.db.DeleteAnimeById(libID)
-	if err != nil {
-		return fmt.Errorf("failed to delete anime from database: %w", err)
-	}
-
 	return m.db.Anime()
 }
 
 func (m WatchList_Model) dropAnime() tea.Msg {
-	p := m.db.Profile()
 	libID := m.state.anime[m.state.animeIndex].LibID
-	if err := kitsu.DropAnime(libID, p.AccessToken); err != nil {
+	if err := app.DropAnime(m.db, libID); err != nil {
 		return err
 	}
-
-	if err := m.db.DeleteAnimeById(libID); err != nil {
-		return fmt.Errorf("failed to delete anime from database: %w", err)
-	}
-
 	return m.db.Anime()
 }
 
 func (m WatchList_Model) completeAnime() tea.Msg {
-	p := m.db.Profile()
 	libID := m.state.anime[m.state.animeIndex].LibID
-	_, err := kitsu.SetAnimeStatus(libID, p.AccessToken, kitsu.LibAnimeCompleted)
-	if err != nil {
+	if err := app.CompleteAnime(m.db, libID); err != nil {
 		return err
 	}
-
-	if err := m.db.DeleteAnimeById(libID); err != nil {
-		return fmt.Errorf("failed to delete anime from database: %w", err)
-	}
-
 	return m.db.Anime()
 }

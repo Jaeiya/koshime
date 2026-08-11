@@ -132,7 +132,6 @@ func (db Database) FindAnimeByLibId(id string) (kitsu.Anime, bool) {
 			return entry, true
 		}
 	}
-
 	return kitsu.Anime{}, false
 }
 
