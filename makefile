@@ -89,4 +89,4 @@ rundev: DISPLAY_VERSION := $(if $(VERSION),$(VERSION),"v0.0.0")
 rundev: DISPLAY_COMMIT := $(if $(COMMIT),$(COMMIT),"d3adb33f")
 rundev: LDFLAGS  := -ldflags="-X 'main.version=$(DISPLAY_VERSION)-dev' -X 'main.commitSha=$(DISPLAY_COMMIT)' -X 'main.buildDate=N/A'"
 rundev:
-	@go run -gcflags="all=-N -l" $(LDFLAGS) . $(RUN_ARGS)
+	@CGO_ENABLED=0 go run -gcflags="all=-N -l" $(LDFLAGS) . $(RUN_ARGS)
