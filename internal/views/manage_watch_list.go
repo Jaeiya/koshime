@@ -71,10 +71,10 @@ func newWatchListModel(db *database.Database) WatchList_Model {
 		"Complete",
 		"Delete",
 	}, ui.WithMenuRotation(), ui.WithMenuDescriptions([]string{
-		`Drops the selected anime above.`,
+		`Drops the selected anime above and removes it from local database.`,
 		`Binds a file name to a specific anime in your watch list.`,
 		`Sets status of selected anime above, to completed.`,
-		`Deletes the selected anime above.`,
+		`Deletes the selected anime above from Kitsu and local database.`,
 	}))
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
 	m.state.anime = db.Anime()
