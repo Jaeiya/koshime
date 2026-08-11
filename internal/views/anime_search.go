@@ -377,7 +377,7 @@ app.ary) for any matches.`,
 				`The ;dgu;Local;x; source searches your ;b;Koshime ;x;database for any matches.
 It only contains anime that you're currently watching.`,
 			},
-			1, 1,
+			1, 1, 1,
 		)
 	}
 
