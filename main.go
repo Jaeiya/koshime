@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	tea "charm.land/bubbletea/v2"
-	"github.com/Jaeiya/koshime/lib"
-	"github.com/Jaeiya/koshime/lib/views"
+	lib "github.com/Jaeiya/koshime/internal"
+	"github.com/Jaeiya/koshime/internal/views"
 )
 
 var (

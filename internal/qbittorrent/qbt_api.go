@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/Jaeiya/koshime/lib/utils"
+	"github.com/Jaeiya/koshime/internal/utils"
 )
 
 type RuleMode int8

@@ -2,7 +2,7 @@
 import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	"github.com/Jaeiya/koshime/lib/ui"
+	"github.com/Jaeiya/koshime/internal/ui"
 )
 
 type Some_View int

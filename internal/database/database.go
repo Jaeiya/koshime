@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Jaeiya/koshime/lib/kitsu"
-	"github.com/Jaeiya/koshime/lib/utils"
+	"github.com/Jaeiya/koshime/internal/kitsu"
+	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/shamaton/msgpack/v2"
 )
 

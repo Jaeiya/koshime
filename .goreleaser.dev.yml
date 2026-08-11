@@ -13,9 +13,9 @@ builds:
       - "all=-B -l=120"
     ldflags:
       - -s -w
-      - -X github.com/Jaeiya/koshime/lib.Version={{ .Version }}
-      - -X github.com/Jaeiya/koshime/lib.CommitHash={{ .ShortCommit }}
-      - -X github.com/Jaeiya/koshime/lib.BuildDate={{ .Date }}
+      - -X github.com/Jaeiya/koshime/internal.Version={{ .Version }}
+      - -X github.com/Jaeiya/koshime/internal.CommitHash={{ .ShortCommit }}
+      - -X github.com/Jaeiya/koshime/internal.BuildDate={{ .Date }}
     goos:
       - windows
     goarch:
@@ -37,9 +37,9 @@ builds:
       - "all=-B -l=120"
     ldflags:
       - -s -w
-      - -X github.com/jaeiya/koshime/lib.Version={{ .Version }}
-      - -X github.com/jaeiya/koshime/lib.CommitHash={{ .ShortCommit }}
-      - -X github.com/jaeiya/koshime/lib.BuildDate={{ .Date }}
+      - -X github.com/jaeiya/koshime/internal.Version={{ .Version }}
+      - -X github.com/jaeiya/koshime/internal.CommitHash={{ .ShortCommit }}
+      - -X github.com/jaeiya/koshime/internal.BuildDate={{ .Date }}
     goos:
       - linux
       - darwin
@@ -62,9 +62,9 @@ builds:
       - "all=-B -l=120"
     ldflags:
       - -s -w
-      - -X github.com/jaeiya/koshime/lib.Version={{ .Version }}
-      - -X github.com/jaeiya/koshime/lib.CommitHash={{ .ShortCommit }}
-      - -X github.com/jaeiya/koshime/lib.BuildDate={{ .Date }}
+      - -X github.com/jaeiya/koshime/internal.Version={{ .Version }}
+      - -X github.com/jaeiya/koshime/internal.CommitHash={{ .ShortCommit }}
+      - -X github.com/jaeiya/koshime/internal.BuildDate={{ .Date }}
     goos:
       - windows
     goarch:
@@ -89,9 +89,9 @@ builds:
       - "all=-B -l=120"
     ldflags:
       - -s -w
-      - -X github.com/jaeiya/koshime/lib.Version={{ .Version }}
-      - -X github.com/jaeiya/koshime/lib.CommitHash={{ .ShortCommit }}
-      - -X github.com/jaeiya/koshime/lib.BuildDate={{ .Date }}
+      - -X github.com/jaeiya/koshime/internal.Version={{ .Version }}
+      - -X github.com/jaeiya/koshime/internal.CommitHash={{ .ShortCommit }}
+      - -X github.com/jaeiya/koshime/internal.BuildDate={{ .Date }}
     goos:
       - linux
       - darwin

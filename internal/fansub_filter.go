@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Jaeiya/koshime/lib/database"
-	"github.com/Jaeiya/koshime/lib/kitsu"
-	"github.com/Jaeiya/koshime/lib/utils"
+	"github.com/Jaeiya/koshime/internal/database"
+	"github.com/Jaeiya/koshime/internal/kitsu"
+	"github.com/Jaeiya/koshime/internal/utils"
 )
 
 type FilteredAnime struct {

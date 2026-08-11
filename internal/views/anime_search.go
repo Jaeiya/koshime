@@ -8,11 +8,11 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/Jaeiya/koshime/lib"
-	"github.com/Jaeiya/koshime/lib/database"
-	"github.com/Jaeiya/koshime/lib/kitsu"
-	"github.com/Jaeiya/koshime/lib/ui"
-	"github.com/Jaeiya/koshime/lib/utils"
+	lib "github.com/Jaeiya/koshime/internal"
+	"github.com/Jaeiya/koshime/internal/database"
+	"github.com/Jaeiya/koshime/internal/kitsu"
+	"github.com/Jaeiya/koshime/internal/ui"
+	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/charmbracelet/x/ansi"
 )
 

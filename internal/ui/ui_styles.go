@@ -2,7 +2,7 @@ package ui
 
 import (
 	"charm.land/lipgloss/v2"
-	"github.com/Jaeiya/koshime/lib/utils"
+	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/charmbracelet/x/ansi"
 )
 

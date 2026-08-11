@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Jaeiya/koshime/lib/utils"
+	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/antchfx/xmlquery"
 	"github.com/antchfx/xpath"
 )

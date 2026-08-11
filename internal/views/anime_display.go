@@ -7,9 +7,9 @@ import (
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
-	"github.com/Jaeiya/koshime/lib/kitsu"
-	"github.com/Jaeiya/koshime/lib/ui"
-	"github.com/Jaeiya/koshime/lib/utils"
+	"github.com/Jaeiya/koshime/internal/kitsu"
+	"github.com/Jaeiya/koshime/internal/ui"
+	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/charmbracelet/x/term"
 )
 

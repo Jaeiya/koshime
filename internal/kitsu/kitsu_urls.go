@@ -13,7 +13,7 @@ type APIUrl string
 
 const (
 	apiAuthTokenURL = APIUrl(KitsuDomain + "/api/oauth/token")
-	apiLibraryURL   = APIUrl(KitsuDomain + "/api/edge/library-entries")
+	apiLibraryURL   = APIUrl(KitsuDomain + "/api/edge/internalrary-entries")
 	apiAnimeURL     = APIUrl(KitsuDomain + "/api/edge/anime")
 	apiUsersURL     = APIUrl(KitsuDomain + "/api/edge/users")
 )
