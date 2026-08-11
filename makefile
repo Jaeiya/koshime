@@ -7,7 +7,6 @@ INSTALL_GORELEASER := go install github.com/goreleaser/goreleaser/v2@latest
 GO_TARBALL := https://golang.org/dl/go$(GO_VERSION).linux-amd64.tar.gz
 LINUX_INSTALL_DIR := /usr/local
 
-# FIXME: change app_name to your apps actual name
 install: APP_NAME := koshime
 install: VERSION := $(shell git describe --tags --exact-match 2>/dev/null)
 install: COMMIT := $(shell git rev-parse --short HEAD)
