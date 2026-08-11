@@ -15,6 +15,7 @@ import (
 	lib "github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/kitsu"
+	"github.com/Jaeiya/koshime/internal/qbittorrent"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/charmbracelet/x/ansi"
@@ -537,10 +538,12 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 		}
 	}
 
-	// 🔵 We assume the user is downloading anime in the order they want to
-	// watch it, therefore no matter what the file episode says, we update
-	// to next episode number. This allows support for non-seasonal episode
-	// counts.
+	/*
+	 * INFO: We assume the user is downloading anime in the order they want to
+	 * watch it, therefore no matter what the file episode says, we update
+	 * to next episode number. This allows support for non-seasonal episode
+	 * counts.
+	 */
 	nextProgress := lastProgress + 1
 
 	progResp, err := kitsu.UpdateAnimeProgress(
@@ -561,6 +564,17 @@ func (m *WatchAnime_Model) SaveProgress() tea.Msg {
 	// is unknown (0).
 	isCompleted := false
 	if libEntry.Episodes == nextProgress {
+		anime, _ := m.db.FindAnimeByLibId(libEntry.LibID)
+		if m.db.Profile().QbtPort > 0 && anime.QbtFeed.Name != "" {
+			portStr := strconv.Itoa(m.db.Profile().QbtPort)
+			qbt, qbtErr := qbittorrent.NewLogin(portStr)
+			if qbtErr != nil {
+				return fmt.Errorf("failed to login to qbittorrent: %w", err)
+			}
+			if qbtErr = qbt.DeleteFeed(anime.QbtFeed.Name); qbtErr != nil {
+				return fmt.Errorf("failed to delete completed anime feed: %w", err)
+			}
+		}
 		err = m.db.DeleteAnimeById(libEntry.LibID)
 		if err != nil {
 			return fmt.Errorf("failed to delete completed anime: %w", err)
