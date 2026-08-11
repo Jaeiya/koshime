@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	tea "charm.land/bubbletea/v2"
-	lib "github.com/Jaeiya/koshime/internal"
+	lib "github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/views"
 )
 

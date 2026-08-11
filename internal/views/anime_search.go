@@ -8,7 +8,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	lib "github.com/Jaeiya/koshime/internal"
+	lib "github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/kitsu"
 	"github.com/Jaeiya/koshime/internal/ui"

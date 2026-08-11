@@ -1,4 +1,4 @@
-package lib
+package app
 
 import (
 	"charm.land/bubbles/v2/list"
