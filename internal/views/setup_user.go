@@ -26,7 +26,7 @@ import (
 type (
 	FetchedAuthTokenMsg  = kitsu.AuthTokenData
 	KitsuProfileMsg      struct{ Value kitsu.Profile }
-	FetchedLibAnimeMsg   = []kitsu.LibraryEntry
+	FetchedLibAnimeMsg   = []kitsu.Anime
 	SetupUserFinishedMsg struct{ Value database.Data }
 	SetupUserAbortMsg    struct{}
 	QbtSetupMsg          struct {

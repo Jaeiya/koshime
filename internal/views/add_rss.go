@@ -62,7 +62,7 @@ type Rss_State struct {
 	isOffline     bool
 	isRssRefined  bool
 	saveStatus    struct {
-		anime kitsu.LibraryEntry
+		anime kitsu.Anime
 		saved bool
 		err   error
 	}
@@ -907,7 +907,7 @@ func (m Rss_Model) removeFeed() tea.Cmd {
 	}
 }
 
-func (m Rss_Model) createFeedName(anime kitsu.LibraryEntry) string {
+func (m Rss_Model) createFeedName(anime kitsu.Anime) string {
 	return fmt.Sprintf(
 		"%s (%s)",
 		anime.ENG_Title,
@@ -919,7 +919,7 @@ func (m *Rss_Model) resetFlowState() {
 	m.state.selAnimeIdx = -1
 	m.state.isRssRefined = false
 	m.state.saveStatus = struct {
-		anime kitsu.LibraryEntry
+		anime kitsu.Anime
 		saved bool
 		err   error
 	}{}

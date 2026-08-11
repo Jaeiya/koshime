@@ -37,7 +37,7 @@ func (s AnimeFinderSource) Name() (string, string) {
 
 type AnimeFinderResult struct {
 	ListItems []list.Item
-	InfoItems []ui.AnimeInfo
+	InfoItems []kitsu.Anime
 }
 
 type KitsuAnimeSearch struct {
@@ -54,7 +54,7 @@ func (af KitsuAnimeSearch) Search(query string) (AnimeFinderResult, error) {
 	if err != nil {
 		return AnimeFinderResult{}, err
 	}
-	info := make([]ui.AnimeInfo, len(anime))
+	info := make([]kitsu.Anime, len(anime))
 	items := make([]list.Item, len(anime))
 	for i, item := range anime {
 		items[i] = ui.NewListItem(
@@ -63,12 +63,12 @@ func (af KitsuAnimeSearch) Search(query string) (AnimeFinderResult, error) {
 			i,
 		)
 
-		info[i] = ui.AnimeInfo{
+		info[i] = kitsu.Anime{
 			ID:        item.ID,
-			JpnTitle:  item.Attributes.CanonicalTitle,
-			EngTitle:  item.Attributes.Titles.English,
+			JPN_Title: item.Attributes.CanonicalTitle,
+			ENG_Title: item.Attributes.Titles.English,
 			AltTitles: item.Attributes.AltTitles,
-			ShowType:  item.Attributes.Type,
+			Type:      item.Attributes.Type,
 			Status:    item.Attributes.Status,
 			Synopsis:  item.Attributes.Synopsis,
 			AvgRating: utils.CalcRating(item.Attributes.AvgRating),
@@ -97,17 +97,17 @@ func (af LocalAnimeSearch) Search(query string) (AnimeFinderResult, error) {
 
 	anime = anime[:min(af.maxResults, len(anime))]
 
-	info := make([]ui.AnimeInfo, len(anime))
+	info := make([]kitsu.Anime, len(anime))
 	items := make([]list.Item, len(anime))
 	for i, item := range anime {
 		items[i] = ui.NewListItem(item.JPN_Title, item.ENG_Title, i)
-		info[i] = ui.AnimeInfo{
+		info[i] = kitsu.Anime{
 			ID:        item.ID,
 			LibID:     item.LibID,
-			JpnTitle:  item.JPN_Title,
-			EngTitle:  item.ENG_Title,
+			JPN_Title: item.JPN_Title,
+			ENG_Title: item.ENG_Title,
 			AltTitles: item.AltTitles,
-			ShowType:  item.Type,
+			Type:      item.Type,
 			Status:    item.Status,
 			Synopsis:  item.Synopsis,
 			Progress:  item.Progress,

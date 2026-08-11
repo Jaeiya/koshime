@@ -5,29 +5,9 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/Jaeiya/koshime/internal/kitsu"
 	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/charmbracelet/x/ansi"
 )
-
-type AnimeInfo struct {
-	ID        string
-	LibID     string
-	JpnTitle  string
-	EngTitle  string
-	AltTitles []string
-	ShowType  string
-	Synopsis  string
-	Status    string
-	Progress  int
-	AvgRating string
-	Episodes  int
-	Slug      string
-	QbtFeed   struct {
-		Name    string
-		RuleURI string
-	}
-}
 
 // DisplayCharLimit returns a string that indicates how many
 // more characters are required to match the minimum.
@@ -135,26 +115,4 @@ func DisplayText(lines []string, margins ...int) string {
 		text = Style.MarginBottom(margins[2]).Render(text)
 	}
 	return text
-}
-
-func ToAnimeInfo(entries []kitsu.LibraryEntry) []AnimeInfo {
-	infoEntries := make([]AnimeInfo, len(entries))
-	for i, entry := range entries {
-		infoEntries[i] = AnimeInfo{
-			ID:        entry.ID,
-			LibID:     entry.LibID,
-			JpnTitle:  entry.JPN_Title,
-			EngTitle:  entry.ENG_Title,
-			AltTitles: entry.AltTitles,
-			ShowType:  entry.Type,
-			Synopsis:  entry.Synopsis,
-			Status:    entry.Status,
-			Progress:  entry.Progress,
-			AvgRating: utils.CalcRating(entry.AvgRating),
-			Episodes:  entry.Episodes,
-			Slug:      entry.Slug,
-			QbtFeed:   entry.QbtFeed,
-		}
-	}
-	return infoEntries
 }

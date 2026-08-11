@@ -49,7 +49,7 @@ type AddAnime_Model struct {
 type AddAnime_State struct {
 	view          AddAnime_View
 	fetchErr      error
-	selectedAnime ui.AnimeInfo
+	selectedAnime kitsu.Anime
 	menuIndex     int
 }
 
@@ -303,24 +303,14 @@ func (m AddAnime_Model) addAnime(animeID string) tea.Cmd {
 		}
 
 		anime := m.state.selectedAnime
-		err = m.db.AddAnime(kitsu.LibraryEntry{
-			ID:        animeID,
-			LibID:     libID,
-			JPN_Title: anime.JpnTitle,
-			ENG_Title: anime.EngTitle,
-			AltTitles: anime.AltTitles,
-			Episodes:  anime.Episodes,
-			Type:      anime.ShowType,
-			Status:    anime.Status,
-			Progress:  0,
-			AvgRating: anime.AvgRating,
-			Synopsis:  anime.Synopsis,
-			Slug:      anime.Slug,
-			QbtFeed: struct {
-				Name    string
-				RuleURI string
-			}{},
-		})
+		anime.ID = animeID
+		anime.LibID = libID
+		anime.QbtFeed = struct {
+			Name    string
+			RuleURI string
+		}{}
+
+		err = m.db.AddAnime(anime)
 		if err != nil {
 			return FetchErrorMsg{
 				Msg: fmt.Errorf("failed to add anime to database: %w", err).Error(),

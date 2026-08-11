@@ -26,7 +26,7 @@ const (
 
 type (
 	SelectedAnimeMsg struct {
-		Value ui.AnimeInfo
+		Value kitsu.Anime
 	}
 	AnimeSearchExitMsg struct{}
 	AnimeSearchOption  func(*AnimeSearchConfig)
@@ -148,8 +148,8 @@ type AnimeSearchState struct {
 	fetchErr      error
 	view          AnimeSearchView
 	source        app.AnimeFinderSource
-	results       []ui.AnimeInfo
-	selectedAnime ui.AnimeInfo
+	results       []kitsu.Anime
+	selectedAnime kitsu.Anime
 }
 
 func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *AnimeSearchModel {

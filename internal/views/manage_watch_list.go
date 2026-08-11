@@ -33,7 +33,7 @@ const (
 	ConfirmSelection
 )
 
-type WatchListReloadedMsg = []kitsu.LibraryEntry
+type WatchListReloadedMsg = []kitsu.Anime
 
 type WatchList_Model struct {
 	windowSize tea.WindowSizeMsg
@@ -54,10 +54,10 @@ type WatchList_Model struct {
 type WatchList_State struct {
 	err               error
 	view              WatchList_View
-	anime             []ui.AnimeInfo
+	anime             []kitsu.Anime
 	animeIndex        int
 	selectedFileTitle string
-	selectedAnime     ui.AnimeInfo
+	selectedAnime     kitsu.Anime
 	bindingMode       BindingMode
 }
 
@@ -77,7 +77,7 @@ func newWatchListModel(db *database.Database) WatchList_Model {
 		`Deletes the selected anime above.`,
 	}))
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
-	m.state.anime = ui.ToAnimeInfo(db.Anime())
+	m.state.anime = db.Anime()
 	return m
 }
 
@@ -303,7 +303,7 @@ func (m WatchList_Model) UpdateReload(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 
 	case WatchListReloadedMsg:
 		m.state = WatchList_State{}
-		m.state.anime = ui.ToAnimeInfo(msg)
+		m.state.anime = msg
 		m.ui.loader.Stop()
 
 	}
@@ -348,7 +348,7 @@ func (m WatchList_Model) UpdateDelete(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 
 	case WatchListReloadedMsg:
 		m.state = WatchList_State{}
-		m.state.anime = ui.ToAnimeInfo(msg)
+		m.state.anime = msg
 		m.ui.loader.Stop()
 	}
 
@@ -365,7 +365,7 @@ func (m WatchList_Model) ViewDeleting() tea.View {
 			[]string{
 				fmt.Sprintf(
 					`;dc;%s ;x;will be deleted from your Kitsu library and
-the local database.`, m.state.anime[m.state.animeIndex].EngTitle,
+the local database.`, m.state.anime[m.state.animeIndex].ENG_Title,
 				),
 				`;y;[this action cannot be undone]`,
 			}, 1,
@@ -393,7 +393,7 @@ func (m WatchList_Model) UpdateDrop(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 
 	case WatchListReloadedMsg:
 		m.state = WatchList_State{}
-		m.state.anime = ui.ToAnimeInfo(msg)
+		m.state.anime = msg
 		m.ui.loader.Stop()
 	}
 
@@ -409,7 +409,7 @@ func (m WatchList_Model) ViewDrop() tea.View {
 		ui.DisplayText([]string{
 			fmt.Sprintf(
 				`;dc;%s ;x;is about to be ;m;dropped ;x;from your watch list.`,
-				m.state.anime[m.state.animeIndex].EngTitle,
+				m.state.anime[m.state.animeIndex].ENG_Title,
 			),
 			`This is not the same as deletion. Dropping an anime sets its status to
 ;dm;dropped;x;, which stores it under the dropped tab in ;db;Kitsu;x;.`,
@@ -467,11 +467,11 @@ func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cm
 				m.state.selectedFileTitle = item.Title()
 				listItems := make([]list.Item, len(m.state.anime))
 				for i, item := range m.state.anime {
-					if item.EngTitle == "" {
-						item.EngTitle = item.JpnTitle
-						item.JpnTitle = ""
+					if item.ENG_Title == "" {
+						item.ENG_Title = item.JPN_Title
+						item.JPN_Title = ""
 					}
-					listItems[i] = ui.NewListItem(item.EngTitle, item.JpnTitle, i)
+					listItems[i] = ui.NewListItem(item.ENG_Title, item.JPN_Title, i)
 				}
 
 				m.ui.list = ui.NewList(ui.ListOptions{
@@ -541,7 +541,7 @@ func (m WatchList_Model) ViewFileBinding() tea.View {
 			ui.DisplayTitle("File Binding"),
 			ui.DisplayText([]string{
 				"Selected File: ;y;" + m.state.selectedFileTitle,
-				"   Binding To: ;g;" + m.state.selectedAnime.JpnTitle + ";x;",
+				"   Binding To: ;g;" + m.state.selectedAnime.JPN_Title + ";x;",
 			}, 0, 1, 1),
 			ui.TextStyle.Render(
 				m.ui.consent.View(utils.ColorText(";b;Is the above correct?")),
@@ -569,7 +569,7 @@ func (m WatchList_Model) UpdateCompleted(msg tea.Msg) (WatchList_Model, tea.Cmd)
 
 	case WatchListReloadedMsg:
 		m.state = WatchList_State{}
-		m.state.anime = ui.ToAnimeInfo(msg)
+		m.state.anime = msg
 		m.ui.loader.Stop()
 	}
 
@@ -578,7 +578,7 @@ func (m WatchList_Model) UpdateCompleted(msg tea.Msg) (WatchList_Model, tea.Cmd)
 }
 
 func (m WatchList_Model) ViewCompleted() tea.View {
-	animeTitle := m.state.anime[m.state.animeIndex].EngTitle
+	animeTitle := m.state.anime[m.state.animeIndex].ENG_Title
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Watch List", "Complete"),

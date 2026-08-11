@@ -65,7 +65,7 @@ func (m *AnimeDisplayModel) Update(msg tea.Msg) {
 	}
 }
 
-func (m AnimeDisplayModel) View(ai ui.AnimeInfo) string {
+func (m AnimeDisplayModel) View(ai kitsu.Anime) string {
 	return m.DisplayAnimeInfo(ai, m.displayMode)
 }
 
@@ -73,15 +73,15 @@ func (m AnimeDisplayModel) ShortHelp() []key.Binding {
 	return []key.Binding{m.keys.displayMode}
 }
 
-func (m AnimeDisplayModel) DisplayAnimeInfo(info ui.AnimeInfo, mode DisplayMode) string {
+func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) string {
 	headers := []string{
 		utils.ColorText(";g;Title"),
 		utils.ColorText(";dc;English"),
 	}
 
 	items := []string{
-		info.JpnTitle,
-		info.EngTitle,
+		info.JPN_Title,
+		info.ENG_Title,
 	}
 
 	if items[1] == "" {
@@ -144,7 +144,7 @@ func (m AnimeDisplayModel) DisplayAnimeInfo(info ui.AnimeInfo, mode DisplayMode)
 	items = append(items, utils.ColorText(";b;"+info.Status))
 
 	headers = append(headers, utils.ColorText(";y;Type"))
-	items = append(items, utils.ColorText(";c;"+info.ShowType))
+	items = append(items, utils.ColorText(";c;"+info.Type))
 
 	totalEpsStr := utils.ColorText(";bk;Unknown")
 	if info.Episodes > 0 {

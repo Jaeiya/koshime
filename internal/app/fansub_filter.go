@@ -10,7 +10,7 @@ import (
 )
 
 type FilteredAnime struct {
-	LibEntry kitsu.LibraryEntry
+	LibEntry kitsu.Anime
 	FileInfo FansubFileInfo
 	Score    int
 }
@@ -135,7 +135,7 @@ func (ff FansubFilter) FilterByLibEntry(
 	return filteredAnime, nil
 }
 
-func (ff FansubFilter) buildAnimeWordMap(entries []kitsu.LibraryEntry) AnimeTitleMap {
+func (ff FansubFilter) buildAnimeWordMap(entries []kitsu.Anime) AnimeTitleMap {
 	animeWordMap := make(map[string]map[string]struct{}, len(entries))
 
 	for _, entry := range entries {

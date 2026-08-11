@@ -9,7 +9,7 @@ import (
 
 const RssRuleName = "(anime)"
 
-type LibraryEntry struct {
+type Anime struct {
 	// Anime ID
 	ID string
 	// Anime User-library ID - Allows looking up User-specific Anime data

@@ -52,7 +52,7 @@ func GetProfileLink(userName string) string {
 	return p
 }
 
-func GetUserAnime(userID string, status LibAnimeStatus) ([]LibraryEntry, error) {
+func GetUserAnime(userID string, status LibAnimeStatus) ([]Anime, error) {
 	qurl, err := userAnimeURL(userID, status)
 	if err != nil {
 		return nil, err
@@ -68,7 +68,7 @@ func GetUserAnime(userID string, status LibAnimeStatus) ([]LibraryEntry, error) 
 		return nil, err
 	}
 
-	entries := make([]LibraryEntry, len(respData.Data))
+	entries := make([]Anime, len(respData.Data))
 	for i, item := range respData.Data {
 		anime := respData.Included[i]
 
@@ -77,7 +77,7 @@ func GetUserAnime(userID string, status LibAnimeStatus) ([]LibraryEntry, error) 
 			jpnTitle = anime.Attributes.CanonicalTitle
 		}
 
-		entries[i] = LibraryEntry{
+		entries[i] = Anime{
 			ID:        respData.Included[i].ID,
 			LibID:     item.LibID,
 			JPN_Title: jpnTitle,
