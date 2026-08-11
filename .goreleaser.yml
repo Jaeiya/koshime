@@ -43,27 +43,27 @@ changelog:
       - "^test"
   groups:
     - title: New
-      regexp: "^.*feat[(\\w)]*:+.*$"
+      regexp: "^feat[(\\w)]*:+.*$"
       order: 100
 
+    - title: Performance
+      regexp: "^perf[(\\w)]*:+.*$"
+      order: 150
+
     - title: Changes
-      regexp: "^.*upd[(\\w)]*:+.*$"
+      regexp: "^refactor[(\\w)]*:+.*$"
       order: 200
 
     - title: "Fixes"
-      regexp: "^.*fix[(\\w)]*:+.*$"
+      regexp: "^fix[(\\w)]*:+.*$"
       order: 300
 
     - title: "Docs"
-      regexp: "^.*docs[(\\w)]*:+.*$"
+      regexp: "^docs[(\\w)]*:+.*$"
       order: 400
 
-    - title: "Cleaning"
-      regexp: "^.*clean[(\\w)]*:+.*$"
-      order: 500
-
     - title: "Maintenance"
-      regexp: "^.*chore[(\\w)]*:+.*$"
+      regexp: "^chore[(\\w)]*:+.*$"
       order: 600
 
     - title: "Other"
