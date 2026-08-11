@@ -1,50 +1,55 @@
+
 version: "2"
+
 run:
-    concurrency: 6
-    tests: true
+    concurrency: 6 # INFO: depends on your dev environment
+    tests: true    # INFO: developer preference (depends on project)
+
 linters:
     default: none
     enable:
-        - errcheck
         - bodyclose
-        - exhaustive
-        - sqlclosecheck
-        - makezero
-        - nolintlint
-        - unparam
-        - unconvert
-        - usestdlibvars
-        - gosec
+        - errcheck
         # - errname     # We use msgs for errors which conflicts with this naming convention
-        - tparallel
-        - nakedret
         - errorlint
+        - exhaustive
+        - gosec
         - govet
         - ineffassign
+        - makezero
+        - nakedret
+        - nolintlint
+        - sqlclosecheck
         - staticcheck
-        - wastedassign
+        - tparallel
+        - unconvert
+        - unparam
         - unused
+        - usestdlibvars
+        - wastedassign
     settings:
+        gosec:
+          severity: low
+          confidence: low
+          excludes:
+            # We launch a subprocess with a variable in a safe
+            # way, because it doesn't involve user input.
+            - G204
         nakedret:
+          # I don't like naked returns
           max-func-lines: 0
         exhaustive:
             default-signifies-exhaustive: true
-        goconst:
-            ignore-tests: true
         errcheck:
             check-type-assertions: true
+            # assignment to blank is considered 'handled'
             check-blank: false
         govet:
             disable:
-                - fieldalignment
+              - fieldalignment
             enable-all: true
     exclusions:
         generated: lax
-        presets:
-            - comments
-            - common-false-positives
-            - legacy
-            - std-error-handling
         paths:
             - third_party$
             - builtin$
@@ -52,10 +57,13 @@ linters:
         rules:
             - linters:
                 - errcheck
+              # disable checking defer funcs for unhandled err's
               source: '^\s*defer\s'
+
 issues:
     max-issues-per-linter: 0
     max-same-issues: 0
+
 formatters:
     exclusions:
         generated: lax
