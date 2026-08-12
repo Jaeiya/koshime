@@ -74,10 +74,10 @@ setup-macos: install-go-macos install-goreleaser
 	@echo "You're all set!"
 
 dev:
-	goreleaser build --snapshot --clean --config .goreleaser.dev.yml
+	@goreleaser build --snapshot --clean --config .goreleaser.dev.yml
 
 release:
-	goreleaser release --snapshot --clean
+	@goreleaser release --snapshot --clean
 
 # Define variables and dummy target evaluations at top level
 RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
