@@ -114,6 +114,10 @@ func (FileSys) NewFilenameStream(dir string) (*FilenameStream, error) {
 	}, nil
 }
 
+func (FileSys) GenFilenameStream(entries []string) *FilenameStream {
+	return &FilenameStream{entries: entries}
+}
+
 // Next returns the next file name and its status. If there
 // are no more file names, the status is false.
 func (fs *FilenameStream) Next() (string, bool) {
