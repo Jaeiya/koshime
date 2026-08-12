@@ -87,7 +87,7 @@ type FilenameIterator interface {
 }
 
 type FilenameStream struct {
-	entries []os.DirEntry
+	entries []string
 	index   int
 }
 
@@ -100,7 +100,18 @@ func (FileSys) NewFilenameStream(dir string) (*FilenameStream, error) {
 	if err != nil {
 		return &FilenameStream{}, fmt.Errorf("could not read dir: %w", err)
 	}
-	return &FilenameStream{entries, 0}, nil
+
+	newEntries := make([]string, len(entries))
+	for i, entry := range entries {
+		if entry.IsDir() {
+			continue
+		}
+		newEntries[i] = entry.Name()
+	}
+
+	return &FilenameStream{
+		entries: newEntries,
+	}, nil
 }
 
 // Next returns the next file name and its status. If there
@@ -109,7 +120,7 @@ func (fs *FilenameStream) Next() (string, bool) {
 	if fs.index == len(fs.entries) {
 		return "", false
 	}
-	fileName := fs.entries[fs.index].Name()
+	fileName := fs.entries[fs.index]
 	fs.index++
 	return fileName, true
 }
