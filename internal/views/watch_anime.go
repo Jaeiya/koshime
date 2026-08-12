@@ -239,12 +239,12 @@ func (m WatchAnime_Model) UpdateSelection(msg tea.Msg) (WatchAnime_Model, tea.Cm
 					return m, nil
 				}
 
-				nextProgress := anime.LibEntry.Progress + 1
+				nextProgress := anime.Anime.Progress + 1
 				switch {
 				case fileEp == 0:
 					m.state.selection.fileState = Pilot
 
-				case anime.LibEntry.Episodes > 0 && fileEp > anime.LibEntry.Episodes:
+				case anime.Anime.Episodes > 0 && fileEp > anime.Anime.Episodes:
 					m.state.selection.fileState = NonSeasonalCount
 
 				case fileEp > nextProgress:
@@ -380,7 +380,7 @@ func (m WatchAnime_Model) displayProgress() string {
 	engTitle := ui.Style.MarginLeft(5).Render(lipgloss.JoinHorizontal(
 		lipgloss.Left,
 		utils.ColorText(";db;  Title: "),
-		ui.Style.Width(40).Render(m.state.selection.anime.LibEntry.ENG_Title),
+		ui.Style.Width(40).Render(m.state.selection.anime.Anime.ENG_Title),
 	))
 
 	fileName := ui.Style.MarginLeft(5).Render(lipgloss.JoinHorizontal(
@@ -417,7 +417,7 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 		warnText = `;m;You have already seen this episode according to your progress.`
 	}
 
-	progress := m.state.selection.anime.LibEntry.Progress
+	progress := m.state.selection.anime.Anime.Progress
 	switch {
 	case m.state.selection.fileState == Pilot:
 		progress = 0
@@ -430,7 +430,7 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 	}
 
 	progressStr := utils.ColorText(fmt.Sprintf(
-		";db; Progress: ;y;%d ;bk;(current)", m.state.selection.anime.LibEntry.Progress,
+		";db; Progress: ;y;%d ;bk;(current)", m.state.selection.anime.Anime.Progress,
 	))
 
 	episodeLine := utils.ColorText(fmt.Sprintf("  ;db;Episode: ;g;%d ;bk;(watching)", progress))
@@ -458,11 +458,11 @@ func (m *WatchAnime_Model) PopulateAnimeList() {
 	listItems := make([]list.Item, len(m.state.filteredAnime))
 	for i, item := range m.state.filteredAnime {
 		// We always want to display title text
-		if item.LibEntry.ENG_Title == "" {
-			item.LibEntry.ENG_Title = item.LibEntry.JPN_Title
-			item.LibEntry.JPN_Title = ""
+		if item.Anime.ENG_Title == "" {
+			item.Anime.ENG_Title = item.Anime.JPN_Title
+			item.Anime.JPN_Title = ""
 		}
-		listItems[i] = ui.NewListItem(item.LibEntry.ENG_Title, item.LibEntry.JPN_Title, i)
+		listItems[i] = ui.NewListItem(item.Anime.ENG_Title, item.Anime.JPN_Title, i)
 	}
 	m.ui.list = ui.NewList(ui.ListOptions{
 		Items:         listItems,
@@ -516,7 +516,7 @@ func (m WatchAnime_Model) PlayAnime() tea.Msg {
 }
 
 func (m *WatchAnime_Model) SaveProgress() tea.Msg {
-	libEntry := m.state.selection.anime.LibEntry
+	libEntry := m.state.selection.anime.Anime
 	fileInfo := m.state.selection.anime.FileInfo
 
 	if !fileSys.FileExists(filepath.Join(fileSys.GetWorkingDir(), fileInfo.Filename)) {
