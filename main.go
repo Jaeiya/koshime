@@ -15,6 +15,9 @@ var (
 )
 
 func main() {
+	// Cleanup residual cursor issues
+	defer fmt.Print("\x1b[0 q")
+
 	app.Version = version
 	app.CommitHash = commitSha
 	app.BuildDate = buildDate
@@ -23,9 +26,6 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	// Cleanup residual cursor issues
-	defer fmt.Print("\x1b[0 q")
 
 	p := tea.NewProgram(m)
 	if _, err := p.Run(); err != nil {
