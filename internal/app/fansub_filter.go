@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/Jaeiya/koshime/internal/database"
@@ -213,6 +214,83 @@ func (ff FansubFilter) buildWordsFromTitles(anime kitsu.Anime) map[string]struct
 	return titleTokenMap
 }
 
+func (ff FansubFilter) Score(title string, anime kitsu.Anime) int {
+	title = ff.normalizeTitle(title)
+	titleWords := strings.Fields(title)
+
+	if len(titleWords) == 0 {
+		return 0
+	}
+
+	jpnWords := strings.Fields(ff.normalizeTitle(anime.JPN_Title))
+	engWords := strings.Fields(ff.normalizeTitle(anime.ENG_Title))
+
+	altWordSlices := make([][]string, len(anime.AltTitles))
+	for i, t := range anime.AltTitles {
+		altWordSlices[i] = strings.Fields(ff.normalizeTitle(t))
+	}
+
+	wordSlices := append([][]string{jpnWords, engWords}, altWordSlices...)
+
+	// ========== EXACT MATCH ==========
+	for _, slice := range wordSlices {
+		if slices.Equal(slice, titleWords) {
+			return 100
+		}
+	}
+
+	score := 0
+
+	// ========= ORDERED WORD MATCH ==========
+	if utils.AreWordsInSlice(jpnWords, titleWords) {
+		score = len(titleWords) * 100 / len(jpnWords)
+	}
+
+	if utils.AreWordsInSlice(engWords, titleWords) {
+		s := len(titleWords) * 100 / len(engWords)
+		if s > score {
+			score = s
+		}
+	}
+
+	for _, altSlice := range altWordSlices {
+		if utils.AreWordsInSlice(altSlice, titleWords) {
+			s := len(titleWords) * 100 / len(altSlice)
+			if s > score {
+				score = s
+			}
+		}
+	}
+
+	// ========== FUZZY WORD MATCH ==========
+	for _, words := range wordSlices {
+		wordMap := ff.buildWordMap(words)
+		if len(wordMap) == 0 {
+			continue
+		}
+		foundWords := map[string]struct{}{}
+		matches := 0
+		for _, word := range titleWords {
+			if _, exists := foundWords[word]; exists {
+				continue
+			}
+			if _, exists := wordMap[word]; exists {
+				matches += 1
+				foundWords[word] = struct{}{}
+			}
+		}
+		s := matches * 100 / len(wordMap)
+		if s > score {
+			score = s
+		}
+	}
+
+	if score >= 50 {
+		return score
+	}
+	return 0
+}
+
 func (ff FansubFilter) scoreTitles(title string, anime kitsu.Anime) int {
 	title = ff.normalizeTitle(title)
 	jpnTitle := ff.normalizeTitle(anime.JPN_Title)
@@ -230,6 +308,17 @@ func (ff FansubFilter) scoreTitles(title string, anime kitsu.Anime) int {
 	}
 
 	return 0
+}
+
+func (ff FansubFilter) buildWordMap(titleWords []string) map[string]struct{} {
+	wordMap := map[string]struct{}{}
+	if len(titleWords) == 0 {
+		return wordMap
+	}
+	for _, word := range titleWords {
+		wordMap[word] = struct{}{}
+	}
+	return wordMap
 }
 
 func (FansubFilter) normalizeTitle(title string) string {
