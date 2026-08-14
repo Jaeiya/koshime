@@ -114,7 +114,7 @@ func (FileSys) NewFilenameStream(dir string) (*FilenameStream, error) {
 	}, nil
 }
 
-func (FileSys) GenFilenameStream(entries []string) *FilenameStream {
+func (FileSys) GenFilenameStream(entries ...string) *FilenameStream {
 	return &FilenameStream{entries: entries}
 }
 
