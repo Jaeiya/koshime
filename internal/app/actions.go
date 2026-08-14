@@ -2,11 +2,14 @@ package app
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/kitsu"
 	"github.com/Jaeiya/koshime/internal/qbittorrent"
+	"github.com/Jaeiya/koshime/internal/utils"
 )
 
 // DropAnime sets the status of an anime to 'dropped', deletes the
@@ -63,6 +66,26 @@ func DeleteAnime(db *database.Database, libID string) error {
 	err = db.DeleteAnimeById(libID)
 	if err != nil {
 		return fmt.Errorf("failed to delete anime from database: %w", err)
+	}
+	return nil
+}
+
+func DeleteFansub(anime kitsu.Anime) error {
+	fs := utils.FileSys{}
+	ff := FansubFilter{}
+	stream, err := fs.NewFilenameStream(fs.GetWorkingDir())
+	if err != nil {
+		return fmt.Errorf("failed get file list for deletion: %w", err)
+	}
+	fileNames, err := ff.FilterFilenamesByAnime(anime, stream)
+	if err != nil {
+		return fmt.Errorf("failed to filter files for deletion: %w", err)
+	}
+	for _, file := range fileNames {
+		err := os.Remove(filepath.Join(fs.GetWorkingDir(), file))
+		if err != nil {
+			return fmt.Errorf("failed to delete fansub file: %w", err)
+		}
 	}
 	return nil
 }
