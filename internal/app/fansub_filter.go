@@ -139,10 +139,10 @@ func (ff FansubFilter) FilterByLibEntry(
 func (ff FansubFilter) FilterFilenamesByAnime(
 	anime kitsu.Anime,
 	stream utils.FilenameIterator,
-) (map[int][]string, error) {
+) ([]string, error) {
 	fp := FansubParser{}
 	found := map[int][]string{}
-	titleWordMap := ff.buildWordsFromTitles(anime)
+	topScore := 0
 
 	for {
 		fileName, ok := stream.Next()
@@ -159,31 +159,18 @@ func (ff FansubFilter) FilterFilenamesByAnime(
 			return nil, fmt.Errorf("failed to parse filename: %w", err)
 		}
 
-		titleWords := strings.Fields(ff.normalizeTitle(fansub.Title))
-		score := 0
-		confidence := 0
-
-		for _, word := range titleWords {
-			if _, exists := titleWordMap[word]; exists {
-				confidence++
-			}
-			score = int(float64(confidence) / float64(len(titleWords)) * 100)
+		s := ff.Score(fansub.Title, anime)
+		if s > topScore {
+			topScore = s
 		}
-		score += ff.scoreTitles(fansub.Title, anime)
 
-		if score > 50 {
-			if len(titleWords) <= len(titleWordMap) {
-				score -= len(titleWordMap) - len(titleWords)
-			}
-
-			if v, exists := found[score]; exists {
-				found[score] = append(v, fansub.Filename)
-			} else {
-				found[score] = []string{fansub.Filename}
-			}
+		if v, exists := found[s]; exists {
+			found[s] = append(v, fansub.Filename)
+		} else {
+			found[s] = []string{fansub.Filename}
 		}
 	}
-	return found, nil
+	return found[topScore], nil
 }
 
 func (ff FansubFilter) buildAnimeWordMap(entries []kitsu.Anime) AnimeTitleMap {
@@ -281,25 +268,6 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime) int {
 	if score >= 50 {
 		return score
 	}
-	return 0
-}
-
-func (ff FansubFilter) scoreTitles(title string, anime kitsu.Anime) int {
-	title = ff.normalizeTitle(title)
-	jpnTitle := ff.normalizeTitle(anime.JPN_Title)
-	engTitle := ff.normalizeTitle(anime.ENG_Title)
-
-	if jpnTitle == title || engTitle == title {
-		return 1
-	}
-
-	for _, altTitle := range anime.AltTitles {
-		altTitle = ff.normalizeTitle(altTitle)
-		if altTitle == title {
-			return 1
-		}
-	}
-
 	return 0
 }
 
