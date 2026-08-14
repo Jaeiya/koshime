@@ -215,9 +215,7 @@ func (ff FansubFilter) buildWordsFromTitles(anime kitsu.Anime) map[string]struct
 }
 
 func (ff FansubFilter) Score(title string, anime kitsu.Anime) int {
-	title = ff.normalizeTitle(title)
-	titleWords := strings.Fields(title)
-
+	titleWords := strings.Fields(ff.normalizeTitle(title))
 	if len(titleWords) == 0 {
 		return 0
 	}
