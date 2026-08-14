@@ -70,6 +70,8 @@ func DeleteAnime(db *database.Database, libID string) error {
 	return nil
 }
 
+// DeleteFansub searches the working directory and filters all fansub
+// files, deleting the ones that have the highest score match.
 func DeleteFansub(anime kitsu.Anime) error {
 	fs := utils.FileSys{}
 	ff := FansubFilter{}
