@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -97,4 +98,20 @@ func OrdinalString(s string) (string, error) {
 
 func HasNonASCII(s string) bool {
 	return !utf8.ValidString(s) || len(s) != utf8.RuneCountInString(s)
+}
+
+func AreWordsInSlice(haystack, needle []string) bool {
+	hLen := len(haystack)
+	nLen := len(needle)
+
+	if nLen > hLen || hLen == 0 || nLen == 0 {
+		return false
+	}
+
+	for i := 0; i <= hLen-nLen; i++ {
+		if slices.Equal(haystack[i:i+nLen], needle) {
+			return true
+		}
+	}
+	return false
 }
