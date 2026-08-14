@@ -239,21 +239,10 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime) int {
 
 	score := 0
 
-	// ========= ORDERED WORD MATCH ==========
-	if utils.AreWordsInSlice(jpnWords, titleWords) {
-		score = len(titleWords) * 100 / len(jpnWords)
-	}
-
-	if utils.AreWordsInSlice(engWords, titleWords) {
-		s := len(titleWords) * 100 / len(engWords)
-		if s > score {
-			score = s
-		}
-	}
-
-	for _, altSlice := range altWordSlices {
-		if utils.AreWordsInSlice(altSlice, titleWords) {
-			s := len(titleWords) * 100 / len(altSlice)
+	// ========= SUBSTR WORD MATCH ==========
+	for _, wordSlice := range wordSlices {
+		if utils.AreWordsInSlice(wordSlice, titleWords) {
+			s := len(titleWords) * 100 / len(wordSlice)
 			if s > score {
 				score = s
 			}
