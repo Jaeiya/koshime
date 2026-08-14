@@ -262,6 +262,12 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime) int {
 		}
 	}
 
+	// A fuzzy search is not necessary if we can find
+	// the title as a substr of an anime title.
+	if score >= 50 {
+		return score
+	}
+
 	// ========== FUZZY WORD MATCH ==========
 	for _, words := range wordSlices {
 		wordMap := ff.buildWordMap(words)
