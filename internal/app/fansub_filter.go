@@ -159,7 +159,7 @@ func (ff FansubFilter) FilterFilenamesByAnime(
 			return nil, fmt.Errorf("failed to parse filename: %w", err)
 		}
 
-		s := ff.Score(fansub.Title, anime)
+		s := ff.score(fansub.Title, anime)
 		if s > topScore {
 			topScore = s
 		}
@@ -201,7 +201,7 @@ func (ff FansubFilter) buildWordsFromTitles(anime kitsu.Anime) map[string]struct
 	return titleTokenMap
 }
 
-func (ff FansubFilter) Score(title string, anime kitsu.Anime) int {
+func (ff FansubFilter) score(title string, anime kitsu.Anime) int {
 	titleWords := strings.Fields(ff.normalizeTitle(title))
 	if len(titleWords) == 0 {
 		return 0
