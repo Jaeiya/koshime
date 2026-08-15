@@ -47,6 +47,51 @@ func (ff FansubFilter) All(stream utils.FilenameIterator) ([]FansubFileInfo, err
 	return fansubs, nil
 }
 
+func (ff FansubFilter) FilterByLibEntry2(
+	stream utils.FilenameIterator,
+	db *database.Database,
+) ([]FilteredAnime, error) {
+	fp := FansubParser{}
+	fileFoundStore := map[string]struct{}{}
+	filteredAnime := []FilteredAnime{}
+
+	for {
+		fileName, ok := stream.Next()
+		if !ok {
+			break
+		}
+		if !fp.IsSupported(fileName) {
+			continue
+		}
+		fansub, err := fp.Parse(fileName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse filename: %w", err)
+		}
+		// Only score unique fansub titles
+		if _, exists := fileFoundStore[fansub.Title]; exists {
+			continue
+		}
+
+		found := FilteredAnime{}
+		for _, anime := range db.Anime() {
+			s := ff.score(fansub.Title, anime)
+			if s > found.Score {
+				found.Anime = anime
+				found.FileInfo = fansub
+				found.Score = s
+			}
+		}
+
+		if found.Score > 0 {
+			filteredAnime = append(filteredAnime, found)
+		}
+
+		fileFoundStore[fansub.Title] = struct{}{}
+	}
+
+	return filteredAnime, nil
+}
+
 // FilterByLibEntry returns a slice of anime data by how closely a file name
 // can be matched against an anime in the users library. A score of greater
 // than 50 is required to be considered a match.
@@ -201,6 +246,12 @@ func (ff FansubFilter) buildWordsFromTitles(anime kitsu.Anime) map[string]struct
 	return titleTokenMap
 }
 
+// score determines a match percentage based on how well the
+// specified title matches any of the anime's titles.
+//
+// 🔵 A match score <= 50 is considered a 0% match. This is
+// because a score of <= 50 cannot ever be guaranteed as a
+// reasonable match in this context.
 func (ff FansubFilter) score(title string, anime kitsu.Anime) int {
 	titleWords := strings.Fields(ff.normalizeTitle(title))
 	if len(titleWords) == 0 {
