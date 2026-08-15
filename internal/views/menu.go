@@ -9,7 +9,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/Jaeiya/koshime/internal/kitsu"
+	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/qbittorrent"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
@@ -38,6 +38,7 @@ type MenuView struct {
 }
 
 type MenuModel struct {
+	db            *database.Database
 	windowSize    tea.WindowSizeMsg
 	menuItems     []MenuView
 	activeItems   []MenuView
@@ -48,13 +49,12 @@ type MenuModel struct {
 	activeIndex   int
 	qbtState      QbtState
 	isQbtInit     bool
-	profile       kitsu.Profile
 	inSubMenu     bool
 }
 
-func NewMenuModel(views []MenuView, p kitsu.Profile) MenuModel {
+func NewMenuModel(views []MenuView, db *database.Database) MenuModel {
 	m := MenuModel{}
-	m.profile = p
+	m.db = db
 
 	m.help = help.New()
 	m.help.Styles.ShortKey = ui.HelpKeyStyle
@@ -202,7 +202,7 @@ func (m MenuModel) FullHelp() [][]key.Binding {
 }
 
 func (m MenuModel) DisplayProfile() string {
-	p := m.profile
+	p := m.db.Profile()
 
 	tokenExpiration := utils.NewRelativeTimeUnits(p.TokenExpirationSec)
 	expStyle := ui.ExpireStyle(tokenExpiration)
@@ -265,11 +265,12 @@ func (m *MenuModel) updateMenu() {
 
 func (m MenuModel) initQbtState() (MenuModel, tea.Cmd) {
 	cmd := func() tea.Msg {
-		if m.profile.QbtPort <= 0 {
+		p := m.db.Profile()
+		if p.QbtPort <= 0 {
 			return QbtStateMsg{None}
 		}
 
-		strPort := strconv.Itoa(m.profile.QbtPort)
+		strPort := strconv.Itoa(p.QbtPort)
 		if err := qbittorrent.CheckConn(strPort); err != nil {
 			return QbtStateMsg{Offline}
 		}

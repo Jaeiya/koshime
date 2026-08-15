@@ -210,7 +210,7 @@ func (m *Model) CreateMenu() {
 			ModelFunc: func() ViewModel { return newAboutModel() },
 			Desc:      "View the nitty-gritty details of Koshime",
 		},
-	}, m.db.Profile())
+	}, m.db)
 }
 
 func abort() tea.Msg {
