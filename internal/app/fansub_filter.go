@@ -236,8 +236,9 @@ func (ff FansubFilter) score(title string, anime kitsu.Anime) int {
 		}
 	}
 
-	// A fuzzy search is not necessary if we can find
-	// the title as a substr of an anime title.
+	// A fuzzy search is not necessary if we found an
+	// acceptable score, because a substr word match
+	// is a more accurate match.
 	if score > 50 {
 		return score
 	}
