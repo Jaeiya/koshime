@@ -151,9 +151,9 @@ func (ff FansubFilter) FilterFilenamesByAnime(
 // score determines a match percentage based on how well the
 // specified title matches any of the anime's titles.
 //
-// 🔵 A match score <= 50 is considered a 0% match. This is
-// because a score of <= 50 cannot ever be guaranteed as a
-// reasonable match in this context.
+// 🔵 A match score <= threshold is considered a 0% match. This is
+// because that threshold will not be considered a valuable match
+// in this context.
 func (ff FansubFilter) score(title string, anime kitsu.Anime, threshold int) int {
 	titleWords := strings.Fields(ff.normalizeTitle(title))
 	if len(titleWords) == 0 {
