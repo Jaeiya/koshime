@@ -174,9 +174,9 @@ func (m *Model) CreateMenu() {
 			Desc:      "Finds downloaded anime and coordinates with your watch list to execute the file.",
 		},
 		{
-			Name:      "Watch List",
-			ModelFunc: func() ViewModel { return newWatchListModel(m.db) },
-			Desc:      "View & manage your watch list",
+			Name:      "Library",
+			ModelFunc: func() ViewModel { return newLibraryModel(m.db) },
+			Desc:      "View & manage your local library.",
 		},
 		{
 			Name:      "Add",

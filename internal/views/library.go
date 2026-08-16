@@ -14,15 +14,15 @@ import (
 	"github.com/Jaeiya/koshime/internal/utils"
 )
 
-type WatchList_View int
+type Library_View int
 
 const (
-	WatchList_Menu = WatchList_View(iota)
-	WatchList_Reload
-	WatchList_Drop
-	WatchList_FileBinding
-	WatchList_Complete
-	WatchList_Delete
+	Library_Menu = Library_View(iota)
+	Library_Reload
+	Library_Drop
+	Library_FileBinding
+	Library_Complete
+	Library_Delete
 )
 
 type BindingMode int
@@ -33,9 +33,9 @@ const (
 	ConfirmSelection
 )
 
-type WatchListReloadedMsg = []kitsu.Anime
+type LibraryReloadedMsg = []kitsu.Anime
 
-type WatchList_Model struct {
+type Library_Model struct {
 	windowSize tea.WindowSizeMsg
 	ui         struct {
 		loader       ui.LoaderModel
@@ -48,12 +48,12 @@ type WatchList_Model struct {
 		reload key.Binding
 	}
 	db    *database.Database
-	state WatchList_State
+	state Library_State
 }
 
-type WatchList_State struct {
+type Library_State struct {
 	err               error
-	view              WatchList_View
+	view              Library_View
 	anime             []kitsu.Anime
 	animeIndex        int
 	selectedFileTitle string
@@ -61,8 +61,8 @@ type WatchList_State struct {
 	bindingMode       BindingMode
 }
 
-func newWatchListModel(db *database.Database) WatchList_Model {
-	m := WatchList_Model{db: db}
+func newLibraryModel(db *database.Database) Library_Model {
+	m := Library_Model{db: db}
 	m.ui.loader = ui.NewLoader()
 	m.ui.animeDisplay = NewAnimeDisplayModel()
 	m.ui.menu = ui.NewMenuModel([]string{
@@ -72,7 +72,7 @@ func newWatchListModel(db *database.Database) WatchList_Model {
 		"Delete",
 	}, ui.WithMenuRotation(), ui.WithMenuDescriptions([]string{
 		`Drops the selected anime above and removes it from local database.`,
-		`Binds a file name to a specific anime in your watch list.`,
+		`Binds a file name to a specific anime in your library.`,
 		`Sets status of selected anime above, to completed.`,
 		`Deletes the selected anime above from Kitsu and local database.`,
 	}))
@@ -81,11 +81,11 @@ func newWatchListModel(db *database.Database) WatchList_Model {
 	return m
 }
 
-func (m WatchList_Model) Init() tea.Cmd {
+func (m Library_Model) Init() tea.Cmd {
 	return nil
 }
 
-func (m WatchList_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -97,10 +97,10 @@ func (m WatchList_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keys.reload):
 			// Never execute reload in another view
-			if m.state.view > WatchList_Menu {
+			if m.state.view > Library_Menu {
 				break
 			}
-			m.state.view = WatchList_Reload
+			m.state.view = Library_Reload
 
 		case key.Matches(msg, ui.KeyMap.MainMenu):
 			if m.ui.list.FilterState() > list.Unfiltered {
@@ -120,27 +120,27 @@ func (m WatchList_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	}
 
 	switch m.state.view {
-	case WatchList_Menu:
+	case Library_Menu:
 		m, cmd = m.UpdateMenu(msg)
 		cmds = append(cmds, cmd)
 
-	case WatchList_Reload:
+	case Library_Reload:
 		m, cmd = m.UpdateReload(msg)
 		cmds = append(cmds, cmd)
 
-	case WatchList_Delete:
+	case Library_Delete:
 		m, cmd = m.UpdateDelete(msg)
 		cmds = append(cmds, cmd)
 
-	case WatchList_Drop:
+	case Library_Drop:
 		m, cmd = m.UpdateDrop(msg)
 		cmds = append(cmds, cmd)
 
-	case WatchList_FileBinding:
+	case Library_FileBinding:
 		m, cmd = m.UpdateFileBinding(msg)
 		cmds = append(cmds, cmd)
 
-	case WatchList_Complete:
+	case Library_Complete:
 		m, cmd = m.UpdateCompleted(msg)
 		cmds = append(cmds, cmd)
 
@@ -149,7 +149,7 @@ func (m WatchList_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m WatchList_Model) View() tea.View {
+func (m Library_Model) View() tea.View {
 	if m.ui.loader.IsLoading() {
 		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
@@ -159,32 +159,32 @@ func (m WatchList_Model) View() tea.View {
 	}
 
 	switch m.state.view {
-	case WatchList_Menu:
+	case Library_Menu:
 		return m.ViewMenu()
-	case WatchList_Reload:
+	case Library_Reload:
 		return m.ViewReload()
-	case WatchList_Drop:
+	case Library_Drop:
 		return m.ViewDrop()
-	case WatchList_Delete:
+	case Library_Delete:
 		return m.ViewDeleting()
-	case WatchList_FileBinding:
+	case Library_FileBinding:
 		return m.ViewFileBinding()
-	case WatchList_Complete:
+	case Library_Complete:
 		return m.ViewCompleted()
 	default:
-		return tea.NewView("missing ManageWatchList view")
+		return tea.NewView("missing Library view")
 	}
 }
 
-func (m WatchList_Model) ShortHelp() []key.Binding {
+func (m Library_Model) ShortHelp() []key.Binding {
 	keys := []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down}
 
 	// List has its own keymap help
-	if m.state.view == WatchList_FileBinding {
+	if m.state.view == Library_FileBinding {
 		return nil
 	}
 
-	if m.state.view > WatchList_Menu {
+	if m.state.view > Library_Menu {
 		return []key.Binding{
 			ui.KeyMap.Up,
 			ui.KeyMap.Down,
@@ -209,9 +209,9 @@ func (m WatchList_Model) ShortHelp() []key.Binding {
 	return keys
 }
 
-func (m WatchList_Model) FullHelp() [][]key.Binding {
+func (m Library_Model) FullHelp() [][]key.Binding {
 	// Prevent conflicts with list component
-	if m.state.view == WatchList_FileBinding {
+	if m.state.view == Library_FileBinding {
 		return nil
 	}
 	return [][]key.Binding{
@@ -227,7 +227,7 @@ func (m WatchList_Model) FullHelp() [][]key.Binding {
 	}
 }
 
-func (m WatchList_Model) UpdateMenu(msg tea.Msg) (WatchList_Model, tea.Cmd) {
+func (m Library_Model) UpdateMenu(msg tea.Msg) (Library_Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -250,13 +250,13 @@ func (m WatchList_Model) UpdateMenu(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 	case ui.MenuIndexMsg:
 		switch msg {
 		case 0:
-			m.state.view = WatchList_Drop
+			m.state.view = Library_Drop
 		case 1:
-			m.state.view = WatchList_FileBinding
+			m.state.view = Library_FileBinding
 		case 2:
-			m.state.view = WatchList_Complete
+			m.state.view = Library_Complete
 		case 3:
-			m.state.view = WatchList_Delete
+			m.state.view = Library_Delete
 		}
 	}
 
@@ -267,13 +267,13 @@ func (m WatchList_Model) UpdateMenu(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m WatchList_Model) ViewMenu() tea.View {
+func (m Library_Model) ViewMenu() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplayTitle("Watch List"),
+		ui.DisplayTitle("Library"),
 		"",
 		ui.DisplayText([]string{
-			fmt.Sprintf(`There are ;g;%d ;x;anime in your watch list.`, len(m.state.anime)),
+			fmt.Sprintf(`There are ;g;%d ;x;anime in your local library.`, len(m.state.anime)),
 		}),
 		"",
 		m.ui.animeDisplay.View(m.state.anime[m.state.animeIndex]),
@@ -287,22 +287,22 @@ func (m WatchList_Model) ViewMenu() tea.View {
 	))
 }
 
-func (m WatchList_Model) UpdateReload(msg tea.Msg) (WatchList_Model, tea.Cmd) {
+func (m Library_Model) UpdateReload(msg tea.Msg) (Library_Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.ui.consent.Select() == ui.No {
-				m.state.view = WatchList_Menu
+				m.state.view = Library_Menu
 				return m, nil
 			}
-			m.ui.loader, cmd = m.ui.loader.Start("Reloading Watch List")
+			m.ui.loader, cmd = m.ui.loader.Start("Reloading Library")
 			return m, tea.Batch(cmd, m.reloadLibrary)
 		}
 
-	case WatchListReloadedMsg:
-		m.state = WatchList_State{}
+	case LibraryReloadedMsg:
+		m.state = Library_State{}
 		m.state.anime = msg
 		m.ui.loader.Stop()
 
@@ -311,10 +311,10 @@ func (m WatchList_Model) UpdateReload(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m WatchList_Model) ViewReload() tea.View {
+func (m Library_Model) ViewReload() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplaySubTitle("Watch List", "Reloading"),
+		ui.DisplaySubTitle("Library", "Reloading"),
 		"",
 		ui.DisplayText(
 			[]string{
@@ -322,7 +322,7 @@ func (m WatchList_Model) ViewReload() tea.View {
 information from ;dg;Kitsu;x;. This should only be necessary if ;dg;Kitsu;x; goes
 out of sync with ;db;Koshime;x;'s database.`,
 				`;dy;Getting ;y;out of sync ;dy;is only likely to happen if you
-manually update your Kitsu watch list from the website.`,
+manually update your Kitsu library from the website.`,
 			},
 			1,
 		),
@@ -332,22 +332,22 @@ manually update your Kitsu watch list from the website.`,
 	))
 }
 
-func (m WatchList_Model) UpdateDelete(msg tea.Msg) (WatchList_Model, tea.Cmd) {
+func (m Library_Model) UpdateDelete(msg tea.Msg) (Library_Model, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.ui.consent.Select() == ui.No {
-				m.state.view = WatchList_Menu
+				m.state.view = Library_Menu
 				return m, nil
 			}
 			m.ui.loader, cmd = m.ui.loader.Start("Deleting Entry")
 			return m, tea.Batch(cmd, m.deleteAnime)
 		}
 
-	case WatchListReloadedMsg:
-		m.state = WatchList_State{}
+	case LibraryReloadedMsg:
+		m.state = Library_State{}
 		m.state.anime = msg
 		m.ui.loader.Stop()
 	}
@@ -356,10 +356,10 @@ func (m WatchList_Model) UpdateDelete(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m WatchList_Model) ViewDeleting() tea.View {
+func (m Library_Model) ViewDeleting() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplaySubTitle("Watch List", "Deleting Entry"),
+		ui.DisplaySubTitle("Library", "Deleting Entry"),
 		"",
 		ui.DisplayText(
 			[]string{
@@ -376,7 +376,7 @@ the local database.`, m.state.anime[m.state.animeIndex].ENG_Title,
 	))
 }
 
-func (m WatchList_Model) UpdateDrop(msg tea.Msg) (WatchList_Model, tea.Cmd) {
+func (m Library_Model) UpdateDrop(msg tea.Msg) (Library_Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -384,15 +384,15 @@ func (m WatchList_Model) UpdateDrop(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.ui.consent.Select() == ui.No {
-				m.state.view = WatchList_Menu
+				m.state.view = Library_Menu
 				return m, nil
 			}
 			m.ui.loader, cmd = m.ui.loader.Start("Dropping Anime")
 			return m, tea.Batch(cmd, m.dropAnime)
 		}
 
-	case WatchListReloadedMsg:
-		m.state = WatchList_State{}
+	case LibraryReloadedMsg:
+		m.state = Library_State{}
 		m.state.anime = msg
 		m.ui.loader.Stop()
 	}
@@ -401,14 +401,14 @@ func (m WatchList_Model) UpdateDrop(msg tea.Msg) (WatchList_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m WatchList_Model) ViewDrop() tea.View {
+func (m Library_Model) ViewDrop() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplaySubTitle("Watch List", "Drop"),
+		ui.DisplaySubTitle("Library", "Drop"),
 		"",
 		ui.DisplayText([]string{
 			fmt.Sprintf(
-				`;dc;%s ;x;is about to be ;m;dropped ;x;from your watch list.`,
+				`;dc;%s ;x;is about to be ;m;dropped;x;.`,
 				m.state.anime[m.state.animeIndex].ENG_Title,
 			),
 			`This is not the same as deletion. Dropping an anime sets its status to
@@ -421,7 +421,7 @@ accurate.`,
 	))
 }
 
-func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cmd) {
+func (m Library_Model) UpdateFileBinding(msg tea.Msg) (Library_Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	if len(m.ui.list.VisibleItems()) == 0 {
@@ -493,7 +493,7 @@ func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cm
 				if m.ui.consent.Select() == ui.No {
 					m.ui.list = list.Model{}
 					m.state.bindingMode = SelectFile
-					m.state.view = WatchList_Menu
+					m.state.view = Library_Menu
 					return m, nil
 				}
 
@@ -503,7 +503,7 @@ func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cm
 				}
 				m.ui.list = list.Model{}
 				m.state.bindingMode = SelectFile
-				m.state.view = WatchList_Menu
+				m.state.view = Library_Menu
 				return m, nil
 			}
 		}
@@ -517,7 +517,7 @@ func (m WatchList_Model) UpdateFileBinding(msg tea.Msg) (WatchList_Model, tea.Cm
 	return m, cmd
 }
 
-func (m WatchList_Model) ViewFileBinding() tea.View {
+func (m Library_Model) ViewFileBinding() tea.View {
 	switch m.state.bindingMode {
 	case SelectFile:
 		return tea.NewView(lipgloss.JoinVertical(
@@ -552,7 +552,7 @@ func (m WatchList_Model) ViewFileBinding() tea.View {
 	return tea.NewView("missing FileBinding view")
 }
 
-func (m WatchList_Model) UpdateCompleted(msg tea.Msg) (WatchList_Model, tea.Cmd) {
+func (m Library_Model) UpdateCompleted(msg tea.Msg) (Library_Model, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -560,15 +560,15 @@ func (m WatchList_Model) UpdateCompleted(msg tea.Msg) (WatchList_Model, tea.Cmd)
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.ui.consent.Select() == ui.No {
-				m.state.view = WatchList_Menu
+				m.state.view = Library_Menu
 				return m, nil
 			}
 			m.ui.loader, cmd = m.ui.loader.Start("Completing Anime")
 			return m, tea.Batch(cmd, m.completeAnime)
 		}
 
-	case WatchListReloadedMsg:
-		m.state = WatchList_State{}
+	case LibraryReloadedMsg:
+		m.state = Library_State{}
 		m.state.anime = msg
 		m.ui.loader.Stop()
 	}
@@ -577,11 +577,11 @@ func (m WatchList_Model) UpdateCompleted(msg tea.Msg) (WatchList_Model, tea.Cmd)
 	return m, nil
 }
 
-func (m WatchList_Model) ViewCompleted() tea.View {
+func (m Library_Model) ViewCompleted() tea.View {
 	animeTitle := m.state.anime[m.state.animeIndex].ENG_Title
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
-		ui.DisplaySubTitle("Watch List", "Complete"),
+		ui.DisplaySubTitle("Library", "Complete"),
 		"",
 		ui.DisplayText([]string{
 			fmt.Sprintf(`;dc;%s ;x;is about to be ;b;completed;x;.`, animeTitle),
@@ -592,20 +592,20 @@ Updating the progress of an anime will auto-complete it on the last episode of a
 	))
 }
 
-func (m WatchList_Model) reloadLibrary() tea.Msg {
+func (m Library_Model) reloadLibrary() tea.Msg {
 	profile := m.db.Profile()
-	watchList, err := kitsu.GetUserAnime(profile.ID, kitsu.LibAnimeWatching)
+	anime, err := kitsu.GetUserAnime(profile.ID, kitsu.LibAnimeWatching)
 	if err != nil {
 		return err
 	}
-	err = m.db.LoadLibrary(watchList)
+	err = m.db.LoadLibrary(anime)
 	if err != nil {
 		return fmt.Errorf("failed to load data into database library: %w", err)
 	}
-	return watchList
+	return anime
 }
 
-func (m WatchList_Model) deleteAnime() tea.Msg {
+func (m Library_Model) deleteAnime() tea.Msg {
 	libID := m.state.anime[m.state.animeIndex].LibID
 	if err := app.DeleteAnime(m.db, libID); err != nil {
 		return err
@@ -613,7 +613,7 @@ func (m WatchList_Model) deleteAnime() tea.Msg {
 	return m.db.Anime()
 }
 
-func (m WatchList_Model) dropAnime() tea.Msg {
+func (m Library_Model) dropAnime() tea.Msg {
 	libID := m.state.anime[m.state.animeIndex].LibID
 	if err := app.DropAnime(m.db, libID); err != nil {
 		return err
@@ -621,7 +621,7 @@ func (m WatchList_Model) dropAnime() tea.Msg {
 	return m.db.Anime()
 }
 
-func (m WatchList_Model) completeAnime() tea.Msg {
+func (m Library_Model) completeAnime() tea.Msg {
 	libID := m.state.anime[m.state.animeIndex].LibID
 	if err := app.CompleteAnime(m.db, libID); err != nil {
 		return err
