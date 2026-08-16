@@ -47,11 +47,12 @@ func (ff FansubFilter) All(stream utils.FilenameIterator) ([]FansubFileInfo, err
 }
 
 // FilterByLibEntry returns a slice of anime data by how closely a file name
-// can be matched against an anime in the users library. A score of greater
-// than 50 is required to be considered a match.
+// can be matched against an anime in the users library.
 //
 // 🔵 Redundant episodic file names are ignored; file names will
 // match in ascending order: '04' matches before '06'
+//
+// 🟡 A lower threshold means more potential for false-positives
 func (ff FansubFilter) FilterByLibEntry(
 	stream utils.FilenameIterator,
 	animeList []kitsu.Anime,
