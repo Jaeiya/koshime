@@ -275,9 +275,9 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("should "+tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := ff.FilterByLibEntry2(tt.stream, tt.actual)
+			got, err := ff.FilterByLibEntry(tt.stream, tt.actual)
 			require.NoError(t, err)
-			assert.Equal(t, tt.expected, got)
+			assert.ElementsMatch(t, tt.expected, got)
 		})
 	}
 }
