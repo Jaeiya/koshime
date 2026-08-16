@@ -52,8 +52,9 @@ func (ff FansubFilter) FilterByLibEntry2(
 	animeList []kitsu.Anime,
 ) ([]FilteredAnime, error) {
 	fp := FansubParser{}
+	animeFoundStore := map[string]FilteredAnime{}
 	fileFoundStore := map[string]struct{}{}
-	filteredAnime := []FilteredAnime{}
+	var filteredAnime []FilteredAnime
 
 	for {
 		fileName, ok := stream.Next()
@@ -83,10 +84,20 @@ func (ff FansubFilter) FilterByLibEntry2(
 		}
 
 		if found.Score > 0 {
-			filteredAnime = append(filteredAnime, found)
+			if f, exists := animeFoundStore[found.Anime.ID]; exists {
+				if found.Score > f.Score {
+					animeFoundStore[found.Anime.ID] = found
+				}
+			} else {
+				animeFoundStore[found.Anime.ID] = found
+			}
 		}
 
 		fileFoundStore[fansub.Title] = struct{}{}
+	}
+
+	for _, foundAnime := range animeFoundStore {
+		filteredAnime = append(filteredAnime, foundAnime)
 	}
 
 	return filteredAnime, nil
