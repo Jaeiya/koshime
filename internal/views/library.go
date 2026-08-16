@@ -58,11 +58,13 @@ type Library_State struct {
 	animeIndex        int
 	selectedFileTitle string
 	selectedAnime     kitsu.Anime
+	filesNotFound     bool
 	bindingMode       BindingMode
 }
 
 func newLibraryModel(db *database.Database) Library_Model {
 	m := Library_Model{db: db}
+	m.ui.list = ui.NewList(ui.ListOptions{})
 	m.ui.loader = ui.NewLoader()
 	m.ui.animeDisplay = NewAnimeDisplayModel()
 	m.ui.menu = ui.NewMenuModel([]string{
@@ -103,6 +105,9 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			m.state.view = Library_Reload
 
 		case key.Matches(msg, ui.KeyMap.MainMenu):
+			if m.state.filesNotFound {
+				break
+			}
 			if m.ui.list.FilterState() > list.Unfiltered {
 				break
 			}
@@ -179,6 +184,10 @@ func (m Library_Model) View() tea.View {
 func (m Library_Model) ShortHelp() []key.Binding {
 	keys := []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down}
 
+	if m.state.filesNotFound {
+		return []key.Binding{ui.KeyMap.EscBack}
+	}
+
 	// List has its own keymap help
 	if m.state.view == Library_FileBinding {
 		return nil
@@ -229,6 +238,7 @@ func (m Library_Model) FullHelp() [][]key.Binding {
 
 func (m Library_Model) UpdateMenu(msg tea.Msg) (Library_Model, tea.Cmd) {
 	var cmd tea.Cmd
+	var cmds []tea.Cmd
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
@@ -253,6 +263,8 @@ func (m Library_Model) UpdateMenu(msg tea.Msg) (Library_Model, tea.Cmd) {
 			m.state.view = Library_Drop
 		case 1:
 			m.state.view = Library_FileBinding
+			m, cmd = m.UpdateFileBinding(nil)
+			cmds = append(cmds, cmd)
 		case 2:
 			m.state.view = Library_Complete
 		case 3:
@@ -264,7 +276,8 @@ func (m Library_Model) UpdateMenu(msg tea.Msg) (Library_Model, tea.Cmd) {
 		m.ui.animeDisplay.Update(msg)
 	}
 	m.ui.menu, cmd = m.ui.menu.Update(msg)
-	return m, cmd
+	cmds = append(cmds, cmd)
+	return m, tea.Batch(cmds...)
 }
 
 func (m Library_Model) ViewMenu() tea.View {
@@ -424,7 +437,7 @@ accurate.`,
 func (m Library_Model) UpdateFileBinding(msg tea.Msg) (Library_Model, tea.Cmd) {
 	var cmd tea.Cmd
 
-	if len(m.ui.list.VisibleItems()) == 0 {
+	if len(m.ui.list.VisibleItems()) == 0 && !m.state.filesNotFound {
 		var ff app.FansubFilter
 		fileStream, err := fileSys.NewFilenameStream(fileSys.GetWorkingDir())
 		if err != nil {
@@ -438,23 +451,34 @@ func (m Library_Model) UpdateFileBinding(msg tea.Msg) (Library_Model, tea.Cmd) {
 			return m, nil
 		}
 
-		listItems := make([]list.Item, len(fansubs))
-		for i, item := range fansubs {
-			listItems[i] = ui.NewListItem(item.Title, item.Filename, i)
-		}
+		if len(fansubs) > 0 {
+			listItems := make([]list.Item, len(fansubs))
+			for i, item := range fansubs {
+				listItems[i] = ui.NewListItem(item.Title, item.Filename, i)
+			}
 
-		m.ui.list = ui.NewList(ui.ListOptions{
-			Items:        listItems,
-			Width:        m.windowSize.Width - 5,
-			MaxHeight:    m.windowSize.Height,
-			ItemsPerPage: 5,
-			EnableFilter: true,
-		})
+			m.ui.list = ui.NewList(ui.ListOptions{
+				Items:        listItems,
+				Width:        m.windowSize.Width - 5,
+				MaxHeight:    m.windowSize.Height,
+				ItemsPerPage: 5,
+				EnableFilter: true,
+			})
+		} else {
+			m.state.filesNotFound = true
+		}
 	}
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
+		case key.Matches(msg, ui.KeyMap.EscBack):
+			if m.state.filesNotFound {
+				m.state.filesNotFound = false
+				m.state.view = Library_Menu
+				return m, nil
+			}
+
 		case key.Matches(msg, ui.KeyMap.Submit):
 			if m.ui.list.FilterState() == list.Filtering {
 				break
@@ -462,6 +486,9 @@ func (m Library_Model) UpdateFileBinding(msg tea.Msg) (Library_Model, tea.Cmd) {
 
 			switch m.state.bindingMode {
 			case SelectFile:
+				if m.state.filesNotFound {
+					return m, nil
+				}
 				//nolint:errcheck // will ALWAYS be a list
 				item := m.ui.list.SelectedItem().(ui.ListItem)
 				m.state.selectedFileTitle = item.Title()
@@ -520,6 +547,13 @@ func (m Library_Model) UpdateFileBinding(msg tea.Msg) (Library_Model, tea.Cmd) {
 func (m Library_Model) ViewFileBinding() tea.View {
 	switch m.state.bindingMode {
 	case SelectFile:
+		if m.state.filesNotFound {
+			return tea.NewView(lipgloss.JoinVertical(
+				lipgloss.Left,
+				ui.DisplayTitle("File Binding"),
+				ui.DisplayText([]string{";y;No files found for binding"}, 0, 1),
+			))
+		}
 		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplayTitle("File Binding"),
