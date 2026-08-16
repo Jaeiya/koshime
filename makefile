@@ -79,6 +79,9 @@ dev:
 release:
 	@goreleaser release --snapshot --clean
 
+test:
+	@gotestsum -f testdox --watch
+
 # Define variables and dummy target evaluations at top level
 RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 $(eval $(RUN_ARGS):;@:)
