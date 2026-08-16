@@ -275,7 +275,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("should "+tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := ff.FilterByLibEntry(tt.stream, tt.actual, 33)
+			got, err := ff.FilterByAnime(tt.stream, tt.actual, 33)
 			require.NoError(t, err)
 			assert.ElementsMatch(t, tt.expected, got)
 		})
