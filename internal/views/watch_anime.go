@@ -377,10 +377,16 @@ func (m WatchAnime_Model) displayProgress() string {
 		),
 	)
 
+	anime := m.state.selection.anime.Anime
+	title := anime.ENG_Title
+	if title == "" {
+		title = anime.JPN_Title
+	}
+
 	engTitle := ui.Style.MarginLeft(5).Render(lipgloss.JoinHorizontal(
 		lipgloss.Left,
 		utils.ColorText(";db;  Title: "),
-		ui.Style.Width(40).Render(m.state.selection.anime.Anime.ENG_Title),
+		ui.Style.Width(40).Render(title),
 	))
 
 	fileName := ui.Style.MarginLeft(5).Render(lipgloss.JoinHorizontal(
