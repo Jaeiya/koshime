@@ -170,7 +170,7 @@ func (m *Model) CreateMenu() {
 	m.menu = NewMenuModel([]MenuView{
 		{
 			Name:      "Watch",
-			ModelFunc: func() ViewModel { return newWatchAnimeModel(m.db) },
+			ModelFunc: func() ViewModel { return newWatchModel(m.db) },
 			Desc:      "Finds downloaded anime and coordinates with your watch list to execute the file.",
 		},
 		{
