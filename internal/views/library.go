@@ -14,6 +14,13 @@ import (
 	"github.com/Jaeiya/koshime/internal/utils"
 )
 
+const (
+	MenuDrop = ui.MenuIndexMsg(iota)
+	// MenuBind
+	MenuComplete
+	MenuDelete
+)
+
 type Library_View int
 
 const (
@@ -69,12 +76,12 @@ func newLibraryModel(db *database.Database) Library_Model {
 	m.ui.animeDisplay = NewAnimeDisplayModel()
 	m.ui.menu = ui.NewMenuModel([]string{
 		"Drop",
-		"Bind",
+		// "Bind",
 		"Complete",
 		"Delete",
 	}, ui.WithMenuRotation(), ui.WithMenuDescriptions([]string{
 		`Drops the selected anime above and removes it from local database.`,
-		`Binds a file name to a specific anime in your library.`,
+		// `Binds a file name to a specific anime in your library.`,
 		`Sets status of selected anime above, to completed.`,
 		`Deletes the selected anime above from Kitsu and local database.`,
 	}))
@@ -258,15 +265,15 @@ func (m Library_Model) UpdateMenu(msg tea.Msg) (Library_Model, tea.Cmd) {
 
 	case ui.MenuIndexMsg:
 		switch msg {
-		case 0:
+		case MenuDrop:
 			m.state.view = Library_Drop
-		case 1:
-			m.state.view = Library_FileBinding
-			m, cmd = m.UpdateFileBinding(nil)
-			cmds = append(cmds, cmd)
-		case 2:
+		// case MenuBind:
+		// 	m.state.view = Library_FileBinding
+		// 	m, cmd = m.UpdateFileBinding(nil)
+		// 	cmds = append(cmds, cmd)
+		case MenuComplete:
 			m.state.view = Library_Complete
-		case 3:
+		case MenuDelete:
 			m.state.view = Library_Delete
 		}
 	}
