@@ -300,7 +300,6 @@ func (m WatchDir_Model) ViewCleaned() tea.View {
 
 // FIX: Loading files on an empty directory probably has some caveats...
 func (m WatchDir_Model) loadFiles() tea.Msg {
-	var fileSys utils.FileSys
 	dirPath := fileSys.WatchDir()
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
