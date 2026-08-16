@@ -38,7 +38,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 		},
 		{
 			name:   "not match lowest threshold anime title match",
-			stream: fs.GenFilenameStream("[group] some title.mkv"),
+			stream: fs.GenFilenameStream("[group] some title little bit longer.mkv"),
 			actual: []kitsu.Anime{
 				{
 					JPN_Title: "title",
@@ -51,20 +51,20 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 			stream: fs.GenFilenameStream("[group] title.mkv"),
 			actual: []kitsu.Anime{
 				{
-					JPN_Title: "some title",
+					JPN_Title: "some title a little bit longer",
 				},
 			},
 			expected: nil,
 		},
 		{
 			name:   "do not match across title boundaries",
-			stream: fs.GenFilenameStream("[group] this is not a match.mkv"),
+			stream: fs.GenFilenameStream("[group] this can not ever be a match.mkv"),
 			actual: []kitsu.Anime{
 				{
-					JPN_Title: "this",
-					ENG_Title: "is not",
+					JPN_Title: "this can",
+					ENG_Title: "not ever",
 					AltTitles: []string{
-						"a", "match",
+						"be", "a", "match",
 					},
 				},
 			},
@@ -275,7 +275,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("should "+tt.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := ff.FilterByLibEntry(tt.stream, tt.actual)
+			got, err := ff.FilterByLibEntry(tt.stream, tt.actual, 33)
 			require.NoError(t, err)
 			assert.ElementsMatch(t, tt.expected, got)
 		})
@@ -353,7 +353,7 @@ func TestScore(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("should "+tt.desc, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.wantScore, ff.score(tt.title, tt.anime))
+			assert.Equal(t, tt.wantScore, ff.score(tt.title, tt.anime, 33))
 		})
 	}
 }
@@ -417,7 +417,7 @@ func TestFilterNamesByAnime(t *testing.T) {
 		t.Run("should "+tt.name, func(t *testing.T) {
 			t.Parallel()
 			ff := FansubFilter{}
-			got, err := ff.FilterFilenamesByAnime(tt.anime, tt.stream)
+			got, err := ff.FilterFilenamesByAnime(tt.anime, tt.stream, 33)
 			require.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

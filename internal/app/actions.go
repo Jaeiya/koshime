@@ -79,7 +79,7 @@ func DeleteFansub(anime kitsu.Anime) error {
 	if err != nil {
 		return fmt.Errorf("failed get file list for deletion: %w", err)
 	}
-	fileNames, err := ff.FilterFilenamesByAnime(anime, stream)
+	fileNames, err := ff.FilterFilenamesByAnime(anime, stream, 33)
 	if err != nil {
 		return fmt.Errorf("failed to filter files for deletion: %w", err)
 	}

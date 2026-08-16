@@ -55,6 +55,7 @@ func (ff FansubFilter) All(stream utils.FilenameIterator) ([]FansubFileInfo, err
 func (ff FansubFilter) FilterByLibEntry(
 	stream utils.FilenameIterator,
 	animeList []kitsu.Anime,
+	scoreThreshold int,
 ) ([]FilteredAnime, error) {
 	fp := FansubParser{}
 	animeFoundStore := map[string]FilteredAnime{}
@@ -80,7 +81,7 @@ func (ff FansubFilter) FilterByLibEntry(
 
 		found := FilteredAnime{}
 		for _, anime := range animeList {
-			s := ff.score(fansub.Title, anime)
+			s := ff.score(fansub.Title, anime, scoreThreshold)
 			if s > found.Score {
 				found.Anime = anime
 				found.FileInfo = fansub
@@ -111,6 +112,7 @@ func (ff FansubFilter) FilterByLibEntry(
 func (ff FansubFilter) FilterFilenamesByAnime(
 	anime kitsu.Anime,
 	stream utils.FilenameIterator,
+	scoreThreshold int,
 ) ([]string, error) {
 	fp := FansubParser{}
 	found := map[int][]string{}
@@ -131,7 +133,7 @@ func (ff FansubFilter) FilterFilenamesByAnime(
 			return nil, fmt.Errorf("failed to parse filename: %w", err)
 		}
 
-		s := ff.score(fansub.Title, anime)
+		s := ff.score(fansub.Title, anime, scoreThreshold)
 		if s > topScore {
 			topScore = s
 		}
@@ -179,7 +181,7 @@ func (ff FansubFilter) buildWordsFromTitles(anime kitsu.Anime) map[string]struct
 // 🔵 A match score <= 50 is considered a 0% match. This is
 // because a score of <= 50 cannot ever be guaranteed as a
 // reasonable match in this context.
-func (ff FansubFilter) score(title string, anime kitsu.Anime) int {
+func (ff FansubFilter) score(title string, anime kitsu.Anime, threshold int) int {
 	titleWords := strings.Fields(ff.normalizeTitle(title))
 	if len(titleWords) == 0 {
 		return 0
@@ -217,7 +219,7 @@ func (ff FansubFilter) score(title string, anime kitsu.Anime) int {
 	// A fuzzy search is not necessary if we found an
 	// acceptable score, because a substr word match
 	// is a more accurate match.
-	if score > 50 {
+	if score > threshold {
 		return score
 	}
 
@@ -247,7 +249,7 @@ func (ff FansubFilter) score(title string, anime kitsu.Anime) int {
 		}
 	}
 
-	if score > 50 {
+	if score > threshold {
 		return score
 	}
 	return 0
