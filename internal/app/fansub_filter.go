@@ -301,17 +301,20 @@ func (ff FansubFilter) score(title string, anime kitsu.Anime) int {
 			continue
 		}
 		foundWords := map[string]struct{}{}
-		matches := 0
+		matchCount := 0
 		for _, word := range titleWords {
 			if _, exists := foundWords[word]; exists {
 				continue
 			}
 			if _, exists := wordMap[word]; exists {
-				matches += 1
+				matchCount += 1
 				foundWords[word] = struct{}{}
 			}
 		}
-		s := matches * 100 / len(wordMap)
+		s := matchCount * 100 / len(wordMap)
+		if len(wordMap) < len(titleWords) {
+			s = matchCount * 100 / len(titleWords)
+		}
 		if s > score {
 			score = s
 		}
