@@ -112,7 +112,6 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 				break
 			}
 			return m, exitToMenu
-
 		}
 
 	case error:
