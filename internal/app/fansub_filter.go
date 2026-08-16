@@ -49,7 +49,7 @@ func (ff FansubFilter) All(stream utils.FilenameIterator) ([]FansubFileInfo, err
 
 func (ff FansubFilter) FilterByLibEntry2(
 	stream utils.FilenameIterator,
-	db *database.Database,
+	animeList []kitsu.Anime,
 ) ([]FilteredAnime, error) {
 	fp := FansubParser{}
 	fileFoundStore := map[string]struct{}{}
@@ -73,7 +73,7 @@ func (ff FansubFilter) FilterByLibEntry2(
 		}
 
 		found := FilteredAnime{}
-		for _, anime := range db.Anime() {
+		for _, anime := range animeList {
 			s := ff.score(fansub.Title, anime)
 			if s > found.Score {
 				found.Anime = anime
