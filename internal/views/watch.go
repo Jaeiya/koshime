@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -497,6 +498,18 @@ func (m Watch_Model) LoadAnime() tea.Msg {
 	if err != nil {
 		return fmt.Errorf("failed to filter fansubs: %w", err)
 	}
+
+	slices.SortFunc(items, func(a, b app.FilteredAnime) int {
+		aTitle := a.Anime.ENG_Title
+		if aTitle == "" {
+			aTitle = a.Anime.JPN_Title
+		}
+		bTitle := b.Anime.ENG_Title
+		if bTitle == "" {
+			bTitle = b.Anime.JPN_Title
+		}
+		return strings.Compare(aTitle, bTitle)
+	})
 
 	return WatchLoadedAnimeMsg{items}
 }
