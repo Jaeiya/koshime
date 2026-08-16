@@ -147,34 +147,6 @@ func (ff FansubFilter) FilterFilenamesByAnime(
 	return found[topScore], nil
 }
 
-func (ff FansubFilter) buildAnimeWordMap(entries []kitsu.Anime) AnimeTitleMap {
-	animeWordMap := make(map[string]map[string]struct{}, len(entries))
-	for _, entry := range entries {
-		animeWordMap[entry.ID] = ff.buildWordsFromTitles(entry)
-	}
-	return animeWordMap
-}
-
-func (ff FansubFilter) buildWordsFromTitles(anime kitsu.Anime) map[string]struct{} {
-	titleTokenMap := map[string]struct{}{}
-	var titles []string
-	if anime.JPN_Title != "" {
-		titles = append(titles, ff.normalizeTitle(anime.JPN_Title))
-	}
-	if anime.ENG_Title != "" {
-		titles = append(titles, ff.normalizeTitle(anime.ENG_Title))
-	}
-	for _, title := range anime.AltTitles {
-		titles = append(titles, ff.normalizeTitle(title))
-	}
-	for _, title := range titles {
-		for token := range strings.FieldsSeq(title) {
-			titleTokenMap[token] = struct{}{}
-		}
-	}
-	return titleTokenMap
-}
-
 // score determines a match percentage based on how well the
 // specified title matches any of the anime's titles.
 //
