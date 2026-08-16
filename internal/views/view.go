@@ -174,11 +174,6 @@ func (m *Model) CreateMenu() {
 			Desc:      "Finds downloaded anime and coordinates with your watch list to execute the file.",
 		},
 		{
-			Name:      "Library",
-			ModelFunc: func() ViewModel { return newLibraryModel(m.db) },
-			Desc:      "View & manage your local library.",
-		},
-		{
 			Name:      "Add",
 			ModelFunc: func() ViewModel { return newAddAnimeModel(m.db) },
 			Desc:      "Add an airing or completed anime to your watch list.",
@@ -187,6 +182,11 @@ func (m *Model) CreateMenu() {
 			Name:      "RSS Lookup",
 			ModelFunc: func() ViewModel { return newRssModel(m.db) },
 			Desc:      "Search for fansub feeds",
+		},
+		{
+			Name:      "Library",
+			ModelFunc: func() ViewModel { return newLibraryModel(m.db) },
+			Desc:      "View & manage your local library.",
 		},
 		{
 			Name:      "Find",
