@@ -68,7 +68,11 @@ type Watch_State struct {
 	view          Watch_View
 	err           error
 	filteredAnime []app.FilteredAnime
-	selection     struct {
+	lastSelected  struct {
+		title string
+		index int
+	}
+	selection struct {
 		anime     app.FilteredAnime
 		fileState WatchState
 	}
@@ -231,6 +235,8 @@ func (m Watch_Model) UpdateSelection(msg tea.Msg) (Watch_Model, tea.Cmd) {
 			if m.ui.list.FilterState() != list.Filtering {
 				//nolint:errcheck // will ALWAYS be a list
 				item := m.ui.list.SelectedItem().(ui.ListItem)
+				m.state.lastSelected.index = item.Index()
+				m.state.lastSelected.title = item.Title()
 				m.state.selection.anime = m.state.filteredAnime[item.Index()]
 				anime := m.state.selection.anime
 
@@ -297,9 +303,11 @@ func (m Watch_Model) UpdateProgress(msg tea.Msg) (Watch_Model, tea.Cmd) {
 			return m, nil
 
 		case key.Matches(msg, ui.KeyMap.Select):
-			// Reload watch list
+			// Continue & Reload watch list
 			if m.state.progress.isUpdated {
+				ls := m.state.lastSelected
 				m.state = Watch_State{}
+				m.state.lastSelected = ls
 				return m, func() tea.Msg { return "forceUpdateToReload" }
 			}
 
@@ -479,11 +487,25 @@ func (m *Watch_Model) PopulateAnimeList() {
 		ItemsPerPage:  5,
 		EnableFilter:  true,
 	})
+	if m.state.lastSelected.title != "" {
+		items := m.ui.list.VisibleItems()
+		if len(items) > 0 {
+			for _, item := range items {
+				listItem, _ := item.(ui.ListItem)
+				if listItem.Title() == m.state.lastSelected.title {
+					m.ui.list.Select(m.state.lastSelected.index)
+					break
+				}
+			}
+		}
+	}
 }
 
 func (m *Watch_Model) cancelProgress() {
 	anime := m.state.filteredAnime
+	ls := m.state.lastSelected
 	m.state = Watch_State{}
+	m.state.lastSelected = ls
 	m.state.filteredAnime = anime
 }
 
