@@ -53,6 +53,7 @@ type Library_Model struct {
 	}
 	keys struct {
 		reload key.Binding
+		search key.Binding
 	}
 	db    *database.Database
 	state Library_State
@@ -86,6 +87,7 @@ func newLibraryModel(db *database.Database) Library_Model {
 		`Deletes the selected anime above from Kitsu and local database.`,
 	}))
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
+	m.keys.search = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "search"))
 	m.state.anime = db.Anime()
 	return m
 }
@@ -235,10 +237,15 @@ func (m Library_Model) FullHelp() [][]key.Binding {
 			ui.KeyMap.Down,
 			ui.KeyMap.Prev,
 			ui.KeyMap.Next,
-			m.ui.animeDisplay.ShortHelp()[0],
 			ui.KeyMap.Select,
 		},
-		{m.keys.reload, ui.KeyMap.MainMenu, ui.KeyMap.HelpLess},
+		{
+			m.ui.animeDisplay.ShortHelp()[0],
+			m.keys.reload,
+			m.keys.search,
+			ui.KeyMap.MainMenu,
+			ui.KeyMap.HelpLess,
+		},
 	}
 }
 
