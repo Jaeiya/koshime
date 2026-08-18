@@ -222,7 +222,7 @@ func (m Library_Model) ShortHelp() []key.Binding {
 			keys = append(keys, ui.KeyMap.Next)
 		}
 	}
-	keys = append(keys, ui.KeyMap.HelpMore)
+	keys = append(keys, m.ui.animeDisplay.ShortHelp()[0], ui.KeyMap.HelpMore)
 	return keys
 }
 
