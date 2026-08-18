@@ -107,3 +107,23 @@ func RemoveFeed(port int, feedName string) error {
 	}
 	return nil
 }
+
+func FuzzyFindAnime(anime []kitsu.Anime, search string) (kitsu.Anime, bool) {
+	ff := FansubFilter{}
+	topAnime := kitsu.Anime{}
+	topScore := 0
+
+	for _, a := range anime {
+		s := ff.Score(search, a, 5)
+		if s > topScore {
+			topScore = s
+			topAnime = a
+		}
+	}
+
+	if topScore == 0 {
+		return topAnime, false
+	}
+
+	return topAnime, true
+}
