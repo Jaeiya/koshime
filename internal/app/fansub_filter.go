@@ -82,7 +82,7 @@ func (ff FansubFilter) FilterByAnime(
 
 		found := FilteredAnime{}
 		for _, anime := range animeList {
-			s := ff.score(fansub.Title, anime, scoreThreshold)
+			s := ff.Score(fansub.Title, anime, scoreThreshold)
 			if s > found.Score {
 				found.Anime = anime
 				found.FileInfo = fansub
@@ -134,7 +134,7 @@ func (ff FansubFilter) FilterFilenamesByAnime(
 			return nil, fmt.Errorf("failed to parse filename: %w", err)
 		}
 
-		s := ff.score(fansub.Title, anime, scoreThreshold)
+		s := ff.Score(fansub.Title, anime, scoreThreshold)
 		if s > topScore {
 			topScore = s
 		}
@@ -148,13 +148,13 @@ func (ff FansubFilter) FilterFilenamesByAnime(
 	return found[topScore], nil
 }
 
-// score determines a match percentage based on how well the
+// Score determines a match percentage based on how well the
 // specified title matches any of the anime's titles.
 //
-// 🔵 A match score <= threshold is considered a 0% match. This is
+// 🔵 A match Score <= threshold is considered a 0% match. This is
 // because that threshold will not be considered a valuable match
 // in this context.
-func (ff FansubFilter) score(title string, anime kitsu.Anime, threshold int) int {
+func (ff FansubFilter) Score(title string, anime kitsu.Anime, threshold int) int {
 	titleWords := strings.Fields(ff.normalizeTitle(title))
 	if len(titleWords) == 0 {
 		return 0

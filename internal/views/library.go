@@ -2,9 +2,11 @@ package views
 
 import (
 	"fmt"
+	"unicode/utf8"
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/list"
+	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/internal/app"
@@ -25,6 +27,7 @@ type Library_View int
 
 const (
 	LibraryMenu = Library_View(iota)
+	LibrarySearch
 	LibraryReload
 	LibraryDrop
 	LibraryFileBinding
@@ -40,7 +43,13 @@ const (
 	ConfirmSelection
 )
 
-type LibraryReloadedMsg = []kitsu.Anime
+type (
+	LibraryReloadedMsg    = []kitsu.Anime
+	LibraryAnimeSearchMsg struct {
+		Value kitsu.Anime
+		Found bool
+	}
+)
 
 type Library_Model struct {
 	windowSize tea.WindowSizeMsg
@@ -50,13 +59,15 @@ type Library_Model struct {
 		animeDisplay *AnimeDisplayModel
 		menu         ui.MenuModel
 		list         list.Model
+		input        textinput.Model
 	}
 	keys struct {
 		reload key.Binding
 		search key.Binding
 	}
-	db    *database.Database
-	state Library_State
+	db          *database.Database
+	state       Library_State
+	minInputLen int
 }
 
 type Library_State struct {
@@ -66,15 +77,20 @@ type Library_State struct {
 	animeIndex        int
 	selectedFileTitle string
 	selectedAnime     kitsu.Anime
-	filesNotFound     bool
-	bindingMode       BindingMode
+	searchAnimeResult struct {
+		Value kitsu.Anime
+		Found bool
+	}
+	filesNotFound bool
+	bindingMode   BindingMode
 }
 
 func newLibraryModel(db *database.Database) Library_Model {
-	m := Library_Model{db: db}
+	m := Library_Model{db: db, minInputLen: 4}
 	m.ui.list = ui.NewList(ui.ListOptions{})
 	m.ui.loader = ui.NewLoader()
 	m.ui.animeDisplay = NewAnimeDisplayModel()
+	m.ui.input = ui.NewTextInput()
 	m.ui.menu = ui.NewMenuModel([]string{
 		"Drop",
 		// "Bind",
@@ -106,6 +122,13 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 	case tea.KeyPressMsg:
 		switch {
+		case key.Matches(msg, m.keys.search):
+			if m.state.view > LibraryMenu {
+				break
+			}
+			m.state.view = LibrarySearch
+			return m, nil
+
 		case key.Matches(msg, m.keys.reload):
 			// Never execute reload in another view
 			if m.state.view > LibraryMenu {
@@ -114,7 +137,7 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			m.state.view = LibraryReload
 
 		case key.Matches(msg, ui.KeyMap.MainMenu):
-			if m.state.filesNotFound {
+			if m.state.filesNotFound || m.state.searchAnimeResult.Found {
 				break
 			}
 			if m.ui.list.FilterState() > list.Unfiltered {
@@ -137,6 +160,16 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m, cmd = m.UpdateMenu(msg)
 		cmds = append(cmds, cmd)
 
+	case LibrarySearch:
+		m, cmd = m.UpdateSearch(msg)
+		cmds = append(cmds, cmd)
+		if m.state.searchAnimeResult.Found {
+			m.ui.animeDisplay.Update(msg)
+		} else {
+			m.ui.input, cmd = m.ui.input.Update(msg)
+		}
+		cmds = append(cmds, cmd)
+
 	case LibraryReload:
 		m, cmd = m.UpdateReload(msg)
 		cmds = append(cmds, cmd)
@@ -156,7 +189,6 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	case LibraryComplete:
 		m, cmd = m.UpdateCompleted(msg)
 		cmds = append(cmds, cmd)
-
 	}
 
 	return m, tea.Batch(cmds...)
@@ -174,6 +206,8 @@ func (m Library_Model) View() tea.View {
 	switch m.state.view {
 	case LibraryMenu:
 		return m.ViewMenu()
+	case LibrarySearch:
+		return m.ViewSearch()
 	case LibraryReload:
 		return m.ViewReload()
 	case LibraryDrop:
@@ -201,7 +235,14 @@ func (m Library_Model) ShortHelp() []key.Binding {
 		return nil
 	}
 
-	if m.state.view > LibraryMenu {
+	if m.state.view == LibrarySearch {
+		if m.state.searchAnimeResult.Found {
+			return []key.Binding{m.ui.animeDisplay.ShortHelp()[0], ui.KeyMap.EscBack}
+		}
+		return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.EscBack}
+	}
+
+	if m.state.view > LibrarySearch {
 		return []key.Binding{
 			ui.KeyMap.Up,
 			ui.KeyMap.Down,
@@ -228,7 +269,7 @@ func (m Library_Model) ShortHelp() []key.Binding {
 
 func (m Library_Model) FullHelp() [][]key.Binding {
 	// Prevent conflicts with list component
-	if m.state.view == LibraryFileBinding {
+	if m.state.view == LibraryFileBinding || m.state.view == LibrarySearch {
 		return nil
 	}
 	return [][]key.Binding{
@@ -311,6 +352,62 @@ func (m Library_Model) ViewMenu() tea.View {
 		"",
 		m.ui.menu.View(),
 	))
+}
+
+func (m Library_Model) UpdateSearch(msg tea.Msg) (Library_Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.Submit):
+			if m.state.searchAnimeResult.Found {
+				break
+			}
+			if utf8.RuneCountInString(m.ui.input.Value()) >= m.minInputLen {
+				return m, m.searchLibrary(m.ui.input.Value())
+			}
+
+		case key.Matches(msg, ui.KeyMap.EscBack):
+			if m.state.searchAnimeResult.Found {
+				m.state.searchAnimeResult.Found = false
+				m.ui.input.Reset()
+				return m, nil
+			}
+
+		}
+	case LibraryAnimeSearchMsg:
+		m.state.searchAnimeResult = msg
+	}
+	return m, nil
+}
+
+func (m Library_Model) ViewSearch() tea.View {
+	v := tea.NewView("")
+	v.Cursor = m.ui.input.Cursor()
+	v.Cursor.Shape = tea.CursorBar
+	v.Content = lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("Library", "Search"),
+		ui.DisplayText([]string{
+			"Quick search your library for top result.",
+		}, 0, 1, 1),
+		ui.Style.Render(lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			m.ui.input.View(),
+			ui.DisplayCharLimit(m.minInputLen, m.ui.input.Value()),
+		)),
+	)
+	v.Cursor.Y = lipgloss.Height(v.Content) - 1
+
+	if m.state.searchAnimeResult.Found {
+		v.Content = lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplaySubTitle("Library", "Search Results"),
+			"",
+			m.ui.animeDisplay.View(m.state.searchAnimeResult.Value),
+		)
+		v.Cursor = nil
+	}
+	return v
 }
 
 func (m Library_Model) UpdateReload(msg tea.Msg) (Library_Model, tea.Cmd) {
@@ -637,6 +734,17 @@ Updating the progress of an anime will auto-complete it on the last episode of a
 		}, 1),
 		ui.TextStyle.Render(m.ui.consent.View(utils.ColorText(";b;Are you sure?"))),
 	))
+}
+
+func (m Library_Model) searchLibrary(search string) tea.Cmd {
+	anime := m.db.Anime()
+	return func() tea.Msg {
+		a, found := app.FuzzyFindAnime(anime, search)
+		return LibraryAnimeSearchMsg{
+			Value: a,
+			Found: found,
+		}
+	}
 }
 
 func (m Library_Model) reloadLibrary() tea.Msg {
