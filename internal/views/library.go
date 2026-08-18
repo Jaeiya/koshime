@@ -137,7 +137,10 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			m.state.view = LibraryReload
 
 		case key.Matches(msg, ui.KeyMap.MainMenu):
-			if m.state.filesNotFound || m.state.searchAnimeResult.Found {
+			if m.state.view == LibrarySearch && m.state.searchAnimeResult.Found {
+				break
+			}
+			if m.state.filesNotFound {
 				break
 			}
 			if m.ui.list.FilterState() > list.Unfiltered {
@@ -162,12 +165,6 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 	case LibrarySearch:
 		m, cmd = m.UpdateSearch(msg)
-		cmds = append(cmds, cmd)
-		if m.state.searchAnimeResult.Found {
-			m.ui.animeDisplay.Update(msg)
-		} else {
-			m.ui.input, cmd = m.ui.input.Update(msg)
-		}
 		cmds = append(cmds, cmd)
 
 	case LibraryReload:
@@ -237,7 +234,8 @@ func (m Library_Model) ShortHelp() []key.Binding {
 
 	if m.state.view == LibrarySearch {
 		if m.state.searchAnimeResult.Found {
-			return []key.Binding{m.ui.animeDisplay.ShortHelp()[0], ui.KeyMap.EscBack}
+			keys = append(keys, m.ui.animeDisplay.ShortHelp()[0], ui.KeyMap.EscBack)
+			return keys
 		}
 		return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.EscBack}
 	}
@@ -355,9 +353,18 @@ func (m Library_Model) ViewMenu() tea.View {
 }
 
 func (m Library_Model) UpdateSearch(msg tea.Msg) (Library_Model, tea.Cmd) {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
+		case key.Matches(msg, ui.KeyMap.Left), key.Matches(msg, ui.KeyMap.Right):
+			// Do not accidentally pass these key events to the UpdateMenu method
+			if m.state.searchAnimeResult.Found {
+				return m, nil
+			}
+
 		case key.Matches(msg, ui.KeyMap.Submit):
 			if m.state.searchAnimeResult.Found {
 				break
@@ -377,7 +384,17 @@ func (m Library_Model) UpdateSearch(msg tea.Msg) (Library_Model, tea.Cmd) {
 	case LibraryAnimeSearchMsg:
 		m.state.searchAnimeResult = msg
 	}
-	return m, nil
+
+	if m.state.searchAnimeResult.Found {
+		m.ui.animeDisplay.Update(msg)
+		m, cmd = m.UpdateMenu(msg)
+		cmds = append(cmds, cmd)
+	} else {
+		m.ui.input, cmd = m.ui.input.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m Library_Model) ViewSearch() tea.View {
@@ -404,6 +421,13 @@ func (m Library_Model) ViewSearch() tea.View {
 			ui.DisplaySubTitle("Library", "Search Results"),
 			"",
 			m.ui.animeDisplay.View(m.state.searchAnimeResult.Value),
+			ui.DisplayTitle("Manage"),
+			"",
+			ui.DisplayText([]string{
+				`Select an action to apply to the above entry.`,
+			}),
+			"",
+			m.ui.menu.View(),
 		)
 		v.Cursor = nil
 	}
@@ -447,7 +471,7 @@ out of sync with ;db;Koshime;x;'s database.`,
 				`;dy;Getting ;y;out of sync ;dy;is only likely to happen if you
 manually update your Kitsu library from the website.`,
 			},
-			1,
+			1, 0, 1,
 		),
 		ui.TextStyle.Render(
 			m.ui.consent.View(utils.ColorText(";b;Are you sure you want to reload?")),
@@ -480,6 +504,16 @@ func (m Library_Model) UpdateDelete(msg tea.Msg) (Library_Model, tea.Cmd) {
 }
 
 func (m Library_Model) ViewDeleting() tea.View {
+	anime := m.state.anime[m.state.animeIndex]
+	if m.state.searchAnimeResult.Found {
+		anime = m.state.searchAnimeResult.Value
+	}
+
+	title := anime.ENG_Title
+	if title == "" {
+		title = anime.JPN_Title
+	}
+
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Library", "Deleting Entry"),
@@ -488,10 +522,10 @@ func (m Library_Model) ViewDeleting() tea.View {
 			[]string{
 				fmt.Sprintf(
 					`;dc;%s ;x;will be deleted from your Kitsu library and
-the local database.`, m.state.anime[m.state.animeIndex].ENG_Title,
+the local database.`, title,
 				),
 				`;y;[this action cannot be undone]`,
-			}, 1,
+			}, 1, 0, 1,
 		),
 		ui.TextStyle.Render(
 			m.ui.consent.View(utils.ColorText(";b;Are you sure?")),
@@ -525,21 +559,28 @@ func (m Library_Model) UpdateDrop(msg tea.Msg) (Library_Model, tea.Cmd) {
 }
 
 func (m Library_Model) ViewDrop() tea.View {
+	anime := m.state.anime[m.state.animeIndex]
+	if m.state.searchAnimeResult.Found {
+		anime = m.state.searchAnimeResult.Value
+	}
+
+	title := anime.ENG_Title
+	if title == "" {
+		title = anime.JPN_Title
+	}
+
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Library", "Drop"),
 		"",
 		ui.DisplayText([]string{
-			fmt.Sprintf(
-				`;dc;%s ;x;is about to be ;m;dropped;x;.`,
-				m.state.anime[m.state.animeIndex].ENG_Title,
-			),
+			fmt.Sprintf(`;dc;%s ;x;is about to be ;m;dropped;x;.`, title),
 			`This is not the same as deletion. Dropping an anime sets its status to
 ;dm;dropped;x;, which stores it under the dropped tab in ;db;Kitsu;x;.`,
 			`Dropping an anime is often times better than deletion because it keeps
 track of the episodes you ;w;did;x; watch. This makes your watch time stats more
 accurate.`,
-		}, 1),
+		}, 1, 0, 1),
 		ui.TextStyle.Render(m.ui.consent.View(utils.ColorText(";b;Are you sure?"))),
 	))
 }
@@ -722,16 +763,25 @@ func (m Library_Model) UpdateCompleted(msg tea.Msg) (Library_Model, tea.Cmd) {
 }
 
 func (m Library_Model) ViewCompleted() tea.View {
-	animeTitle := m.state.anime[m.state.animeIndex].ENG_Title
+	anime := m.state.anime[m.state.animeIndex]
+	if m.state.searchAnimeResult.Found {
+		anime = m.state.searchAnimeResult.Value
+	}
+
+	title := anime.ENG_Title
+	if title == "" {
+		title = anime.JPN_Title
+	}
+
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Library", "Complete"),
 		"",
 		ui.DisplayText([]string{
-			fmt.Sprintf(`;dc;%s ;x;is about to be ;b;completed;x;.`, animeTitle),
+			fmt.Sprintf(`;dc;%s ;x;is about to be ;b;completed;x;.`, title),
 			`This should only be necessary if ;dg;Kitsu;x; messes up episode counts.
 Updating the progress of an anime will auto-complete it on the last episode of a season.`,
-		}, 1),
+		}, 1, 0, 1),
 		ui.TextStyle.Render(m.ui.consent.View(utils.ColorText(";b;Are you sure?"))),
 	))
 }
@@ -762,6 +812,9 @@ func (m Library_Model) reloadLibrary() tea.Msg {
 
 func (m Library_Model) deleteAnime() tea.Msg {
 	libID := m.state.anime[m.state.animeIndex].LibID
+	if m.state.searchAnimeResult.Found {
+		libID = m.state.searchAnimeResult.Value.LibID
+	}
 	if err := app.DeleteAnime(m.db, libID); err != nil {
 		return err
 	}
@@ -770,6 +823,9 @@ func (m Library_Model) deleteAnime() tea.Msg {
 
 func (m Library_Model) dropAnime() tea.Msg {
 	libID := m.state.anime[m.state.animeIndex].LibID
+	if m.state.searchAnimeResult.Found {
+		libID = m.state.searchAnimeResult.Value.LibID
+	}
 	if err := app.DropAnime(m.db, libID); err != nil {
 		return err
 	}
@@ -778,6 +834,9 @@ func (m Library_Model) dropAnime() tea.Msg {
 
 func (m Library_Model) completeAnime() tea.Msg {
 	libID := m.state.anime[m.state.animeIndex].LibID
+	if m.state.searchAnimeResult.Found {
+		libID = m.state.searchAnimeResult.Value.LibID
+	}
 	if err := app.CompleteAnime(m.db, libID); err != nil {
 		return err
 	}
