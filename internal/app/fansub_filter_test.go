@@ -353,7 +353,7 @@ func TestScore(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("should "+tt.desc, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.wantScore, ff.score(tt.title, tt.anime, 33))
+			assert.Equal(t, tt.wantScore, ff.Score(tt.title, tt.anime, 33))
 		})
 	}
 }
