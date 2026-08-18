@@ -24,12 +24,12 @@ const (
 type Library_View int
 
 const (
-	Library_Menu = Library_View(iota)
-	Library_Reload
-	Library_Drop
-	Library_FileBinding
-	Library_Complete
-	Library_Delete
+	LibraryMenu = Library_View(iota)
+	LibraryReload
+	LibraryDrop
+	LibraryFileBinding
+	LibraryComplete
+	LibraryDelete
 )
 
 type BindingMode int
@@ -106,10 +106,10 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keys.reload):
 			// Never execute reload in another view
-			if m.state.view > Library_Menu {
+			if m.state.view > LibraryMenu {
 				break
 			}
-			m.state.view = Library_Reload
+			m.state.view = LibraryReload
 
 		case key.Matches(msg, ui.KeyMap.MainMenu):
 			if m.state.filesNotFound {
@@ -131,27 +131,27 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	}
 
 	switch m.state.view {
-	case Library_Menu:
+	case LibraryMenu:
 		m, cmd = m.UpdateMenu(msg)
 		cmds = append(cmds, cmd)
 
-	case Library_Reload:
+	case LibraryReload:
 		m, cmd = m.UpdateReload(msg)
 		cmds = append(cmds, cmd)
 
-	case Library_Delete:
+	case LibraryDelete:
 		m, cmd = m.UpdateDelete(msg)
 		cmds = append(cmds, cmd)
 
-	case Library_Drop:
+	case LibraryDrop:
 		m, cmd = m.UpdateDrop(msg)
 		cmds = append(cmds, cmd)
 
-	case Library_FileBinding:
+	case LibraryFileBinding:
 		m, cmd = m.UpdateFileBinding(msg)
 		cmds = append(cmds, cmd)
 
-	case Library_Complete:
+	case LibraryComplete:
 		m, cmd = m.UpdateCompleted(msg)
 		cmds = append(cmds, cmd)
 
@@ -170,17 +170,17 @@ func (m Library_Model) View() tea.View {
 	}
 
 	switch m.state.view {
-	case Library_Menu:
+	case LibraryMenu:
 		return m.ViewMenu()
-	case Library_Reload:
+	case LibraryReload:
 		return m.ViewReload()
-	case Library_Drop:
+	case LibraryDrop:
 		return m.ViewDrop()
-	case Library_Delete:
+	case LibraryDelete:
 		return m.ViewDeleting()
-	case Library_FileBinding:
+	case LibraryFileBinding:
 		return m.ViewFileBinding()
-	case Library_Complete:
+	case LibraryComplete:
 		return m.ViewCompleted()
 	default:
 		return tea.NewView("missing Library view")
@@ -195,11 +195,11 @@ func (m Library_Model) ShortHelp() []key.Binding {
 	}
 
 	// List has its own keymap help
-	if m.state.view == Library_FileBinding {
+	if m.state.view == LibraryFileBinding {
 		return nil
 	}
 
-	if m.state.view > Library_Menu {
+	if m.state.view > LibraryMenu {
 		return []key.Binding{
 			ui.KeyMap.Up,
 			ui.KeyMap.Down,
@@ -226,7 +226,7 @@ func (m Library_Model) ShortHelp() []key.Binding {
 
 func (m Library_Model) FullHelp() [][]key.Binding {
 	// Prevent conflicts with list component
-	if m.state.view == Library_FileBinding {
+	if m.state.view == LibraryFileBinding {
 		return nil
 	}
 	return [][]key.Binding{
@@ -266,15 +266,15 @@ func (m Library_Model) UpdateMenu(msg tea.Msg) (Library_Model, tea.Cmd) {
 	case ui.MenuIndexMsg:
 		switch msg {
 		case MenuDrop:
-			m.state.view = Library_Drop
+			m.state.view = LibraryDrop
 		// case MenuBind:
 		// 	m.state.view = Library_FileBinding
 		// 	m, cmd = m.UpdateFileBinding(nil)
 		// 	cmds = append(cmds, cmd)
 		case MenuComplete:
-			m.state.view = Library_Complete
+			m.state.view = LibraryComplete
 		case MenuDelete:
-			m.state.view = Library_Delete
+			m.state.view = LibraryDelete
 		}
 	}
 
@@ -313,7 +313,7 @@ func (m Library_Model) UpdateReload(msg tea.Msg) (Library_Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.ui.consent.Select() == ui.No {
-				m.state.view = Library_Menu
+				m.state.view = LibraryMenu
 				return m, nil
 			}
 			m.ui.loader, cmd = m.ui.loader.Start("Reloading Library")
@@ -358,7 +358,7 @@ func (m Library_Model) UpdateDelete(msg tea.Msg) (Library_Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.ui.consent.Select() == ui.No {
-				m.state.view = Library_Menu
+				m.state.view = LibraryMenu
 				return m, nil
 			}
 			m.ui.loader, cmd = m.ui.loader.Start("Deleting Entry")
@@ -403,7 +403,7 @@ func (m Library_Model) UpdateDrop(msg tea.Msg) (Library_Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.ui.consent.Select() == ui.No {
-				m.state.view = Library_Menu
+				m.state.view = LibraryMenu
 				return m, nil
 			}
 			m.ui.loader, cmd = m.ui.loader.Start("Dropping Anime")
@@ -481,7 +481,7 @@ func (m Library_Model) UpdateFileBinding(msg tea.Msg) (Library_Model, tea.Cmd) {
 		case key.Matches(msg, ui.KeyMap.EscBack):
 			if m.state.filesNotFound {
 				m.state.filesNotFound = false
-				m.state.view = Library_Menu
+				m.state.view = LibraryMenu
 				return m, nil
 			}
 
@@ -526,7 +526,7 @@ func (m Library_Model) UpdateFileBinding(msg tea.Msg) (Library_Model, tea.Cmd) {
 				if m.ui.consent.Select() == ui.No {
 					m.ui.list = list.Model{}
 					m.state.bindingMode = SelectFile
-					m.state.view = Library_Menu
+					m.state.view = LibraryMenu
 					return m, nil
 				}
 
@@ -536,7 +536,7 @@ func (m Library_Model) UpdateFileBinding(msg tea.Msg) (Library_Model, tea.Cmd) {
 				}
 				m.ui.list = list.Model{}
 				m.state.bindingMode = SelectFile
-				m.state.view = Library_Menu
+				m.state.view = LibraryMenu
 				return m, nil
 			}
 		}
@@ -600,7 +600,7 @@ func (m Library_Model) UpdateCompleted(msg tea.Msg) (Library_Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.ui.consent.Select() == ui.No {
-				m.state.view = Library_Menu
+				m.state.view = LibraryMenu
 				return m, nil
 			}
 			m.ui.loader, cmd = m.ui.loader.Start("Completing Anime")
