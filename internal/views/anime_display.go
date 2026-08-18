@@ -37,14 +37,18 @@ var MaxSynopsisLen = func() int {
 
 type AnimeDisplayModel struct {
 	keys struct {
-		displayMode key.Binding
+		simple   key.Binding
+		extended key.Binding
+		all      key.Binding
 	}
 	displayMode DisplayMode
 }
 
 func NewAnimeDisplayModel() *AnimeDisplayModel {
 	m := &AnimeDisplayModel{}
-	m.keys.displayMode = key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "display mode"))
+	m.keys.simple = key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "view simple"))
+	m.keys.extended = key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "view extended"))
+	m.keys.all = key.NewBinding(key.WithKeys("d"), key.WithHelp("d", "view all"))
 	return m
 }
 
@@ -52,7 +56,7 @@ func (m *AnimeDisplayModel) Update(msg tea.Msg) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
-		case key.Matches(msg, m.keys.displayMode):
+		case key.Matches(msg, m.keys.simple):
 			switch m.displayMode {
 			case Simple:
 				m.displayMode = Extended
@@ -70,7 +74,16 @@ func (m AnimeDisplayModel) View(ai kitsu.Anime) string {
 }
 
 func (m AnimeDisplayModel) ShortHelp() []key.Binding {
-	return []key.Binding{m.keys.displayMode}
+	switch m.displayMode {
+	case Simple:
+		return []key.Binding{m.keys.extended}
+	case Extended:
+		return []key.Binding{m.keys.all}
+	case All:
+		return []key.Binding{m.keys.simple}
+	default:
+		return []key.Binding{}
+	}
 }
 
 func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) string {
