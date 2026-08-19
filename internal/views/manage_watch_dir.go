@@ -91,6 +91,7 @@ func (m WatchDir_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m.ui.loader.Stop()
 
 	case error:
+		m.ui.loader.Stop()
 		m.state.err = msg
 	}
 
@@ -298,7 +299,6 @@ func (m WatchDir_Model) ViewCleaned() tea.View {
 	))
 }
 
-// FIX: Loading files on an empty directory probably has some caveats...
 func (m WatchDir_Model) loadFiles() tea.Msg {
 	dirPath := fileSys.WatchDir()
 	entries, err := os.ReadDir(dirPath)
