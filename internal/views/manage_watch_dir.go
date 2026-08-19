@@ -48,12 +48,9 @@ type WatchDir_Model struct {
 }
 
 type WatchDir_State struct {
-	err        error
-	view       WatchDir_View
-	folderInfo WatchDir_Info
-	menu       struct {
-		index int
-	}
+	err          error
+	view         WatchDir_View
+	folderInfo   WatchDir_Info
 	cleanResults struct {
 		deleted int
 		size    int64
@@ -63,8 +60,8 @@ type WatchDir_State struct {
 func newWatchDirModel() WatchDir_Model {
 	m := WatchDir_Model{}
 	m.ui.menu = ui.NewMenuModel([]string{
-		"Clean All",
 		"Clean Recent",
+		"Clean All",
 	})
 	m.ui.loader = ui.NewLoader()
 	return m
@@ -163,26 +160,27 @@ func (m WatchDir_Model) UpdateMenu(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.MainMenu):
 			return m, exitToMenu
+		}
 
-		case key.Matches(msg, ui.KeyMap.Select):
-			// Nothing to clean
-			if m.state.folderInfo.size == 0 {
-				break
-			}
-
-			m.ui.loader, cmd = m.ui.loader.Start("Cleaning Files")
-			if m.state.menu.index == 0 {
-				m.state.view = WatchDir_CleanAll
-				return m, tea.Batch(cmd, m.cleanAll)
-			}
-
+	case ui.MenuIndexMsg:
+		if m.state.folderInfo.fileCount == 0 {
+			return m, nil
+		}
+		m.ui.loader, cmd = m.ui.loader.Start("Cleaning Files")
+		switch msg {
+		case 0:
 			m.state.view = WatchDir_CleanRecent
 			return m, tea.Batch(cmd, m.cleanRecentFiles)
+		case 1:
+			m.state.view = WatchDir_CleanAll
+			return m, tea.Batch(cmd, m.cleanAll)
 		}
 	}
 
-	m.ui.menu, cmd = m.ui.menu.Update(msg)
-	cmds = append(cmds, cmd)
+	if m.state.folderInfo.fileCount > 0 {
+		m.ui.menu, cmd = m.ui.menu.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 
 	return m, tea.Batch(cmds...)
 }
@@ -192,11 +190,6 @@ func (m WatchDir_Model) ViewMenu() tea.View {
 		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplayTitle("Watch Directory"),
-			"",
-			ui.DisplayPropValue(
-				[]string{`;dc;Location`},
-				[]string{fmt.Sprintf(";dy;%s", m.state.folderInfo.location)},
-			),
 			"",
 			ui.DisplayText([]string{
 				`;m;Watch directory is currently empty.`,
@@ -224,11 +217,11 @@ func (m WatchDir_Model) ViewMenu() tea.View {
 		),
 		"",
 		ui.DisplayText([]string{
-			`;dgu;Clean All;x; removes all files within the watch directory. This is
-typically a good idea after each season.`,
 			`;dgu;Clean Recent;x; removes all files except for the most recent, per
 series. If you've watched ;dy;5;x; different series, this will leave ;dy;5;x; files.`,
-		}, 1),
+			`;dgu;Clean All;x; removes all files within the watch directory. This is
+typically a good idea after each season.`,
+		}, 1, 0, 1),
 		m.ui.menu.View(),
 	))
 }
@@ -332,32 +325,32 @@ func (m WatchDir_Model) cleanRecentFiles() tea.Msg {
 		return fmt.Errorf("failed to read watch dir: %w", err)
 	}
 
-	type MappedInfo struct {
-		modTime int64
-		fansub  app.FansubFileInfo
-		size    int64
+	type FileInfo struct {
+		modTime  int64
+		fileName string
+		size     int64
 	}
 
-	infoMap := map[string][]MappedInfo{}
+	infoMap := map[string][]FileInfo{}
 	for _, name := range fileNames {
 		fp := app.FansubParser{}
-		info, err := fp.Parse(name)
+		fansub, err := fp.Parse(name)
 		if err != nil {
 			return fmt.Errorf("failed to parse fansub file: %w", err)
 		}
-		stats, err := os.Stat(filepath.Join(fileSys.WatchDir(), info.Filename))
+		stats, err := os.Stat(filepath.Join(fileSys.WatchDir(), name))
 		if err != nil {
 			return fmt.Errorf("failed to get file stats: %w", err)
 		}
-		infoMap[info.Title] = append(infoMap[info.Title], MappedInfo{
-			modTime: stats.ModTime().UnixMilli(),
-			fansub:  info,
-			size:    stats.Size(),
+		infoMap[fansub.Title] = append(infoMap[fansub.Title], FileInfo{
+			modTime:  stats.ModTime().UnixMilli(),
+			fileName: name,
+			size:     stats.Size(),
 		})
 	}
 
-	sortMostRecent := func(data []MappedInfo) []MappedInfo {
-		slices.SortFunc(data, func(a MappedInfo, b MappedInfo) int {
+	sortMostRecent := func(data []FileInfo) []FileInfo {
+		slices.SortFunc(data, func(a FileInfo, b FileInfo) int {
 			// Descending order
 			if a.modTime < b.modTime {
 				return 1
@@ -376,9 +369,8 @@ func (m WatchDir_Model) cleanRecentFiles() tea.Msg {
 		}
 
 		sortMostRecent(info)
-
 		for _, info := range info[1:] {
-			err := os.Remove(filepath.Join(fileSys.WatchDir(), info.fansub.Filename))
+			err := os.Remove(filepath.Join(fileSys.WatchDir(), info.fileName))
 			if err != nil {
 				return fmt.Errorf("failed to remove fansub: %w", err)
 			}
