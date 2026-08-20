@@ -137,16 +137,18 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			m.state.view = LibraryReload
 
 		case key.Matches(msg, ui.KeyMap.MainMenu):
+			if m.state.view == LibraryMenu {
+				return m, exitToMenu
+			}
 			if m.state.view == LibrarySearch && m.state.searchAnimeResult.Found {
 				break
 			}
-			if m.state.filesNotFound {
-				break
+			// If we were moved to another view via search view
+			if m.state.searchAnimeResult.Found {
+				m.state.view = LibrarySearch
+				return m, nil
 			}
-			if m.ui.list.FilterState() > list.Unfiltered {
-				break
-			}
-			return m, exitToMenu
+			m.state.view = LibraryMenu
 		}
 
 	case error:
@@ -379,8 +381,8 @@ func (m Library_Model) UpdateSearch(msg tea.Msg) (Library_Model, tea.Cmd) {
 				m.ui.input.Reset()
 				return m, nil
 			}
-
 		}
+
 	case LibraryAnimeSearchMsg:
 		m.state.searchAnimeResult = msg
 	}
