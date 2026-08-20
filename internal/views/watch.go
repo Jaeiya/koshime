@@ -522,15 +522,7 @@ func (m Watch_Model) LoadAnime() tea.Msg {
 	}
 
 	slices.SortFunc(items, func(a, b app.FilteredAnime) int {
-		aTitle := a.Anime.ENG_Title
-		if aTitle == "" {
-			aTitle = a.Anime.JPN_Title
-		}
-		bTitle := b.Anime.ENG_Title
-		if bTitle == "" {
-			bTitle = b.Anime.JPN_Title
-		}
-		return strings.Compare(aTitle, bTitle)
+		return app.CompareAnime(a.Anime, b.Anime)
 	})
 
 	return WatchLoadedAnimeMsg{items}

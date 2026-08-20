@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/kitsu"
@@ -126,4 +127,16 @@ func FuzzyFindAnime(anime []kitsu.Anime, search string) (kitsu.Anime, bool) {
 	}
 
 	return topAnime, true
+}
+
+func CompareAnime(animeA, animeB kitsu.Anime) int {
+	aTitle := animeA.ENG_Title
+	if aTitle == "" {
+		aTitle = animeA.JPN_Title
+	}
+	bTitle := animeB.ENG_Title
+	if bTitle == "" {
+		bTitle = animeB.JPN_Title
+	}
+	return strings.Compare(aTitle, bTitle)
 }
