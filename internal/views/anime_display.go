@@ -89,16 +89,16 @@ func (m AnimeDisplayModel) ShortHelp() []key.Binding {
 func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) string {
 	headers := []string{
 		utils.ColorText(";g;Title"),
-		utils.ColorText(";dc;English"),
+		utils.ColorText(";dc;Cannon"),
 	}
 
 	items := []string{
-		info.JPN_Title,
 		info.ENG_Title,
+		info.JPN_Title,
 	}
 
-	if items[1] == "" {
-		items[1] = utils.ColorText(";bk;None")
+	if items[0] == "" {
+		items[0] = info.JPN_Title
 	}
 
 	// Accept only utf8 titles
