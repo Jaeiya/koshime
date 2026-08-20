@@ -460,7 +460,6 @@ func (m Library_Model) UpdateReload(msg tea.Msg) (Library_Model, tea.Cmd) {
 		m.state = Library_State{}
 		m.state.anime = msg.Value
 		m.ui.loader.Stop()
-
 	}
 	m.ui.consent = m.ui.consent.Update(msg)
 	return m, nil
@@ -828,7 +827,7 @@ func (m Library_Model) reloadLibrary() tea.Msg {
 	if err != nil {
 		return fmt.Errorf("failed to reload library: %w", err)
 	}
-	slices.SortFunc(m.db.Anime(), app.CompareAnime)
+	slices.SortFunc(anime, app.CompareAnime)
 	return LibraryReloadedMsg{anime, 0}
 }
 
@@ -842,8 +841,9 @@ func (m Library_Model) deleteAnime() tea.Msg {
 	if err := app.DeleteAnime(m.db, libID); err != nil {
 		return err
 	}
-	slices.SortFunc(m.db.Anime(), app.CompareAnime)
-	return LibraryReloadedMsg{m.db.Anime(), index}
+	anime := m.db.Anime()
+	slices.SortFunc(anime, app.CompareAnime)
+	return LibraryReloadedMsg{anime, index}
 }
 
 func (m Library_Model) dropAnime() tea.Msg {
@@ -856,8 +856,9 @@ func (m Library_Model) dropAnime() tea.Msg {
 	if err := app.DropAnime(m.db, libID); err != nil {
 		return err
 	}
-	slices.SortFunc(m.db.Anime(), app.CompareAnime)
-	return LibraryReloadedMsg{m.db.Anime(), index}
+	anime := m.db.Anime()
+	slices.SortFunc(anime, app.CompareAnime)
+	return LibraryReloadedMsg{anime, index}
 }
 
 func (m Library_Model) completeAnime() tea.Msg {
@@ -870,6 +871,7 @@ func (m Library_Model) completeAnime() tea.Msg {
 	if err := app.CompleteAnime(m.db, libID); err != nil {
 		return err
 	}
-	slices.SortFunc(m.db.Anime(), app.CompareAnime)
-	return LibraryReloadedMsg{m.db.Anime(), index}
+	anime := m.db.Anime()
+	slices.SortFunc(anime, app.CompareAnime)
+	return LibraryReloadedMsg{anime, index}
 }
