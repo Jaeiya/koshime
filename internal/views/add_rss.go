@@ -257,8 +257,6 @@ func (m Rss_Model) UpdateSelection(msg tea.Msg) (Rss_Model, tea.Cmd) {
 			m.state.view = Rss_Search
 		case 1:
 			return m, m.testConn()
-			// m.state.view = Rss_QbtSearch
-			// m.ui.animeList = m.createAnimeList()
 		}
 	}
 
