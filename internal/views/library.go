@@ -822,7 +822,11 @@ func (m Library_Model) reloadLibrary() tea.Msg {
 	}
 	err = m.db.LoadLibrary(anime)
 	if err != nil {
-		return fmt.Errorf("failed to load data into database library: %w", err)
+		return fmt.Errorf("failed to reload library: %w", err)
+	}
+	err = app.UpdateFeeds(m.db)
+	if err != nil {
+		return fmt.Errorf("failed to reload library: %w", err)
 	}
 	slices.SortFunc(m.db.Anime(), app.CompareAnime)
 	return LibraryReloadedMsg{anime, 0}
