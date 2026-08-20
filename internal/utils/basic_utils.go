@@ -42,12 +42,6 @@ func AbsInt(i int) int {
 	return i
 }
 
-func CopySlice[T any](s []T) []T {
-	copiedSlice := make([]T, len(s))
-	copy(copiedSlice, s)
-	return copiedSlice
-}
-
 func CalcRating(r string) string {
 	if r == "" {
 		return ""

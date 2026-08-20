@@ -1,12 +1,12 @@
 package ui
 
 import (
+	"slices"
 	"strings"
 
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -104,7 +104,7 @@ func (m MenuModel) View() string {
 }
 
 func (m MenuModel) displayMenuItems(items []string, selectedIndex int) string {
-	items = utils.CopySlice(items)
+	items = slices.Clone(items)
 
 	if selectedIndex >= len(items) {
 		panic("menu index is beyond the item count")

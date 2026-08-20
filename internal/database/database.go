@@ -155,7 +155,7 @@ func (db Database) AnimeByIndex(libIndexes ...LibraryIndex) ([]kitsu.Anime, erro
 }
 
 func (db Database) Anime() []kitsu.Anime {
-	return utils.CopySlice(db.data.Library)
+	return slices.Clone(db.data.Library)
 }
 
 func (db Database) Profile() kitsu.Profile {
