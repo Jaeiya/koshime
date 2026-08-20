@@ -44,7 +44,10 @@ const (
 )
 
 type (
-	LibraryReloadedMsg    = []kitsu.Anime
+	LibraryReloadedMsg struct {
+		Value     []kitsu.Anime
+		LastIndex int
+	}
 	LibraryAnimeSearchMsg struct {
 		Value kitsu.Anime
 		Found bool
@@ -452,7 +455,7 @@ func (m Library_Model) UpdateReload(msg tea.Msg) (Library_Model, tea.Cmd) {
 
 	case LibraryReloadedMsg:
 		m.state = Library_State{}
-		m.state.anime = msg
+		m.state.anime = msg.Value
 		m.ui.loader.Stop()
 
 	}
@@ -497,7 +500,10 @@ func (m Library_Model) UpdateDelete(msg tea.Msg) (Library_Model, tea.Cmd) {
 
 	case LibraryReloadedMsg:
 		m.state = Library_State{}
-		m.state.anime = msg
+		m.state.anime = msg.Value
+		if msg.LastIndex > 0 {
+			m.state.animeIndex = msg.LastIndex - 1
+		}
 		m.ui.loader.Stop()
 	}
 
@@ -552,7 +558,10 @@ func (m Library_Model) UpdateDrop(msg tea.Msg) (Library_Model, tea.Cmd) {
 
 	case LibraryReloadedMsg:
 		m.state = Library_State{}
-		m.state.anime = msg
+		m.state.anime = msg.Value
+		if msg.LastIndex > 0 {
+			m.state.animeIndex = msg.LastIndex - 1
+		}
 		m.ui.loader.Stop()
 	}
 
@@ -756,7 +765,10 @@ func (m Library_Model) UpdateCompleted(msg tea.Msg) (Library_Model, tea.Cmd) {
 
 	case LibraryReloadedMsg:
 		m.state = Library_State{}
-		m.state.anime = msg
+		m.state.anime = msg.Value
+		if msg.LastIndex > 0 {
+			m.state.animeIndex = msg.LastIndex - 1
+		}
 		m.ui.loader.Stop()
 	}
 
@@ -809,38 +821,44 @@ func (m Library_Model) reloadLibrary() tea.Msg {
 	if err != nil {
 		return fmt.Errorf("failed to load data into database library: %w", err)
 	}
-	return anime
+	return LibraryReloadedMsg{anime, 0}
 }
 
 func (m Library_Model) deleteAnime() tea.Msg {
-	libID := m.state.anime[m.state.animeIndex].LibID
+	index := m.state.animeIndex
+	libID := m.state.anime[index].LibID
 	if m.state.searchAnimeResult.Found {
+		index = 0
 		libID = m.state.searchAnimeResult.Value.LibID
 	}
 	if err := app.DeleteAnime(m.db, libID); err != nil {
 		return err
 	}
-	return m.db.Anime()
+	return LibraryReloadedMsg{m.db.Anime(), index}
 }
 
 func (m Library_Model) dropAnime() tea.Msg {
-	libID := m.state.anime[m.state.animeIndex].LibID
+	index := m.state.animeIndex
+	libID := m.state.anime[index].LibID
 	if m.state.searchAnimeResult.Found {
+		index = 0
 		libID = m.state.searchAnimeResult.Value.LibID
 	}
 	if err := app.DropAnime(m.db, libID); err != nil {
 		return err
 	}
-	return m.db.Anime()
+	return LibraryReloadedMsg{m.db.Anime(), index}
 }
 
 func (m Library_Model) completeAnime() tea.Msg {
-	libID := m.state.anime[m.state.animeIndex].LibID
+	index := m.state.animeIndex
+	libID := m.state.anime[index].LibID
 	if m.state.searchAnimeResult.Found {
+		index = 0
 		libID = m.state.searchAnimeResult.Value.LibID
 	}
 	if err := app.CompleteAnime(m.db, libID); err != nil {
 		return err
 	}
-	return m.db.Anime()
+	return LibraryReloadedMsg{m.db.Anime(), index}
 }
