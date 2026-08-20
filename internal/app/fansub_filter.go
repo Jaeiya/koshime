@@ -155,7 +155,8 @@ func (ff FansubFilter) FilterFilenamesByAnime(
 // because that threshold will not be considered a valuable match
 // in this context.
 func (ff FansubFilter) Score(title string, anime kitsu.Anime, threshold int) int {
-	titleWords := strings.Fields(ff.normalizeTitle(title))
+	title = ff.normalizeTitle(title)
+	titleWords := strings.Fields(title)
 	if len(titleWords) == 0 {
 		return 0
 	}
@@ -225,6 +226,26 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime, threshold int) int
 	if score > threshold {
 		return score
 	}
+
+	// ========== LAST DITCH EFFORT ==========
+	// This attempts to capture titles/file names that abuse titles
+	// =======================================
+	smashedTitle := strings.Join(titleWords, "")
+	if ff.normalizeTitle(anime.JPN_Title) == smashedTitle ||
+		ff.normalizeTitle(anime.ENG_Title) == smashedTitle {
+		return threshold
+	}
+	for _, alt := range anime.AltTitles {
+		if ff.normalizeTitle(alt) == smashedTitle {
+			return threshold
+		}
+	}
+	for _, slice := range wordSlices {
+		if strings.Join(slice, "") == title {
+			return threshold
+		}
+	}
+
 	return 0
 }
 

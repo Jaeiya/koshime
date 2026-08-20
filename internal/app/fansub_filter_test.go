@@ -348,6 +348,18 @@ func TestScore(t *testing.T) {
 			anime:     kitsu.Anime{ENG_Title: "My Hero Academia"},
 			wantScore: 60,
 		},
+		{
+			desc:      "match score threshold with abused anime title",
+			title:     "Kokaku no Ou",
+			anime:     kitsu.Anime{JPN_Title: "Kokakunoou"},
+			wantScore: 33,
+		},
+		{
+			desc:      "match score threshold with abused file name",
+			title:     "Kokakunoou",
+			anime:     kitsu.Anime{JPN_Title: "Kokaku no Ou"},
+			wantScore: 33,
+		},
 	}
 
 	for _, tt := range tests {
