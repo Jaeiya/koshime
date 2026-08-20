@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"slices"
 	"unicode/utf8"
 
 	"charm.land/bubbles/v2/key"
@@ -107,7 +108,9 @@ func newLibraryModel(db *database.Database) Library_Model {
 	}))
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
 	m.keys.search = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "search"))
-	m.state.anime = db.Anime()
+	anime := db.Anime()
+	slices.SortFunc(anime, app.CompareAnime)
+	m.state.anime = anime
 	return m
 }
 
@@ -821,6 +824,7 @@ func (m Library_Model) reloadLibrary() tea.Msg {
 	if err != nil {
 		return fmt.Errorf("failed to load data into database library: %w", err)
 	}
+	slices.SortFunc(m.db.Anime(), app.CompareAnime)
 	return LibraryReloadedMsg{anime, 0}
 }
 
@@ -834,6 +838,7 @@ func (m Library_Model) deleteAnime() tea.Msg {
 	if err := app.DeleteAnime(m.db, libID); err != nil {
 		return err
 	}
+	slices.SortFunc(m.db.Anime(), app.CompareAnime)
 	return LibraryReloadedMsg{m.db.Anime(), index}
 }
 
@@ -847,6 +852,7 @@ func (m Library_Model) dropAnime() tea.Msg {
 	if err := app.DropAnime(m.db, libID); err != nil {
 		return err
 	}
+	slices.SortFunc(m.db.Anime(), app.CompareAnime)
 	return LibraryReloadedMsg{m.db.Anime(), index}
 }
 
@@ -860,5 +866,6 @@ func (m Library_Model) completeAnime() tea.Msg {
 	if err := app.CompleteAnime(m.db, libID); err != nil {
 		return err
 	}
+	slices.SortFunc(m.db.Anime(), app.CompareAnime)
 	return LibraryReloadedMsg{m.db.Anime(), index}
 }
