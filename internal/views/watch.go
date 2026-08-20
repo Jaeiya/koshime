@@ -516,7 +516,7 @@ func (m Watch_Model) LoadAnime() tea.Msg {
 	}
 
 	ff := app.FansubFilter{}
-	items, err := ff.FilterByAnime(stream, m.db.Anime(), 33)
+	items, err := ff.FilterByAnime(stream, m.db.Anime(), 25)
 	if err != nil {
 		return fmt.Errorf("failed to filter fansubs: %w", err)
 	}
