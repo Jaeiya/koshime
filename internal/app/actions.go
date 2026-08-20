@@ -129,6 +129,46 @@ func FuzzyFindAnime(anime []kitsu.Anime, search string) (kitsu.Anime, bool) {
 	return topAnime, true
 }
 
+func UpdateFeeds(db *database.Database) error {
+	if db.Profile().QbtPort == 0 {
+		return nil
+	}
+
+	qb, err := qbittorrent.NewLogin(strconv.Itoa(db.Profile().QbtPort))
+	if err != nil {
+		return fmt.Errorf("failed to update anime feed: %w", err)
+	}
+
+	feeds, err := qb.Feeds()
+	if err != nil {
+		return fmt.Errorf("failed to update anime feed: %w", err)
+	}
+
+	for _, a := range db.Anime() {
+		for _, feed := range feeds {
+			// All feeds added by Koshime have a paren
+			if !strings.Contains(feed.Name, "(") {
+				continue
+			}
+			titles := strings.Split(feed.Name, "(")
+			titles[0] = strings.TrimSpace(titles[0])
+			titles[1] = strings.TrimSpace(titles[1])
+			if strings.EqualFold(titles[0], a.ENG_Title) ||
+				strings.EqualFold(titles[1][:len(titles[1])-1], a.JPN_Title) {
+				a.QbtFeed.Name = feed.Name
+				a.QbtFeed.RuleURI = feed.URL
+				err := db.UpdateAnime(a)
+				if err != nil {
+					return fmt.Errorf("failed to update anime feed: %w", err)
+				}
+				break
+			}
+		}
+	}
+
+	return nil
+}
+
 func CompareAnime(animeA, animeB kitsu.Anime) int {
 	aTitle := animeA.ENG_Title
 	if aTitle == "" {
