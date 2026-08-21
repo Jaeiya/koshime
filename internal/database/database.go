@@ -26,8 +26,6 @@ type LibraryIndex int
 type Data struct {
 	Profile kitsu.Profile
 	Library []kitsu.Anime
-	// Binds an anime fansub title to its library ID
-	FileBindings map[string]string
 }
 
 type Database struct {
@@ -225,21 +223,6 @@ func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) err
 	*/
 	db.data.Profile.TokenExpirationSec = int64(expiresIn) + time.Now().Unix()
 	return db.SaveProfile(db.data.Profile)
-}
-
-func (db *Database) AddFileBinding(title, libraryID string) error {
-	if db.data.FileBindings == nil {
-		db.data.FileBindings = map[string]string{}
-	}
-	db.data.FileBindings[title] = libraryID
-	return db.Save()
-}
-
-func (db *Database) FindFileBinding(title string) (string, bool) {
-	if val, ok := db.data.FileBindings[title]; ok {
-		return val, ok
-	}
-	return "", false
 }
 
 func (db Database) Save() error {

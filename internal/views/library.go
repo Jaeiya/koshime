@@ -19,7 +19,6 @@ import (
 
 const (
 	MenuDrop = ui.MenuIndexMsg(iota)
-	// MenuBind
 	MenuComplete
 	MenuDelete
 )
@@ -31,17 +30,8 @@ const (
 	LibrarySearch
 	LibraryReload
 	LibraryDrop
-	LibraryFileBinding
 	LibraryComplete
 	LibraryDelete
-)
-
-type BindingMode int
-
-const (
-	SelectFile = BindingMode(iota)
-	SelectAnime
-	ConfirmSelection
 )
 
 type (
@@ -79,14 +69,11 @@ type Library_State struct {
 	view              Library_View
 	anime             []kitsu.Anime
 	animeIndex        int
-	selectedFileTitle string
-	selectedAnime     kitsu.Anime
 	searchAnimeResult struct {
 		Value kitsu.Anime
 		Found bool
 	}
 	filesNotFound bool
-	bindingMode   BindingMode
 }
 
 func newLibraryModel(db *database.Database) Library_Model {
@@ -97,12 +84,10 @@ func newLibraryModel(db *database.Database) Library_Model {
 	m.ui.input = ui.NewTextInput()
 	m.ui.menu = ui.NewMenuModel([]string{
 		"Drop",
-		// "Bind",
 		"Complete",
 		"Delete",
 	}, ui.WithMenuRotation(), ui.WithMenuDescriptions([]string{
 		`Drops the selected anime above and removes it from local database.`,
-		// `Binds a file name to a specific anime in your library.`,
 		`Sets status of selected anime above, to completed.`,
 		`Deletes the selected anime above from Kitsu and local database.`,
 	}))
@@ -187,10 +172,6 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m, cmd = m.UpdateDrop(msg)
 		cmds = append(cmds, cmd)
 
-	case LibraryFileBinding:
-		m, cmd = m.UpdateFileBinding(msg)
-		cmds = append(cmds, cmd)
-
 	case LibraryComplete:
 		m, cmd = m.UpdateCompleted(msg)
 		cmds = append(cmds, cmd)
@@ -219,8 +200,6 @@ func (m Library_Model) View() tea.View {
 		return m.ViewDrop()
 	case LibraryDelete:
 		return m.ViewDeleting()
-	case LibraryFileBinding:
-		return m.ViewFileBinding()
 	case LibraryComplete:
 		return m.ViewCompleted()
 	default:
@@ -233,11 +212,6 @@ func (m Library_Model) ShortHelp() []key.Binding {
 
 	if m.state.filesNotFound {
 		return []key.Binding{ui.KeyMap.EscBack}
-	}
-
-	// List has its own keymap help
-	if m.state.view == LibraryFileBinding {
-		return nil
 	}
 
 	if m.state.view == LibrarySearch {
@@ -275,7 +249,7 @@ func (m Library_Model) ShortHelp() []key.Binding {
 
 func (m Library_Model) FullHelp() [][]key.Binding {
 	// Prevent conflicts with list component
-	if m.state.view == LibraryFileBinding || m.state.view == LibrarySearch {
+	if m.state.view == LibrarySearch {
 		return nil
 	}
 	return [][]key.Binding{
@@ -321,10 +295,6 @@ func (m Library_Model) UpdateMenu(msg tea.Msg) (Library_Model, tea.Cmd) {
 		switch msg {
 		case MenuDrop:
 			m.state.view = LibraryDrop
-		// case MenuBind:
-		// 	m.state.view = Library_FileBinding
-		// 	m, cmd = m.UpdateFileBinding(nil)
-		// 	cmds = append(cmds, cmd)
 		case MenuComplete:
 			m.state.view = LibraryComplete
 		case MenuDelete:
@@ -596,158 +566,6 @@ accurate.`,
 		}, 1, 0, 1),
 		ui.TextStyle.Render(m.ui.consent.View(utils.ColorText(";b;Are you sure?"))),
 	))
-}
-
-func (m Library_Model) UpdateFileBinding(msg tea.Msg) (Library_Model, tea.Cmd) {
-	var cmd tea.Cmd
-
-	if len(m.ui.list.VisibleItems()) == 0 && !m.state.filesNotFound {
-		var ff app.FansubFilter
-		fileStream, err := fileSys.NewFilenameStream(fileSys.GetWorkingDir())
-		if err != nil {
-			m.state.err = err
-			return m, nil
-		}
-
-		fansubs, err := ff.All(fileStream)
-		if err != nil {
-			m.state.err = err
-			return m, nil
-		}
-
-		if len(fansubs) > 0 {
-			listItems := make([]list.Item, len(fansubs))
-			for i, item := range fansubs {
-				listItems[i] = ui.NewListItem(item.Title, item.Filename, i)
-			}
-
-			m.ui.list = ui.NewList(ui.ListOptions{
-				Items:        listItems,
-				Width:        m.windowSize.Width - 5,
-				MaxHeight:    m.windowSize.Height,
-				ItemsPerPage: 5,
-				EnableFilter: true,
-			})
-		} else {
-			m.state.filesNotFound = true
-		}
-	}
-
-	switch msg := msg.(type) {
-	case tea.KeyPressMsg:
-		switch {
-		case key.Matches(msg, ui.KeyMap.EscBack):
-			if m.state.filesNotFound {
-				m.state.filesNotFound = false
-				m.state.view = LibraryMenu
-				return m, nil
-			}
-
-		case key.Matches(msg, ui.KeyMap.Submit):
-			if m.ui.list.FilterState() == list.Filtering {
-				break
-			}
-
-			switch m.state.bindingMode {
-			case SelectFile:
-				if m.state.filesNotFound {
-					return m, nil
-				}
-				//nolint:errcheck // will ALWAYS be a list
-				item := m.ui.list.SelectedItem().(ui.ListItem)
-				m.state.selectedFileTitle = item.Title()
-				listItems := make([]list.Item, len(m.state.anime))
-				for i, item := range m.state.anime {
-					if item.ENG_Title == "" {
-						item.ENG_Title = item.JPN_Title
-						item.JPN_Title = ""
-					}
-					listItems[i] = ui.NewListItem(item.ENG_Title, item.JPN_Title, i)
-				}
-
-				m.ui.list = ui.NewList(ui.ListOptions{
-					Items:        listItems,
-					Width:        m.windowSize.Width - 5,
-					MaxHeight:    m.windowSize.Height,
-					ItemsPerPage: 5,
-					EnableFilter: true,
-				})
-				m.state.bindingMode = SelectAnime
-
-			case SelectAnime:
-				//nolint:errcheck // will ALWAYS be a list
-				item := m.ui.list.SelectedItem().(ui.ListItem)
-				m.state.selectedAnime = m.state.anime[item.Index()]
-				m.state.bindingMode = ConfirmSelection
-
-			case ConfirmSelection:
-				if m.ui.consent.Select() == ui.No {
-					m.ui.list = list.Model{}
-					m.state.bindingMode = SelectFile
-					m.state.view = LibraryMenu
-					return m, nil
-				}
-
-				err := m.db.AddFileBinding(m.state.selectedFileTitle, m.state.selectedAnime.LibID)
-				if err != nil {
-					return m, func() tea.Msg { return DefaultErrorMsg{err} }
-				}
-				m.ui.list = list.Model{}
-				m.state.bindingMode = SelectFile
-				m.state.view = LibraryMenu
-				return m, nil
-			}
-		}
-	}
-
-	if m.state.bindingMode == ConfirmSelection {
-		m.ui.consent = m.ui.consent.Update(msg)
-	}
-
-	m.ui.list, cmd = m.ui.list.Update(msg)
-	return m, cmd
-}
-
-func (m Library_Model) ViewFileBinding() tea.View {
-	switch m.state.bindingMode {
-	case SelectFile:
-		if m.state.filesNotFound {
-			return tea.NewView(lipgloss.JoinVertical(
-				lipgloss.Left,
-				ui.DisplayTitle("File Binding"),
-				ui.DisplayText([]string{";y;No files found for binding"}, 0, 1),
-			))
-		}
-		return tea.NewView(lipgloss.JoinVertical(
-			lipgloss.Left,
-			ui.DisplayTitle("File Binding"),
-			ui.DisplayText([]string{";m;Select a file you want to bind"}, 0, 1),
-			m.ui.list.View(),
-		))
-
-	case SelectAnime:
-		return tea.NewView(lipgloss.JoinVertical(
-			lipgloss.Left,
-			ui.DisplayTitle("File Binding"),
-			ui.DisplayText([]string{";m;Select the anime you'd like to bind"}, 0, 1),
-			m.ui.list.View(),
-		))
-
-	case ConfirmSelection:
-		return tea.NewView(lipgloss.JoinVertical(
-			lipgloss.Left,
-			ui.DisplayTitle("File Binding"),
-			ui.DisplayText([]string{
-				"Selected File: ;y;" + m.state.selectedFileTitle,
-				"   Binding To: ;g;" + m.state.selectedAnime.JPN_Title + ";x;",
-			}, 0, 1, 1),
-			ui.TextStyle.Render(
-				m.ui.consent.View(utils.ColorText(";b;Is the above correct?")),
-			),
-		))
-	}
-
-	return tea.NewView("missing FileBinding view")
 }
 
 func (m Library_Model) UpdateCompleted(msg tea.Msg) (Library_Model, tea.Cmd) {
