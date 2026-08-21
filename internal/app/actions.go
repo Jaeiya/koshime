@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -13,6 +14,8 @@ import (
 	"github.com/Jaeiya/koshime/internal/utils"
 )
 
+var ErrDropAnimeFailed = errors.New("failed to drop anime")
+
 // DropAnime sets the status of an anime to 'dropped', deletes the
 // anime from the local database, and attempts to remove an
 // assigned qBittorrent feed.
@@ -20,16 +23,16 @@ func DropAnime(db *database.Database, libID string) error {
 	p := db.Profile()
 	anime, ok := db.FindAnimeByLibId(libID)
 	if !ok {
-		return fmt.Errorf("failed to find anime to drop")
+		return fmt.Errorf("failed to find anime to drop: %w", ErrDropAnimeFailed)
 	}
 	if err := RemoveFeed(p.QbtPort, anime.QbtFeed.Name); err != nil {
-		return fmt.Errorf("failed to delete dropped anime feed: %w", err)
+		return fmt.Errorf("failed to remove dropped anime feed: %w", err)
 	}
 	if err := kitsu.DropAnime(libID, p.AccessToken); err != nil {
-		return err
+		return ErrDropAnimeFailed
 	}
 	if err := db.DeleteAnimeById(libID); err != nil {
-		return fmt.Errorf("failed to delete dropped anime: %w", err)
+		return fmt.Errorf("failed to delete anime while dropping: %w", err)
 	}
 	return nil
 }
@@ -136,12 +139,12 @@ func UpdateFeeds(db *database.Database) error {
 
 	qb, err := qbittorrent.NewLogin(strconv.Itoa(db.Profile().QbtPort))
 	if err != nil {
-		return fmt.Errorf("failed to update anime feed: %w", err)
+		return fmt.Errorf("failed to login to update feeds: %w", err)
 	}
 
 	feeds, err := qb.Feeds()
 	if err != nil {
-		return fmt.Errorf("failed to update anime feed: %w", err)
+		return fmt.Errorf("failed to load feeds to update: %w", err)
 	}
 
 	for _, a := range db.Anime() {
@@ -159,7 +162,7 @@ func UpdateFeeds(db *database.Database) error {
 				a.QbtFeed.RuleURI = feed.URL
 				err := db.UpdateAnime(a)
 				if err != nil {
-					return fmt.Errorf("failed to update anime feed: %w", err)
+					return fmt.Errorf("failed to update feeds: %w", err)
 				}
 				break
 			}
