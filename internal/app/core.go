@@ -124,11 +124,9 @@ func FuzzyFindAnime(anime []kitsu.Anime, search string) (kitsu.Anime, bool) {
 			topAnime = a
 		}
 	}
-
 	if topScore == 0 {
 		return topAnime, false
 	}
-
 	return topAnime, true
 }
 
@@ -147,17 +145,19 @@ func UpdateFeeds(db *database.Database) error {
 		return fmt.Errorf("failed to load feeds to update: %w", err)
 	}
 
-	for _, a := range db.Anime() {
-		for _, feed := range feeds {
-			// All feeds added by Koshime have a paren
-			if !strings.Contains(feed.Name, "(") {
-				continue
-			}
-			titles := strings.Split(feed.Name, "(")
-			titles[0] = strings.TrimSpace(titles[0])
-			titles[1] = strings.TrimSpace(titles[1])
-			if strings.EqualFold(titles[0], a.ENG_Title) ||
-				strings.EqualFold(titles[1][:len(titles[1])-1], a.JPN_Title) {
+	anime := db.Anime()
+	for _, feed := range feeds {
+		head, tail, found := strings.Cut(feed.Name, "(")
+		if !found { // All feeds added by Koshime have open/closing paren
+			continue
+		}
+		engTitle := strings.TrimSpace(head)
+		jpnTitle := strings.TrimSpace(strings.TrimSuffix(tail, ")"))
+
+		for _, a := range anime {
+			hasEngTitle := len(a.ENG_Title) > 0 && strings.EqualFold(a.ENG_Title, engTitle)
+			hasJpnTitle := len(a.JPN_Title) > 0 && strings.EqualFold(a.JPN_Title, jpnTitle)
+			if hasEngTitle || hasJpnTitle {
 				a.QbtFeed.Name = feed.Name
 				a.QbtFeed.RuleURI = feed.URL
 				err := db.UpdateAnime(a)
