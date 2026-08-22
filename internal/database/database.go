@@ -21,8 +21,6 @@ var (
 	dbFileName = "koshime.db"
 )
 
-type LibraryIndex int
-
 type Data struct {
 	Profile kitsu.Profile
 	Library []kitsu.Anime
@@ -98,58 +96,33 @@ func (db *Database) LoadLibrary(entries []kitsu.Anime) error {
 }
 
 func (db Database) FindAnime(query string) ([]kitsu.Anime, error) {
-	indexes, err := db.FindLibAnimeIndex(query)
-	if err != nil {
-		return []kitsu.Anime{}, err
+	query = strings.ToLower(query)
+
+	var libIndexes []int
+	for i, entry := range db.data.Library {
+		if hasMatchingEntry(entry, query) {
+			libIndexes = append(libIndexes, i)
+		}
 	}
 
-	if len(indexes) == 0 {
+	if len(libIndexes) == 0 {
 		return []kitsu.Anime{}, nil
 	}
 
-	return db.AnimeByIndex(indexes...)
+	anime := make([]kitsu.Anime, len(libIndexes))
+	for i, idx := range libIndexes {
+		anime[i] = db.data.Library[idx]
+	}
+
+	return anime, nil
 }
 
-// FindLibAnimeIndex uses the query to do a partial lookup against
-// all available anime titles, including alt titles, and returns
-// the library index of all matches found.
-func (db Database) FindLibAnimeIndex(query string) ([]LibraryIndex, error) {
-	query = strings.ToLower(query)
-	var indexes []LibraryIndex
-	for i, entry := range db.data.Library {
-		if hasMatchingEntry(entry, query) {
-			indexes = append(indexes, LibraryIndex(i))
-		}
+func (db Database) FindAnimeByLibId(libID string) (kitsu.Anime, bool) {
+	idx, found := db.LibraryLookup(libID)
+	if !found {
+		return kitsu.Anime{}, false
 	}
-	return indexes, nil
-}
-
-func (db Database) FindAnimeByLibId(id string) (kitsu.Anime, bool) {
-	for _, entry := range db.data.Library {
-		if entry.LibID == id {
-			return entry, true
-		}
-	}
-	return kitsu.Anime{}, false
-}
-
-// AnimeByIndex will retrieve library anime using the specified
-// library indexes.
-func (db Database) AnimeByIndex(libIndexes ...LibraryIndex) ([]kitsu.Anime, error) {
-	if len(libIndexes) == 0 {
-		return []kitsu.Anime{}, fmt.Errorf("missing indexes to lookup")
-	}
-	entries := make([]kitsu.Anime, len(libIndexes))
-	for i, libIndex := range libIndexes {
-		if libIndex < 0 || int(libIndex) >= len(db.data.Library) {
-			return []kitsu.Anime{}, fmt.Errorf(
-				"library anime index (%d) does not exist",
-				libIndex,
-			)
-		}
-		entries[i] = db.data.Library[libIndex]
-	}
-	return entries, nil
+	return db.data.Library[idx], true
 }
 
 func (db Database) Anime() []kitsu.Anime {
@@ -167,40 +140,17 @@ func (db *Database) SaveProfile(p kitsu.Profile) error {
 	return db.Save()
 }
 
-// SaveLibrary overwrites the existing library with
-// the specified one.
-func (db *Database) SaveLibrary(p []kitsu.Anime) error {
-	db.data.Library = p
-	return db.Save()
-}
-
 func (db *Database) AddAnime(entry kitsu.Anime) error {
 	db.data.Library = append(db.data.Library, entry)
 	return db.Save()
 }
 
 func (db *Database) DeleteAnimeById(libID string) error {
-	var deleted bool
-	for i, entry := range db.data.Library {
-		if entry.LibID == libID {
-			db.data.Library = slices.Delete(db.data.Library, i, i+1)
-			deleted = true
-			break
-		}
+	idx, found := db.LibraryLookup(libID)
+	if !found {
+		return fmt.Errorf("failed to delete anime: library id not found [%s]", libID)
 	}
-	if !deleted {
-		return fmt.Errorf("could not find anime-library id [%s]", libID)
-	}
-	return db.Save()
-}
-
-func (db *Database) DeleteAnimeByIndex(index LibraryIndex) error {
-	db.data.Library = slices.Delete(db.data.Library, int(index), int(index)+1)
-	return db.Save()
-}
-
-func (db *Database) UpdateAnimeAt(i LibraryIndex, entry kitsu.Anime) error {
-	db.data.Library[i] = entry
+	db.data.Library = slices.Delete(db.data.Library, idx, idx+1)
 	return db.Save()
 }
 
