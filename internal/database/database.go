@@ -95,6 +95,8 @@ func (db *Database) LoadLibrary(entries []kitsu.Anime) error {
 	return db.Save()
 }
 
+// FindAnime fuzzy-finds an anime by searching all titles & synopsis
+// then returns all possible matches.
 func (db Database) FindAnime(query string) ([]kitsu.Anime, error) {
 	query = strings.ToLower(query)
 
