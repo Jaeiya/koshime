@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/Jaeiya/koshime/internal/kitsu"
@@ -17,8 +18,14 @@ import (
 )
 
 var (
-	fileSys    utils.FileSys
-	dbFileName = "koshime.db"
+	fileSys         utils.FileSys
+	dbFileName      = "koshime.db"
+	flateWriterPool = sync.Pool{
+		New: func() any {
+			w, _ := flate.NewWriter(io.Discard, flate.DefaultCompression)
+			return w
+		},
+	}
 )
 
 type Data struct {
@@ -233,16 +240,17 @@ func hasMatchingEntry(e kitsu.Anime, q string) bool {
 }
 
 func compressData(data []byte) ([]byte, error) {
-	var b bytes.Buffer
-	writer, err := flate.NewWriter(&b, flate.BestCompression)
+	b := bytes.NewBuffer(make([]byte, 0, len(data)))
+	fw, _ := flateWriterPool.Get().(*flate.Writer)
+	defer flateWriterPool.Put(fw)
+
+	fw.Reset(b)
+
+	_, err := fw.Write(data)
 	if err != nil {
 		return nil, err
 	}
-	_, err = writer.Write(data)
-	if err != nil {
-		return nil, err
-	}
-	if err := writer.Close(); err != nil {
+	if err := fw.Close(); err != nil {
 		return nil, err
 	}
 	return b.Bytes(), nil
