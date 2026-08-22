@@ -89,7 +89,7 @@ func (m AnimeDisplayModel) ShortHelp() []key.Binding {
 func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) string {
 	headers := []string{
 		utils.ColorText(";g;Title"),
-		utils.ColorText(";dc;Cannon"),
+		utils.ColorText(";dc;Canon"),
 	}
 
 	items := []string{
