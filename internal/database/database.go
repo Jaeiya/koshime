@@ -126,8 +126,8 @@ func (db Database) FindAnime(query string) ([]kitsu.Anime, error) {
 }
 
 func (db Database) FindAnimeByLibId(libID string) (kitsu.Anime, bool) {
-	idx, found := db.LibraryLookup(libID)
-	if !found {
+	idx := db.LibraryLookup(libID)
+	if idx < 0 {
 		return kitsu.Anime{}, false
 	}
 	return db.data.Library[idx], true
@@ -139,8 +139,8 @@ func (db *Database) AddAnime(entry kitsu.Anime) error {
 }
 
 func (db *Database) DeleteAnime(libID string) error {
-	idx, found := db.LibraryLookup(libID)
-	if !found {
+	idx := db.LibraryLookup(libID)
+	if idx < 0 {
 		return fmt.Errorf("failed to delete anime: library id not found [%s]", libID)
 	}
 	db.data.Library = slices.Delete(db.data.Library, idx, idx+1)
@@ -148,8 +148,8 @@ func (db *Database) DeleteAnime(libID string) error {
 }
 
 func (db *Database) UpdateAnime(anime kitsu.Anime) error {
-	idx, found := db.LibraryLookup(anime.LibID)
-	if !found {
+	idx := db.LibraryLookup(anime.LibID)
+	if idx < 0 {
 		return fmt.Errorf("library id not found for: %s", anime.ENG_Title)
 	}
 	db.data.Library[idx] = anime
@@ -162,8 +162,8 @@ func (db *Database) UpdateAnime(anime kitsu.Anime) error {
 
 func (db *Database) UpdateAllAnime(animeList []kitsu.Anime) error {
 	for _, anime := range animeList {
-		idx, found := db.LibraryLookup(anime.LibID)
-		if !found {
+		idx := db.LibraryLookup(anime.LibID)
+		if idx < 0 {
 			return fmt.Errorf("library id not found for: %s", anime.ENG_Title)
 		}
 		db.data.Library[idx] = anime
@@ -175,15 +175,15 @@ func (db *Database) UpdateAllAnime(animeList []kitsu.Anime) error {
 	return nil
 }
 
-// LibraryLookup looks up an anime by library id and returns
-// its library index and whether or not it was found.
-func (db *Database) LibraryLookup(libID string) (int, bool) {
+// LibraryLookup looks up an entry by its library id and returns
+// its index or -1 if it was not found.
+func (db *Database) LibraryLookup(libID string) int {
 	for i, entry := range db.data.Library {
 		if entry.LibID == libID {
-			return i, true
+			return i
 		}
 	}
-	return 0, false
+	return -1
 }
 
 func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) error {
