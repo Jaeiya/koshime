@@ -31,7 +31,7 @@ func DropAnime(db *database.Database, libID string) error {
 	if err := kitsu.DropAnime(libID, p.AccessToken); err != nil {
 		return ErrDropAnimeFailed
 	}
-	if err := db.DeleteAnimeById(libID); err != nil {
+	if err := db.DeleteAnime(libID); err != nil {
 		return fmt.Errorf("failed to delete anime while dropping: %w", err)
 	}
 	return nil
@@ -53,7 +53,7 @@ func CompleteAnime(db *database.Database, libID string) error {
 	if err != nil {
 		return err
 	}
-	if err := db.DeleteAnimeById(libID); err != nil {
+	if err := db.DeleteAnime(libID); err != nil {
 		return fmt.Errorf("failed to delete completed anime: %w", err)
 	}
 	return nil
@@ -67,7 +67,7 @@ func DeleteAnime(db *database.Database, libID string) error {
 	if err != nil {
 		return fmt.Errorf("failed to delete anime from Library: %w", err)
 	}
-	err = db.DeleteAnimeById(libID)
+	err = db.DeleteAnime(libID)
 	if err != nil {
 		return fmt.Errorf("failed to delete anime from database: %w", err)
 	}

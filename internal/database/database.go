@@ -38,14 +38,20 @@ func NewDatabase(data *Data) (*Database, error) {
 		db := &Database{}
 		return db, nil
 	}
-
 	db := &Database{true, *data}
 	err := db.Save()
 	if err != nil {
 		return &Database{}, err
 	}
-
 	return db, nil
+}
+
+func (db Database) Anime() []kitsu.Anime {
+	return slices.Clone(db.data.Library)
+}
+
+func (db Database) Profile() kitsu.Profile {
+	return db.data.Profile
 }
 
 func (db *Database) Exists() bool {
@@ -127,27 +133,12 @@ func (db Database) FindAnimeByLibId(libID string) (kitsu.Anime, bool) {
 	return db.data.Library[idx], true
 }
 
-func (db Database) Anime() []kitsu.Anime {
-	return slices.Clone(db.data.Library)
-}
-
-func (db Database) Profile() kitsu.Profile {
-	return db.data.Profile
-}
-
-// SaveProfile overwrites the existing profile with
-// the specified one.
-func (db *Database) SaveProfile(p kitsu.Profile) error {
-	db.data.Profile = p
-	return db.Save()
-}
-
 func (db *Database) AddAnime(entry kitsu.Anime) error {
 	db.data.Library = append(db.data.Library, entry)
 	return db.Save()
 }
 
-func (db *Database) DeleteAnimeById(libID string) error {
+func (db *Database) DeleteAnime(libID string) error {
 	idx, found := db.LibraryLookup(libID)
 	if !found {
 		return fmt.Errorf("failed to delete anime: library id not found [%s]", libID)
@@ -161,9 +152,7 @@ func (db *Database) UpdateAnime(anime kitsu.Anime) error {
 	if !found {
 		return fmt.Errorf("library id not found for: %s", anime.ENG_Title)
 	}
-
 	db.data.Library[idx] = anime
-
 	err := db.Save()
 	if err != nil {
 		return fmt.Errorf("failed to save updated anime: %w", err)
@@ -179,7 +168,6 @@ func (db *Database) UpdateAllAnime(animeList []kitsu.Anime) error {
 		}
 		db.data.Library[idx] = anime
 	}
-
 	err := db.Save()
 	if err != nil {
 		return fmt.Errorf("failed to save updated anime: %w", err)
@@ -209,6 +197,11 @@ func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) err
 	return db.SaveProfile(db.data.Profile)
 }
 
+func (db *Database) SaveProfile(p kitsu.Profile) error {
+	db.data.Profile = p
+	return db.Save()
+}
+
 func (db Database) Save() error {
 	if !db.isLoaded {
 		return fmt.Errorf("database was not initialized properly")
@@ -217,12 +210,10 @@ func (db Database) Save() error {
 	if err != nil {
 		return err
 	}
-
 	compressed, err := compressData(bytes)
 	if err != nil {
 		return err
 	}
-
 	err = os.WriteFile(dbFileName, compressed, 0o600)
 	if err != nil {
 		return err
@@ -236,7 +227,6 @@ func hasMatchingEntry(e kitsu.Anime, q string) bool {
 		strings.Contains(strings.ToLower(e.Synopsis), q) {
 		return true
 	}
-
 	return slices.ContainsFunc(e.AltTitles, func(s string) bool {
 		return strings.Contains(strings.ToLower(s), q)
 	})
@@ -248,16 +238,13 @@ func compressData(data []byte) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	_, err = writer.Write(data)
 	if err != nil {
 		return nil, err
 	}
-
 	if err := writer.Close(); err != nil {
 		return nil, err
 	}
-
 	return b.Bytes(), nil
 }
 
