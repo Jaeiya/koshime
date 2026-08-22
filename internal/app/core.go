@@ -146,6 +146,8 @@ func UpdateFeeds(db *database.Database) error {
 	}
 
 	anime := db.Anime()
+	updatedAnime := make([]kitsu.Anime, 0, len(feeds))
+
 	for _, feed := range feeds {
 		head, tail, found := strings.Cut(feed.Name, "(")
 		if !found { // All feeds added by Koshime have open/closing paren
@@ -160,16 +162,13 @@ func UpdateFeeds(db *database.Database) error {
 			if hasEngTitle || hasJpnTitle {
 				a.QbtFeed.Name = feed.Name
 				a.QbtFeed.RuleURI = feed.URL
-				err := db.UpdateAnime(a)
-				if err != nil {
-					return fmt.Errorf("failed to update feeds: %w", err)
-				}
+				updatedAnime = append(updatedAnime, a)
 				break
 			}
 		}
 	}
 
-	return nil
+	return db.UpdateAllAnime(updatedAnime)
 }
 
 func CompareAnime(animeA, animeB kitsu.Anime) int {
