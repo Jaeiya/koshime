@@ -126,7 +126,7 @@ func (db Database) FindAnime(query string) ([]kitsu.Anime, error) {
 }
 
 func (db Database) FindAnimeByLibId(libID string) (kitsu.Anime, bool) {
-	idx := db.LibraryLookup(libID)
+	idx := db.LibraryIndex(libID)
 	if idx < 0 {
 		return kitsu.Anime{}, false
 	}
@@ -139,7 +139,7 @@ func (db *Database) AddAnime(entry kitsu.Anime) error {
 }
 
 func (db *Database) DeleteAnime(libID string) error {
-	idx := db.LibraryLookup(libID)
+	idx := db.LibraryIndex(libID)
 	if idx < 0 {
 		return fmt.Errorf("failed to delete anime: library id not found [%s]", libID)
 	}
@@ -148,7 +148,7 @@ func (db *Database) DeleteAnime(libID string) error {
 }
 
 func (db *Database) UpdateAnime(anime kitsu.Anime) error {
-	idx := db.LibraryLookup(anime.LibID)
+	idx := db.LibraryIndex(anime.LibID)
 	if idx < 0 {
 		return fmt.Errorf("library id not found for: %s", anime.ENG_Title)
 	}
@@ -162,7 +162,7 @@ func (db *Database) UpdateAnime(anime kitsu.Anime) error {
 
 func (db *Database) UpdateAllAnime(animeList []kitsu.Anime) error {
 	for _, anime := range animeList {
-		idx := db.LibraryLookup(anime.LibID)
+		idx := db.LibraryIndex(anime.LibID)
 		if idx < 0 {
 			return fmt.Errorf("library id not found for: %s", anime.ENG_Title)
 		}
@@ -175,9 +175,9 @@ func (db *Database) UpdateAllAnime(animeList []kitsu.Anime) error {
 	return nil
 }
 
-// LibraryLookup looks up an entry by its library id and returns
+// LibraryIndex looks up a library entry by its library id and returns
 // its index or -1 if it was not found.
-func (db *Database) LibraryLookup(libID string) int {
+func (db *Database) LibraryIndex(libID string) int {
 	for i, entry := range db.data.Library {
 		if entry.LibID == libID {
 			return i
