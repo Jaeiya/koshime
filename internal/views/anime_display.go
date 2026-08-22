@@ -184,10 +184,23 @@ func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) 
 	hasFeed := info.QbtFeed.Name != ""
 
 	headers = append(headers, utils.ColorText(";dc;RSSFeed"))
-	if hasFeed {
-		items = append(items, utils.ColorText(";g;Yes"))
-	} else {
-		items = append(items, utils.ColorText(";m;No"))
+	switch mode {
+	case Simple:
+		if hasFeed {
+			items = append(items, utils.ColorText(";g;Yes"))
+		} else {
+			items = append(items, utils.ColorText(";m;No"))
+		}
+	case Extended, All:
+		if hasFeed {
+			uri := info.QbtFeed.RuleURI
+			if mode == Extended && len(uri) > charLimit {
+				uri = uri[:charLimit-2] + ".."
+			}
+			items = append(items, utils.ColorText(fmt.Sprintf(";g;%s", uri)))
+		} else {
+			items = append(items, utils.ColorText(";m;No"))
+		}
 	}
 
 	link, _ := url.JoinPath(kitsu.KitsuDomain, "anime", info.Slug)
