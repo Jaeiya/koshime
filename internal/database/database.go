@@ -204,14 +204,46 @@ func (db *Database) UpdateAnimeAt(i LibraryIndex, entry kitsu.Anime) error {
 	return db.Save()
 }
 
-func (db *Database) UpdateAnime(updatedEntry kitsu.Anime) error {
+func (db *Database) UpdateAnime(anime kitsu.Anime) error {
+	idx, found := db.LibraryLookup(anime.LibID)
+	if !found {
+		return fmt.Errorf("library id not found for: %s", anime.ENG_Title)
+	}
+
+	db.data.Library[idx] = anime
+
+	err := db.Save()
+	if err != nil {
+		return fmt.Errorf("failed to save updated anime: %w", err)
+	}
+	return nil
+}
+
+func (db *Database) UpdateAllAnime(animeList []kitsu.Anime) error {
+	for _, anime := range animeList {
+		idx, found := db.LibraryLookup(anime.LibID)
+		if !found {
+			return fmt.Errorf("library id not found for: %s", anime.ENG_Title)
+		}
+		db.data.Library[idx] = anime
+	}
+
+	err := db.Save()
+	if err != nil {
+		return fmt.Errorf("failed to save updated anime: %w", err)
+	}
+	return nil
+}
+
+// LibraryLookup looks up an anime by library id and returns
+// its library index and whether or not it was found.
+func (db *Database) LibraryLookup(libID string) (int, bool) {
 	for i, entry := range db.data.Library {
-		if entry.LibID == updatedEntry.LibID {
-			db.data.Library[i] = updatedEntry
-			return db.Save()
+		if entry.LibID == libID {
+			return i, true
 		}
 	}
-	return fmt.Errorf("library id not found for: %s", updatedEntry.ENG_Title)
+	return 0, false
 }
 
 func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) error {
