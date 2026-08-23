@@ -68,15 +68,16 @@ func New() (Model, error) {
 	m.help.Styles.ShortDesc = ui.HelpDescStyle
 	m.help.Styles.FullDesc = m.help.Styles.ShortDesc
 
-	// Initialize empty database
-	db, _ := database.NewDatabase(nil)
-	m.db = db
-
+	db, err := database.NewDatabase(nil)
+	if err != nil {
+		return m, fmt.Errorf("failed to initialize database: %w", err)
+	}
 	if !db.Exists() {
 		m.setupUser = newSetupUserModel()
 		return m, nil
 	}
 
+	m.db = db
 	err := db.Load()
 	if err != nil {
 		return m, err
