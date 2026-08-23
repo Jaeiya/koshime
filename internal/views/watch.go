@@ -474,8 +474,14 @@ func (m *Watch_Model) PopulateAnimeList() {
 	for i, item := range m.state.filteredAnime {
 		// We always want to display title text
 		if item.Anime.ENG_Title == "" {
-			item.Anime.ENG_Title = item.Anime.JPN_Title
-			item.Anime.JPN_Title = ""
+			// Kitsu has a bad habit of making alt english titles and
+			// not assigning one as the actual eng title.
+			if len(item.Anime.AltTitles) > 0 {
+				item.Anime.ENG_Title = item.Anime.AltTitles[0]
+			} else {
+				item.Anime.ENG_Title = item.Anime.JPN_Title
+				item.Anime.JPN_Title = ""
+			}
 		}
 		listItems[i] = ui.NewListItem(item.Anime.ENG_Title, item.Anime.JPN_Title, i)
 	}
