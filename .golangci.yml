@@ -35,6 +35,7 @@ linters:
             # We launch a subprocess with a variable in a safe
             # way, because it doesn't involve user input.
             - G204
+            - G304
         nakedret:
           # I don't like naked returns
           max-func-lines: 0
