@@ -18,8 +18,10 @@ import (
 )
 
 var (
-	fileSys         utils.FileSys
-	dbFileName      = "koshime.db"
+	fileSys    utils.FileSys
+	dbFilePath = func() string {
+		return filepath.Join(fileSys.GetWorkingDir(), "koshime.db")
+	}()
 	flateWriterPool = sync.Pool{
 		New: func() any {
 			w, _ := flate.NewWriter(io.Discard, flate.DefaultCompression)
@@ -34,21 +36,52 @@ type Data struct {
 }
 
 type Database struct {
-	isLoaded bool
-	data     Data
+	data Data
+	rw   DbRWriter
 }
 
-func NewDatabase(data *Data) (*Database, error) {
-	// Initialize empty database when it needs
-	// to be loaded from file
-	if data == nil {
-		db := &Database{}
+type DbRWriter interface {
+	Write(filePath string, data []byte) error
+	Read(filePath string) ([]byte, error)
+	Exists() bool
+}
+
+type dbRWriter struct{}
+
+func (dbRWriter) Read(filePath string) ([]byte, error) {
+	return os.ReadFile(filePath)
+}
+
+func (dbRWriter) Write(filePath string, data []byte) error {
+	return os.WriteFile(filePath, data, 0o600)
+}
+
+func (dbRWriter) Exists() bool {
+	return fileSys.FileExists(dbFilePath)
+}
+
+func NewDatabase(rw DbRWriter) (*Database, error) {
+	db := &Database{}
+	db.rw = dbRWriter{}
+	if rw != nil {
+		db.rw = rw
+	}
+
+	if !db.rw.Exists() {
 		return db, nil
 	}
-	db := &Database{true, *data}
-	err := db.Save()
+
+	fileBytes, err := db.rw.Read(dbFilePath)
 	if err != nil {
-		return &Database{}, err
+		return nil, err
+	}
+	uncompressed, err := decompressData(fileBytes)
+	if err != nil {
+		return nil, err
+	}
+	err = msgpack.Unmarshal(uncompressed, &db.data)
+	if err != nil {
+		return nil, err
 	}
 	return db, nil
 }
@@ -61,48 +94,32 @@ func (db Database) Profile() kitsu.Profile {
 	return db.data.Profile
 }
 
-func (db *Database) Exists() bool {
-	dbPath := filepath.Join(fileSys.GetWorkingDir(), dbFileName)
-	return fileSys.FileExists(dbPath)
+func (db Database) Exists() bool {
+	return db.rw.Exists()
 }
 
-// Load an existing database. In order to initialize the database
-// properly, you can either pass the data directly to the
-// constructor or use this function to load it from file.
-func (db *Database) Load() error {
-	if db.isLoaded {
-		return nil
-	}
-	fileBytes, err := os.ReadFile(filepath.Join(fileSys.GetWorkingDir(), dbFileName))
-	if err != nil {
-		return err
-	}
-	uncompressed, err := decompressData(fileBytes)
-	if err != nil {
-		return err
-	}
-	err = msgpack.Unmarshal(uncompressed, &db.data)
-	if err != nil {
-		return err
-	}
-	db.isLoaded = true
-	return nil
-}
-
-// LoadData overwrites existing data and saves it to file.
+// LoadData overwrites all existing data and saves it.
 //
-// 🟠 This is destructive and should only be used
-// to initialize an empty database.
+// 🟠 This is destructive and should only be used to
+// bootstrap or refresh the database.
 func (db *Database) LoadData(d Data) error {
 	db.data = d
-	db.isLoaded = true
 	return db.Save()
 }
 
-// LoadLibrary overwrites existing library with new entries.
+// LoadProfile overwrites existing profile data and saves it.
 //
-// 🟠 This is destructive and should only be used
-// if the library is in an invalid state.
+// 🟠 This is destructive and should only be used to
+// bootstrap or refresh the user profile.
+func (db *Database) LoadProfile(p kitsu.Profile) error {
+	db.data.Profile = p
+	return db.Save()
+}
+
+// LoadLibrary overwrites existing library data and saves it.
+//
+// 🟠 This is destructive and should only be used to
+// bootstrap or refresh the library.
 func (db *Database) LoadLibrary(entries []kitsu.Anime) error {
 	db.data.Library = entries
 	return db.Save()
@@ -201,18 +218,10 @@ func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) err
 		it ourselves by adding the unix time.
 	*/
 	db.data.Profile.TokenExpirationSec = int64(expiresIn) + time.Now().Unix()
-	return db.SaveProfile(db.data.Profile)
-}
-
-func (db *Database) SaveProfile(p kitsu.Profile) error {
-	db.data.Profile = p
-	return db.Save()
+	return db.LoadProfile(db.data.Profile)
 }
 
 func (db Database) Save() error {
-	if !db.isLoaded {
-		return fmt.Errorf("database was not initialized properly")
-	}
 	bytes, err := msgpack.Marshal(db.data)
 	if err != nil {
 		return err
@@ -221,7 +230,7 @@ func (db Database) Save() error {
 	if err != nil {
 		return err
 	}
-	err = os.WriteFile(dbFileName, compressed, 0o600)
+	err = db.rw.Write(dbFilePath, compressed)
 	if err != nil {
 		return err
 	}
@@ -261,7 +270,6 @@ func decompressData(data []byte) ([]byte, error) {
 	defer reader.Close()
 
 	var out bytes.Buffer
-	//nolint:gosec // DoS bomb impossible since this isn't a web service
 	if _, err := io.Copy(&out, reader); err != nil {
 		return nil, err
 	}

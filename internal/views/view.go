@@ -78,11 +78,6 @@ func New() (Model, error) {
 	}
 
 	m.db = db
-	err := db.Load()
-	if err != nil {
-		return m, err
-	}
-
 	m.CreateMenu()
 	m.view = Menu
 	return m, nil
