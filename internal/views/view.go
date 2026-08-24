@@ -57,6 +57,7 @@ type Model struct {
 	help       help.Model
 	setupUser  SetupUserModel
 	view       UIView
+	HasAborted bool
 }
 
 func New() (Model, error) {
@@ -100,7 +101,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		if msg.String() == "ctrl+c" {
 			m.view = Abort
-			return m, tea.Quit
+			return m, abort
 		}
 
 	case SetupUserFinishedMsg:
@@ -114,6 +115,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.view = Menu
 
 	case AbortMsg:
+		m.HasAborted = true
 		m.view = Abort
 		return m, tea.Quit
 
@@ -148,13 +150,8 @@ func (m Model) View() tea.View {
 		)
 		return v
 
-	case Exit:
-		return tea.NewView("")
-
 	case Abort:
-		return tea.NewView(ui.AbortStyle.Render(
-			utils.ColorText(";g;>>> ;y;User Aborted Operation ;g;<<<"),
-		))
+		return tea.NewView("")
 
 	default:
 		return tea.NewView("missing view")

@@ -5,6 +5,8 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/Jaeiya/koshime/internal/app"
+	"github.com/Jaeiya/koshime/internal/ui"
+	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/Jaeiya/koshime/internal/views"
 )
 
@@ -16,7 +18,7 @@ var (
 
 func main() {
 	// Cleanup residual cursor issues
-	defer fmt.Print("\x1b[0 q")
+	// defer fmt.Print("\x1b[0 q")
 
 	app.Version = version
 	app.CommitHash = commitSha
@@ -28,7 +30,19 @@ func main() {
 	}
 
 	p := tea.NewProgram(m)
-	if _, err := p.Run(); err != nil {
+	updatedModel, err := p.Run()
+	if err != nil {
 		panic(err)
+	}
+
+	model, _ := updatedModel.(views.Model)
+	if model.HasAborted {
+		fmt.Printf(
+			"%s",
+			ui.DisplayText(
+				[]string{utils.ColorText(";g;>>> ;y;User Aborted Operation ;g;<<<")},
+				0, 1, 1,
+			),
+		)
 	}
 }
