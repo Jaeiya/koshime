@@ -1,6 +1,3 @@
-### File Binding
-
-When a series is completed, we need to delete any existing file bindings
 
 ### Rating
 
@@ -16,20 +13,6 @@ I'm not a huge fan of the complexity of the list component and I think it would
 be more efficient to create my own, for my own specific use case. The display
 options are very limited.
 
-### Add Anime
-
-Should allow users to interactively add a movie or anime series to their
-library. Wakitsu was limited to just adding anime, but Koshime should also
-ask if the user wants to look for an RSS feed for the anime series.
-
-1. Once an anime has been selected, start the RSS query process.
-1. Allow the user to specify an optional fansub & resolution.
-1. If they entered an invalid resolution, give them a verbose description of what a resolution should look like.
-1. Display a specific amount of top results from the search.
-1. Once the user selects a result, the full RSS information should be displayed.
-
-**Caveats**
-If the anime is a movie, it should avoid the RSS feed prompts.
 
 ### Update Anime
 
