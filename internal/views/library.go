@@ -29,6 +29,7 @@ const (
 	LibraryMenu = Library_View(iota)
 	LibrarySearch
 	LibraryReload
+	LibraryFeed
 	LibraryDrop
 	LibraryComplete
 	LibraryDelete
@@ -42,6 +43,9 @@ type (
 	LibraryAnimeSearchMsg struct {
 		Value kitsu.Anime
 		Found bool
+	}
+	LibraryFeedMsg struct {
+		Value []kitsu.Anime
 	}
 )
 
@@ -58,6 +62,7 @@ type Library_Model struct {
 	keys struct {
 		reload key.Binding
 		search key.Binding
+		feed   key.Binding
 	}
 	db          *database.Database
 	state       Library_State
@@ -93,6 +98,7 @@ func newLibraryModel(db *database.Database) Library_Model {
 	}))
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
 	m.keys.search = key.NewBinding(key.WithKeys("s"), key.WithHelp("s", "search"))
+	m.keys.feed = key.NewBinding(key.WithKeys("f"), key.WithHelp("f", "update feeds"))
 	anime := db.Anime()
 	slices.SortFunc(anime, app.CompareAnime)
 	m.state.anime = anime
@@ -126,6 +132,17 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 				break
 			}
 			m.state.view = LibraryReload
+
+		case key.Matches(msg, m.keys.feed):
+			// Do not allow this action unless user has qBt setup
+			if m.db.Profile().QbtPort == 0 {
+				break
+			}
+			// Never execute feed update in another view
+			if m.state.view > LibraryMenu {
+				break
+			}
+			m.state.view = LibraryFeed
 
 		case key.Matches(msg, ui.KeyMap.MainMenu):
 			if m.state.view == LibraryMenu {
@@ -164,6 +181,10 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m, cmd = m.UpdateReload(msg)
 		cmds = append(cmds, cmd)
 
+	case LibraryFeed:
+		m, cmd = m.UpdateFeed(msg)
+		cmds = append(cmds, cmd)
+
 	case LibraryDelete:
 		m, cmd = m.UpdateDelete(msg)
 		cmds = append(cmds, cmd)
@@ -196,6 +217,8 @@ func (m Library_Model) View() tea.View {
 		return m.ViewSearch()
 	case LibraryReload:
 		return m.ViewReload()
+	case LibraryFeed:
+		return m.ViewFeed()
 	case LibraryDrop:
 		return m.ViewDrop()
 	case LibraryDelete:
@@ -252,6 +275,13 @@ func (m Library_Model) FullHelp() [][]key.Binding {
 	if m.state.view == LibrarySearch {
 		return nil
 	}
+
+	// We only show the user this key if they have qBt setup.
+	feedHelp := m.keys.feed
+	if m.db.Profile().QbtPort == 0 {
+		feedHelp = key.Binding{}
+	}
+
 	return [][]key.Binding{
 		{
 			ui.KeyMap.Up,
@@ -264,6 +294,7 @@ func (m Library_Model) FullHelp() [][]key.Binding {
 			m.ui.animeDisplay.ShortHelp()[0],
 			m.keys.reload,
 			m.keys.search,
+			feedHelp,
 			ui.KeyMap.MainMenu,
 			ui.KeyMap.HelpLess,
 		},
@@ -452,6 +483,50 @@ manually update your Kitsu library from the website.`,
 		),
 		ui.TextStyle.Render(
 			m.ui.consent.View(utils.ColorText(";b;Are you sure you want to reload?")),
+		),
+	))
+}
+
+func (m Library_Model) UpdateFeed(msg tea.Msg) (Library_Model, tea.Cmd) {
+	var cmd tea.Cmd
+	switch msg := msg.(type) {
+	case tea.KeyPressMsg:
+		switch {
+		case key.Matches(msg, ui.KeyMap.Select):
+			if m.ui.consent.Select() == ui.No {
+				m.state.view = LibraryMenu
+				return m, nil
+			}
+			m.ui.loader, cmd = m.ui.loader.Start("Updating Library Feeds")
+			return m, tea.Batch(cmd, m.updateFeeds)
+		}
+
+	case LibraryFeedMsg:
+		m.state = Library_State{}
+		m.state.anime = msg.Value
+		m.ui.loader.Stop()
+	}
+	m.ui.consent = m.ui.consent.Update(msg)
+	return m, nil
+}
+
+func (m Library_Model) ViewFeed() tea.View {
+	return tea.NewView(lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("Library", "Update Feeds"),
+		"",
+		ui.DisplayText(
+			[]string{
+				`This will update your current library with any feeds that
+have not been assigned yet. You only need to do this if you deleted or lost
+your database.`,
+			},
+			1, 0, 1,
+		),
+		ui.TextStyle.Render(
+			m.ui.consent.View(
+				utils.ColorText(";b;Are you sure you want to update your libraries feeds?"),
+			),
 		),
 	))
 }
@@ -647,6 +722,16 @@ func (m Library_Model) reloadLibrary() tea.Msg {
 	}
 	slices.SortFunc(anime, app.CompareAnime)
 	return LibraryReloadedMsg{anime, 0}
+}
+
+func (m Library_Model) updateFeeds() tea.Msg {
+	err := app.UpdateFeeds(m.db)
+	if err != nil {
+		return err
+	}
+	anime := m.db.Anime()
+	slices.SortFunc(anime, app.CompareAnime)
+	return LibraryFeedMsg{m.db.Anime()}
 }
 
 func (m Library_Model) deleteAnime() tea.Msg {
