@@ -228,7 +228,7 @@ func (m SetupUserModel) View() tea.View {
 your anime, from the command line.`,
 				`Some operations can even be ;w;automated;x;, like ;dc;updating;x; your
 ;dc;progress;x; once you've finished watching an anime.`,
-			}, 1, 1),
+			}, 1, 1, 1),
 			m.ui.consent.View(
 				ui.ConsentStyle.Render("Would you like to setup in this directory?"),
 			),
@@ -410,7 +410,7 @@ func (m SetupUserModel) ViewQBittorrent() tea.View {
 ;dg;qBittorrent;x;, to automatically download your anime for you. It is
 a ;g;free;x; and ;g;open source;x; program.`,
 			`It works on ;y;Linux;x;, ;c;MacOS;x;, and ;m;Windows;x;.`,
-		}, 1, 1),
+		}, 1, 1, 1),
 	)
 
 	if !m.state.qBittorrent.accepted {
@@ -432,7 +432,7 @@ a ;g;free;x; and ;g;open source;x; program.`,
 if you don't already have it installed. Once you have it downloaded,
 you can install it using all its default settings.`,
 			";b;Here are some options to get you started:;x;",
-		}, 1, 1),
+		}, 1, 1, 1),
 	)
 
 	page2 := lipgloss.JoinVertical(
@@ -447,7 +447,7 @@ selecting ;c;options;x; from the list.`,
 			`The options window should now be visible. On the left side, find
 the icon named ;w;WebUI;x; and click it. The icon will look like a ringed
 planet.`,
-		}, 1, 1),
+		}, 1, 1, 1),
 	)
 
 	page3 := lipgloss.JoinVertical(
@@ -469,7 +469,7 @@ every time.`,
 			`Once you're done, hit the ;c;Apply;x; button on the bottom right
 of the options window.`,
 			`;b;Enter the port you chose:;x;`,
-		}, 1, 1),
+		}, 1, 1, 1),
 	)
 
 	page3PortFail := lipgloss.JoinVertical(
@@ -490,7 +490,7 @@ of the options window.`,
 		ui.DisplayText([]string{
 			`Your ;dg;qBittorrent;x; client is ;g;Online;x; and working as expected!`,
 			`;g;> Continue;x;`,
-		}, 1, 1),
+		}, 1, 1, 1),
 	)
 
 	page1Opts := [...]string{
@@ -660,19 +660,35 @@ func (m SetupUserModel) ViewUsername() tea.View {
 		}
 
 		profileStr := ui.DisplayPropValue([]string{
-			"Name", "About", "Gender", "BirthDay", "Location", "Created", "Profile",
+			";dc;Name",
+			";dc;About",
+			";dc;Gender",
+			";dc;BirthDay",
+			";dc;Location",
+			";dc;Created",
+			";dc;Profile",
 		}, []string{
-			fmt.Sprintf(";g;%s", p.Username), p.About, p.Gender, p.Birthday, p.Location,
+			fmt.Sprintf(";g;%s", p.Username),
+			p.About,
+			p.Gender,
+			p.Birthday,
+			p.Location,
 			createdDate.Local().Format("01/02/2006 3:04 PM"),
 			kitsu.GetProfileLink(p.ID),
 		})
 
-		return tea.NewView(m.ui.consent.View(
-			ui.DisplaySubTitle("Setup User", "Select User"),
-			"",
-			profileStr,
-			ui.DisplayText([]string{`;b;Does that look like your profile?`}, 0, 1),
-		))
+		return tea.NewView(
+			lipgloss.JoinVertical(
+				lipgloss.Left,
+				ui.DisplaySubTitle("Setup User", "Select User"),
+				"",
+				profileStr,
+				"",
+				m.ui.consent.View(
+					ui.ConsentStyle.Render(`Does that look like your profile?`),
+				),
+			),
+		)
 	}
 
 	c := m.ui.username.Cursor()
@@ -690,7 +706,7 @@ at the following link:`,
 			`You'll see a setting for ;w;Profile URL;x;. Enter a name for your profile URL
 in that box and click ;w;update profile;x; at the bottom of the page.`,
 			`;b;Enter the profile URL name you applied`,
-		}, 1, 1),
+		}, 1, 1, 1),
 		m.ui.username.View(),
 	))
 
@@ -771,9 +787,11 @@ func (m SetupUserModel) ViewPassword() tea.View {
 				[]string{
 					`;r;Authorization Failed. ;x;You must have entered your password incorrectly.`,
 				},
-				1, 1,
+				1, 1, 1,
 			),
-			m.ui.consent.View(ui.DisplayText([]string{";b;Would you like to try again?"}, 0)),
+			m.ui.consent.View(
+				ui.DisplayText([]string{";b;Would you like to try again?"}, 0, 0, 1),
+			),
 		))
 	}
 
@@ -799,7 +817,7 @@ use the following credentials to manage your ;w;Kitsu;x; account:`,
 			ui.DisplayText([]string{
 				`You ;m;do not;x; need to save these credentials; they are displayed for
 transparency purposes only.`,
-			}, 1, 1),
+			}, 1, 1, 1),
 			ui.TextStyle.Foreground(ansi.BrightGreen).Render("> Continue"),
 			"",
 		))
@@ -818,7 +836,7 @@ renewed any time within the ;w;30 days;x;, without a password.`,
 			`;g;Koshime;x; tracks the time until token expiration and will let you know when
 to renew it.`,
 			`;b;Enter your password below to finish logging in.`,
-		}, 1, 1),
+		}, 1, 1, 1),
 		m.ui.password.View(),
 	))
 
