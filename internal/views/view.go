@@ -61,6 +61,7 @@ type Model struct {
 
 func New() (Model, error) {
 	m := Model{}
+	var err error
 
 	m.help = help.New()
 	m.help.Styles.ShortKey = ui.HelpKeyStyle
@@ -68,16 +69,15 @@ func New() (Model, error) {
 	m.help.Styles.ShortDesc = ui.HelpDescStyle
 	m.help.Styles.FullDesc = m.help.Styles.ShortDesc
 
-	db, err := database.NewDatabase(nil)
+	m.db, err = database.NewDatabase(nil)
 	if err != nil {
 		return m, fmt.Errorf("failed to initialize database: %w", err)
 	}
-	if !db.Exists() {
+	if !m.db.Exists() {
 		m.setupUser = newSetupUserModel()
 		return m, nil
 	}
 
-	m.db = db
 	m.CreateMenu()
 	m.view = Menu
 	return m, nil
