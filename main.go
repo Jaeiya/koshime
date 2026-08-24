@@ -40,7 +40,7 @@ func main() {
 		fmt.Printf(
 			"%s",
 			ui.DisplayText(
-				[]string{utils.ColorText(";g;>>> ;y;User Aborted Operation ;g;<<<")},
+				[]string{utils.ColorText(";g;>>> ;y;User Aborted Setup ;g;<<<")},
 				0, 1, 1,
 			),
 		)
