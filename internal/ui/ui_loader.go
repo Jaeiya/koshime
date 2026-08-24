@@ -24,10 +24,6 @@ func NewLoader() LoaderModel {
 	return LoaderModel{spinner: s}
 }
 
-func (m LoaderModel) Init() tea.Cmd {
-	return nil
-}
-
 func (m LoaderModel) Update(msg tea.Msg) (LoaderModel, tea.Cmd) {
 	var cmd tea.Cmd
 	if m.active {

@@ -16,10 +16,6 @@ type ConsentModel struct {
 	pos Consent
 }
 
-func (ConsentModel) Init() tea.Cmd {
-	return nil
-}
-
 func (m ConsentModel) Update(msg tea.Msg) ConsentModel {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:

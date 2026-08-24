@@ -21,6 +21,8 @@ const (
 	All
 )
 
+const maxStrLen = 60
+
 var MaxSynopsisLen = func() int {
 	_, h, err := term.GetSize(os.Stdout.Fd())
 	if err != nil {
@@ -121,18 +123,16 @@ func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) 
 		headers = append(headers, utils.ColorText(";db;AltTitle"))
 	}
 
-	const charLimit = 60
-
 	if Simple == mode {
 		for i, item := range items {
-			if len(item) > charLimit {
-				items[i] = item[:charLimit-2] + ".."
+			if len(item) > maxStrLen {
+				items[i] = item[:maxStrLen-2] + ".."
 			}
 		}
 		if len(altTitles) > 0 {
 			title := altTitles[0]
-			if len(title) > charLimit {
-				title = title[:charLimit-2] + ".."
+			if len(title) > maxStrLen {
+				title = title[:maxStrLen-2] + ".."
 			}
 			items = append(items, title)
 		} else {
@@ -194,8 +194,8 @@ func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) 
 	case Extended, All:
 		if hasFeed {
 			uri := info.QbtFeed.RuleURI
-			if mode == Extended && len(uri) > charLimit {
-				uri = uri[:charLimit-2] + ".."
+			if mode == Extended && len(uri) > maxStrLen {
+				uri = uri[:maxStrLen-2] + ".."
 			}
 			items = append(items, utils.ColorText(fmt.Sprintf(";g;%s", uri)))
 		} else {
