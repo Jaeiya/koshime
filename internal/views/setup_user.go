@@ -159,7 +159,7 @@ func (m SetupUserModel) Update(msg tea.Msg) (SetupUserModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Abort):
-			// Do allow aborting on successful user setup
+			// Do NOT allow aborting on successful user setup
 			if m.state.view == SetupLibraryView && m.state.libAnime.passed {
 				break
 			}
