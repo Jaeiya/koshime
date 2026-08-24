@@ -90,10 +90,11 @@ type ProfileData struct {
 type AnimeData struct {
 	ID         string `json:"id"`
 	Attributes struct {
+		// Never empty
 		CanonicalTitle string `json:"canonicalTitle"`
 		Titles         struct {
-			English string `json:"en"` // Can be empty
-			Romaji  string `json:"en_jp"`
+			English string `json:"en"`    // Can be empty
+			Romaji  string `json:"en_jp"` // Can be empty
 		} `json:"titles"`
 		// Can be empty
 		AltTitles []string `json:"abbreviatedTitles"`
