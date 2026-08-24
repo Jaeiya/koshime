@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const userAgent = "Koshime/0.1"
+const userAgent = "Koshime/1.10"
 
 var client = func() http.Client {
 	jar, _ := cookiejar.New(nil)
