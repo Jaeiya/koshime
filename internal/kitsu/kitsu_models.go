@@ -139,11 +139,33 @@ type ProgressRespData struct {
 	} `json:"included"`
 }
 
+type FlexibleStatus int
+
+func (fs *FlexibleStatus) UnmarshalJSON(data []byte) error {
+	var rawInt int
+	if err := json.Unmarshal(data, &rawInt); err == nil {
+		*fs = FlexibleStatus(rawInt)
+		return nil
+	}
+
+	var rawStr string
+	if err := json.Unmarshal(data, &rawStr); err == nil {
+		val, err := strconv.Atoi(rawStr)
+		if err != nil {
+			return fmt.Errorf("status string %q is not a valid integer: %w", rawStr, err)
+		}
+		*fs = FlexibleStatus(val)
+		return nil
+	}
+
+	return fmt.Errorf("invalid status format: %s", string(data))
+}
+
 type APIErrorData struct {
 	Errors []struct {
-		Status int    `json:"status"`
-		Title  string `json:"title"`
-		Detail string `json:"detail"`
+		Status FlexibleStatus `json:"status"`
+		Title  string         `json:"title"`
+		Detail string         `json:"detail"`
 	} `json:"errors"`
 }
 
@@ -159,34 +181,6 @@ func (ed APIErrorData) String() string {
 			detail = err.Title
 		}
 		fmt.Fprintf(&sb, "%s: [HTTP %d] %s\n", errType, err.Status, detail)
-	}
-	if sb.Len() > 0 {
-		return sb.String()
-	}
-	return "no error data"
-}
-
-type APIErrorDataV2 struct {
-	Errors []struct {
-		Status string `json:"status"`
-		Title  string `json:"title"`
-		Detail string `json:"detail"`
-	} `json:"errors"`
-}
-
-func (ed APIErrorDataV2) String() string {
-	var sb strings.Builder
-	for _, err := range ed.Errors {
-		errType := "ClientError"
-		status, _ := strconv.Atoi(err.Status)
-		if status >= 500 {
-			errType = "ServerError"
-		}
-		detail := err.Detail
-		if detail == "" {
-			detail = err.Title
-		}
-		fmt.Fprintf(&sb, "%s: [HTTP %d] %s\n", errType, status, detail)
 	}
 	if sb.Len() > 0 {
 		return sb.String()
