@@ -3,7 +3,6 @@ package views
 import (
 	"fmt"
 	"slices"
-	"unicode/utf8"
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/list"
@@ -378,7 +377,7 @@ func (m Library_Model) UpdateSearch(msg tea.Msg) (Library_Model, tea.Cmd) {
 			if m.state.searchAnimeResult.Found {
 				break
 			}
-			if utf8.RuneCountInString(m.ui.input.Value()) >= m.minInputLen {
+			if utils.RuneCount(m.ui.input.Value()) >= m.minInputLen {
 				return m, m.searchLibrary(m.ui.input.Value())
 			}
 
