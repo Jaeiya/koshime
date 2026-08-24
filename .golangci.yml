@@ -35,7 +35,10 @@ linters:
             # We launch a subprocess with a variable in a safe
             # way, because it doesn't involve user input.
             - G204
+            # All file variables are only assigned once.
             - G304
+            # DoS attacks are impossible with a local-only application
+            - G110
         nakedret:
           # I don't like naked returns
           max-func-lines: 0
