@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -145,7 +146,9 @@ func UpdateFeeds(db *database.Database) error {
 		return fmt.Errorf("failed to load feeds to update: %w", err)
 	}
 
-	anime := db.Anime()
+	anime := slices.DeleteFunc(db.Anime(), func(a kitsu.Anime) bool {
+		return len(a.QbtFeed.Name) > 0
+	})
 	updatedAnime := make([]kitsu.Anime, 0, len(feeds))
 
 	for _, feed := range feeds {
@@ -156,13 +159,14 @@ func UpdateFeeds(db *database.Database) error {
 		engTitle := strings.TrimSpace(head)
 		jpnTitle := strings.TrimSpace(strings.TrimSuffix(tail, ")"))
 
-		for _, a := range anime {
+		for i, a := range anime {
 			hasEngTitle := len(a.ENG_Title) > 0 && strings.EqualFold(a.ENG_Title, engTitle)
 			hasJpnTitle := len(a.JPN_Title) > 0 && strings.EqualFold(a.JPN_Title, jpnTitle)
 			if hasEngTitle || hasJpnTitle {
 				a.QbtFeed.Name = feed.Name
 				a.QbtFeed.RuleURI = feed.URL
 				updatedAnime = append(updatedAnime, a)
+				anime = slices.Delete(anime, i, i+1)
 				break
 			}
 		}
