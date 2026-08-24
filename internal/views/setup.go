@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -994,11 +993,9 @@ func (m SetupUserModel) getAuthToken() tea.Msg {
 }
 
 func (m SetupUserModel) createWatchDir() tea.Msg {
-	wd := fileSys.GetWorkingDir()
-	watchPath := filepath.Join(wd, "(watched)")
-	_, err := os.Stat(watchPath)
+	_, err := os.Stat(fileSys.WatchDir())
 	if errors.Is(err, os.ErrNotExist) {
-		if err = os.Mkdir(watchPath, 0o750); err != nil {
+		if err = os.Mkdir(fileSys.WatchDir(), 0o750); err != nil {
 			return DefaultErrorMsg{err}
 		}
 		return nil
@@ -1012,8 +1009,7 @@ func (m SetupUserModel) createWatchDir() tea.Msg {
 }
 
 func (m SetupUserModel) deleteWatchDir() {
-	wd := fileSys.GetWorkingDir()
-	err := os.Remove(filepath.Join(wd, "(watched)"))
+	err := os.Remove(fileSys.WatchDir())
 	if errors.Is(err, os.ErrNotExist) {
 		return
 	}
