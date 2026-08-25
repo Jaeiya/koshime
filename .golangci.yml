@@ -64,6 +64,13 @@ linters:
               # disable checking defer funcs for unhandled err's
               source: '^\s*defer\s'
 
+severity:
+  default: warning
+  rules:
+    - linters:
+        - unused
+      severity: info
+
 issues:
     max-issues-per-linter: 0
     max-same-issues: 0
