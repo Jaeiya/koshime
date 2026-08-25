@@ -289,7 +289,7 @@ func (m RssModel) ViewSelection() tea.View {
 			ui.DisplayText([]string{
 				`It appears that your qBittorrent client is ;r;Offline;x;,
 which means you can't currently use the ;dc;automatic;x; rss option.`,
-			}, 1, 1),
+			}, 1, 1, 1),
 			m.ui.consent.View(ui.ConsentStyle.Render("Would you like to try again?")),
 		))
 	}
@@ -308,7 +308,7 @@ link after each search.`,
 and allows you to bind your search to that anime. Once you find the fansub
 you want, you can auto-add it to ;dg;qBittorrent;x; and it will begin
 downloading immediately.`,
-		}, 1),
+		}, 1, 0, 1),
 		m.ui.selMenu.View(),
 	))
 }
@@ -360,8 +360,8 @@ func (m RssModel) ViewSearch() tea.View {
 			`So if you were searching for the fansub group ;dc;asw;x;, the anime
 ;dc;solo leveling;x;, and the resolution ;dc;1080p;x;, then entering the above
 line would give you those results.`,
-		}, 1, 0, 0),
-		ui.Style.MarginTop(1).Render(lipgloss.JoinHorizontal(
+		}, 1, 0, 1),
+		ui.Style.Render(lipgloss.JoinHorizontal(
 			lipgloss.Left,
 			m.ui.input.View(),
 			ui.DisplayCharLimit(m.config.minInputLen, m.ui.input.Value()),
@@ -536,7 +536,7 @@ func (m RssModel) ViewQbtSearch() tea.View {
 				),
 				`This means that it's ;w;already;x; attached to an existing
 auto-download rule. If you continue, the feed will be removed.`,
-			}, 1, 1),
+			}, 1, 1, 1),
 			m.ui.consent.View(
 				ui.ConsentStyle.Render("Do you want to override its existing feed?"),
 			),
@@ -565,7 +565,7 @@ leveling;x;, the season ;dc;s2;x; and even the resolution ;dc;1080p;x;.`,
 		display := lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("RSS", "Fansub Lookup"),
-			ui.DisplayText(text, 1, 1),
+			ui.DisplayText(text, 1, 1, 1),
 		)
 
 		view.Cursor = m.ui.input.Cursor()
@@ -697,7 +697,7 @@ func (m RssModel) ViewQbtReview() tea.View {
 			ui.DisplaySubTitle("RSS", "Save Error"),
 			ui.DisplayText([]string{
 				fmt.Sprintf(";y;Error Occurred: ;r;%s", m.state.saveStatus.err),
-			}, 1, 1),
+			}, 1, 1, 1),
 		)
 
 	case m.state.saveStatus.saved:
@@ -710,7 +710,7 @@ func (m RssModel) ViewQbtReview() tea.View {
 every week!`,
 					m.state.saveStatus.anime.ENG_Title,
 				),
-			}, 1, 1),
+			}, 1, 1, 1),
 			m.ui.consent.View(ui.ConsentStyle.Render("Would you like to add another feed?")),
 		)
 
