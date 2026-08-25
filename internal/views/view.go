@@ -150,7 +150,7 @@ func (m Model) View() tea.View {
 		)
 		return v
 
-	case Abort:
+	case Abort, Exit:
 		return tea.NewView("")
 
 	default:
