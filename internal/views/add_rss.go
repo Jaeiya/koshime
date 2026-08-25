@@ -22,12 +22,21 @@ import (
 type Rss_View int
 
 const (
-	Rss_Selection = Rss_View(iota)
-	Rss_Search
-	Rss_Review
-	Rss_QbtSearch
-	Rss_QbtReview
+	RssSelection = Rss_View(iota)
+	RssSearch
+	RssReview
+	RssQbtSearch
+	RssQbtReview
 )
+
+type RssMenuOption int
+
+const (
+	RssManualOpt = RssMenuOption(iota)
+	RssAutoOpt
+)
+
+var menuOptions = [...]string{"Manual", "Automatic"}
 
 type (
 	QbtSavedMsg       struct{ err error }
@@ -35,7 +44,7 @@ type (
 	QbtConnMsg        bool
 )
 
-type Rss_Model struct {
+type RssModel struct {
 	windowSize tea.WindowSizeMsg
 	ui         struct {
 		loader    ui.LoaderModel
@@ -49,10 +58,10 @@ type Rss_Model struct {
 		minInputLen int
 	}
 	db    *database.Database
-	state Rss_State
+	state RssState
 }
 
-type Rss_State struct {
+type RssState struct {
 	err           error
 	view          Rss_View
 	rssResult     app.RSSResult
@@ -68,30 +77,30 @@ type Rss_State struct {
 	}
 }
 
-func newRssModel(db *database.Database) Rss_Model {
-	m := Rss_Model{db: db}
+func newRssModel(db *database.Database) RssModel {
+	m := RssModel{db: db}
 	m.ui.list = ui.NewList(ui.ListOptions{})
 	m.ui.animeList = ui.NewList(ui.ListOptions{})
 	m.ui.input = ui.NewTextInput()
 	m.ui.input.Placeholder = "<fansub anime search terms>"
 	m.ui.input.SetWidth(30)
 	m.ui.loader = ui.NewLoader()
-	m.ui.selMenu = ui.NewMenuModel([]string{"Manual", "Automatic"})
+	m.ui.selMenu = ui.NewMenuModel(menuOptions[:])
 	m.config.minInputLen = 5
 
 	p := db.Profile()
 	if p.QbtPort == 0 {
-		m.state.view = Rss_Search
+		m.state.view = RssSearch
 	}
 	m.state.selAnimeIdx = -1
 	return m
 }
 
-func (m Rss_Model) Init() tea.Cmd {
+func (m RssModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m Rss_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m RssModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -106,7 +115,7 @@ func (m Rss_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			if m.ui.loader.IsLoading() {
 				return m, cmd
 			}
-			if m.state.view == Rss_Search {
+			if m.state.view == RssSearch {
 				return m, exitToMenu
 			}
 			// Reset on error
@@ -144,19 +153,19 @@ func (m Rss_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	}
 
 	switch m.state.view {
-	case Rss_Selection:
+	case RssSelection:
 		m, cmd = m.UpdateSelection(msg)
 		cmds = append(cmds, cmd)
-	case Rss_Search:
+	case RssSearch:
 		m, cmd = m.UpdateSearch(msg)
 		cmds = append(cmds, cmd)
-	case Rss_Review:
+	case RssReview:
 		m, cmd = m.UpdateReview(msg)
 		cmds = append(cmds, cmd)
-	case Rss_QbtSearch:
+	case RssQbtSearch:
 		m, cmd = m.UpdateQbtSearch(msg)
 		cmds = append(cmds, cmd)
-	case Rss_QbtReview:
+	case RssQbtReview:
 		m, cmd = m.UpdateQbtReview(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -164,7 +173,7 @@ func (m Rss_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Rss_Model) View() tea.View {
+func (m RssModel) View() tea.View {
 	if m.state.err != nil {
 		return tea.NewView(ui.DisplayError(m.state.err))
 	}
@@ -174,15 +183,15 @@ func (m Rss_Model) View() tea.View {
 	}
 
 	switch m.state.view {
-	case Rss_Selection:
+	case RssSelection:
 		return m.ViewSelection()
-	case Rss_Search:
+	case RssSearch:
 		return m.ViewSearch()
-	case Rss_Review:
+	case RssReview:
 		return m.ViewReview()
-	case Rss_QbtSearch:
+	case RssQbtSearch:
 		return m.ViewQbtSearch()
-	case Rss_QbtReview:
+	case RssQbtReview:
 		return m.ViewQbtReview()
 
 	default:
@@ -190,26 +199,26 @@ func (m Rss_Model) View() tea.View {
 	}
 }
 
-func (m Rss_Model) ShortHelp() []key.Binding {
+func (m RssModel) ShortHelp() []key.Binding {
 	if m.state.err != nil {
 		return []key.Binding{ui.KeyMap.EscBack}
 	}
 
 	switch m.state.view {
-	case Rss_Selection:
+	case RssSelection:
 		return []key.Binding{ui.KeyMap.Select, ui.KeyMap.MainMenu}
-	case Rss_Search:
+	case RssSearch:
 		return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.MainMenu}
-	case Rss_Review:
+	case RssReview:
 		return []key.Binding{ui.KeyMap.EscBack}
-	case Rss_QbtSearch:
+	case RssQbtSearch:
 		if m.state.selAnimeIdx > -1 && m.state.saveStatus.anime.QbtFeed.Name != "" {
 			return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select}
 		}
 		if m.state.selAnimeIdx > -1 {
 			return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.Abort}
 		}
-	case Rss_QbtReview:
+	case RssQbtReview:
 		if m.state.err != nil || m.state.saveStatus.err != nil {
 			return []key.Binding{ui.KeyMap.EscBack}
 		}
@@ -221,11 +230,11 @@ func (m Rss_Model) ShortHelp() []key.Binding {
 	return []key.Binding{}
 }
 
-func (m Rss_Model) FullHelp() [][]key.Binding {
+func (m RssModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m Rss_Model) UpdateSelection(msg tea.Msg) (Rss_Model, tea.Cmd) {
+func (m RssModel) UpdateSelection(msg tea.Msg) (RssModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
@@ -235,7 +244,7 @@ func (m Rss_Model) UpdateSelection(msg tea.Msg) (Rss_Model, tea.Cmd) {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.state.isOffline {
 				if m.ui.consent.Select() == ui.No {
-					m.state.view = Rss_Search
+					m.state.view = RssSearch
 					return m, nil
 				}
 				return m, m.testConn()
@@ -248,14 +257,15 @@ func (m Rss_Model) UpdateSelection(msg tea.Msg) (Rss_Model, tea.Cmd) {
 			m.state.isOffline = true
 			return m, nil
 		}
-		m.state.view = Rss_QbtSearch
+		m.state.view = RssQbtSearch
 		m.ui.animeList = m.createAnimeList()
 
 	case ui.MenuIndexMsg:
-		switch msg {
-		case 0:
-			m.state.view = Rss_Search
-		case 1:
+		option := RssMenuOption(msg)
+		switch option {
+		case RssManualOpt:
+			m.state.view = RssSearch
+		case RssAutoOpt:
 			return m, m.testConn()
 		}
 	}
@@ -271,7 +281,7 @@ func (m Rss_Model) UpdateSelection(msg tea.Msg) (Rss_Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Rss_Model) ViewSelection() tea.View {
+func (m RssModel) ViewSelection() tea.View {
 	if m.state.isOffline {
 		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -303,7 +313,7 @@ downloading immediately.`,
 	))
 }
 
-func (m Rss_Model) UpdateSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
+func (m RssModel) UpdateSearch(msg tea.Msg) (RssModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 	switch msg := msg.(type) {
@@ -325,7 +335,7 @@ func (m Rss_Model) UpdateSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 			return m, func() tea.Msg { return DefaultErrorMsg{err} }
 		}
 		m.ui.loader.Stop()
-		m.state.view = Rss_Review
+		m.state.view = RssReview
 
 	}
 
@@ -335,7 +345,7 @@ func (m Rss_Model) UpdateSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Rss_Model) ViewSearch() tea.View {
+func (m RssModel) ViewSearch() tea.View {
 	view := tea.NewView("")
 	view.Cursor = m.ui.input.Cursor()
 	view.Cursor.Shape = tea.CursorBar
@@ -362,13 +372,13 @@ line would give you those results.`,
 	return view
 }
 
-func (m Rss_Model) UpdateReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
+func (m RssModel) UpdateReview(msg tea.Msg) (RssModel, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.EscBack):
-			m.state.view = Rss_Search
+			m.state.view = RssSearch
 			return m, nil
 		}
 	}
@@ -378,7 +388,7 @@ func (m Rss_Model) UpdateReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Rss_Model) ViewReview() tea.View {
+func (m RssModel) ViewReview() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("RSS", "Selection"),
@@ -394,7 +404,7 @@ func (m Rss_Model) ViewReview() tea.View {
 	))
 }
 
-func (m Rss_Model) UpdateQbtSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
+func (m RssModel) UpdateQbtSearch(msg tea.Msg) (RssModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -416,7 +426,7 @@ func (m Rss_Model) UpdateQbtSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 			return m, func() tea.Msg { return DefaultErrorMsg{err} }
 		}
 		m.ui.loader.Stop()
-		m.state.view = Rss_QbtReview
+		m.state.view = RssQbtReview
 
 	case tea.KeyPressMsg:
 		switch {
@@ -438,7 +448,7 @@ func (m Rss_Model) UpdateQbtSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 			if hasSelectedAnime {
 				m.state.selAnimeIdx = -1
 			} else {
-				m.state.view = Rss_Selection
+				m.state.view = RssSelection
 			}
 
 		case key.Matches(msg, ui.KeyMap.Select):
@@ -488,7 +498,7 @@ func (m Rss_Model) UpdateQbtSearch(msg tea.Msg) (Rss_Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Rss_Model) ViewQbtSearch() tea.View {
+func (m RssModel) ViewQbtSearch() tea.View {
 	view := tea.NewView("")
 
 	if m.ui.animeList.FilterState() == list.Filtering {
@@ -577,7 +587,7 @@ leveling;x;, the season ;dc;s2;x; and even the resolution ;dc;1080p;x;.`,
 	return tea.NewView("missing RSS QbtSearch view")
 }
 
-func (m Rss_Model) UpdateQbtReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
+func (m RssModel) UpdateQbtReview(msg tea.Msg) (RssModel, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -617,7 +627,7 @@ func (m Rss_Model) UpdateQbtReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
 				}
 				return m, nil
 			}
-			m.state.view = Rss_QbtSearch
+			m.state.view = RssQbtSearch
 			m.ui.input.Reset()
 
 		case key.Matches(msg, ui.KeyMap.Select):
@@ -627,7 +637,7 @@ func (m Rss_Model) UpdateQbtReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
 					return m, exitToMenu
 				}
 				m.resetFlowState()
-				m.state.view = Rss_QbtSearch
+				m.state.view = RssQbtSearch
 				return m, nil
 			}
 
@@ -677,7 +687,7 @@ func (m Rss_Model) UpdateQbtReview(msg tea.Msg) (Rss_Model, tea.Cmd) {
 	return m, cmd
 }
 
-func (m Rss_Model) ViewQbtReview() tea.View {
+func (m RssModel) ViewQbtReview() tea.View {
 	view := tea.NewView("")
 
 	switch {
@@ -740,7 +750,7 @@ based on that selection.`,
 	return view
 }
 
-func (m Rss_Model) parseRssResult(r app.RSSResult) (list.Model, []app.FansubFileInfo, error) {
+func (m RssModel) parseRssResult(r app.RSSResult) (list.Model, []app.FansubFileInfo, error) {
 	var parser app.FansubParser
 	items := make([]list.Item, 0, len(r.Entries))
 	rssFansubs := make([]app.FansubFileInfo, 0, len(r.Entries))
@@ -795,7 +805,7 @@ func (m Rss_Model) parseRssResult(r app.RSSResult) (list.Model, []app.FansubFile
 	), rssFansubs, nil
 }
 
-func (m Rss_Model) search(query string) tea.Cmd {
+func (m RssModel) search(query string) tea.Cmd {
 	return func() tea.Msg {
 		var rss app.RSS
 		result, err := rss.FindAnimeFansub(app.Nyaa, query)
@@ -807,10 +817,10 @@ func (m Rss_Model) search(query string) tea.Cmd {
 	}
 }
 
-func (m Rss_Model) createAnimeList() list.Model {
+func (m RssModel) createAnimeList() list.Model {
 	anime := m.db.Anime()
 	items := make([]list.Item, len(anime))
-	for i, entry := range m.db.Anime() {
+	for i, entry := range anime {
 		items[i] = ui.NewListItem(entry.JPN_Title, entry.ENG_Title, i)
 	}
 
@@ -823,7 +833,7 @@ func (m Rss_Model) createAnimeList() list.Model {
 	})
 }
 
-func (m Rss_Model) findResolution(encoding string) string {
+func (m RssModel) findResolution(encoding string) string {
 	resolutions := [...]string{"480p", "720p", "1080p"}
 
 	for _, res := range resolutions {
@@ -834,7 +844,7 @@ func (m Rss_Model) findResolution(encoding string) string {
 	return ""
 }
 
-func (m Rss_Model) saveQbtFeed(feed string) tea.Cmd {
+func (m RssModel) saveQbtFeed(feed string) tea.Cmd {
 	return func() tea.Msg {
 		port := strconv.Itoa(m.db.Profile().QbtPort)
 		qb, err := qbittorrent.NewLogin(port)
@@ -870,7 +880,7 @@ func (m Rss_Model) saveQbtFeed(feed string) tea.Cmd {
 	}
 }
 
-func (m Rss_Model) removeFeed() tea.Cmd {
+func (m RssModel) removeFeed() tea.Cmd {
 	return func() tea.Msg {
 		port := strconv.Itoa(m.db.Profile().QbtPort)
 		qb, err := qbittorrent.NewLogin(port)
@@ -905,7 +915,7 @@ func (m Rss_Model) removeFeed() tea.Cmd {
 	}
 }
 
-func (m Rss_Model) createFeedName(anime kitsu.Anime) string {
+func (m RssModel) createFeedName(anime kitsu.Anime) string {
 	return fmt.Sprintf(
 		"%s (%s)",
 		anime.ENG_Title,
@@ -913,7 +923,7 @@ func (m Rss_Model) createFeedName(anime kitsu.Anime) string {
 	)
 }
 
-func (m *Rss_Model) resetFlowState() {
+func (m *RssModel) resetFlowState() {
 	m.state.selAnimeIdx = -1
 	m.state.isRssRefined = false
 	m.state.saveStatus = struct {
@@ -923,7 +933,7 @@ func (m *Rss_Model) resetFlowState() {
 	}{}
 }
 
-func (m Rss_Model) testConn() tea.Cmd {
+func (m RssModel) testConn() tea.Cmd {
 	return func() tea.Msg {
 		port := strconv.Itoa(m.db.Profile().QbtPort)
 		err := qbittorrent.CheckConn(port)
