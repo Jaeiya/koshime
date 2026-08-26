@@ -173,7 +173,7 @@ func (m *Model) CreateMenu() {
 		},
 		{
 			Name:      "RSS Lookup",
-			ModelFunc: func() ViewModel { return newRssModel(m.db) },
+			ModelFunc: func() ViewModel { return newRssMainModel(m.db) },
 			Desc:      "Search for fansub feeds",
 		},
 		{

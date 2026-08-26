@@ -19,29 +19,9 @@ import (
 	"github.com/Jaeiya/koshime/internal/utils"
 )
 
-type Rss_View int
-
-const (
-	RssSelection = Rss_View(iota)
-	RssSearch
-	RssReview
-	RssQbtSearch
-	RssQbtReview
-)
-
-type RssMenuOption int
-
-const (
-	RssManualOpt = RssMenuOption(iota)
-	RssAutoOpt
-)
-
-var menuOptions = [...]string{"Manual", "Automatic"}
-
 type (
 	QbtSavedMsg       struct{ err error }
 	QbtRemovedFeedMsg bool
-	QbtConnMsg        bool
 )
 
 type RssModel struct {
@@ -63,7 +43,7 @@ type RssModel struct {
 
 type RssState struct {
 	err           error
-	view          Rss_View
+	view          RssView
 	rssResult     app.RSSResult
 	refinedResult app.RSSResult
 	parsedFansubs []app.FansubFileInfo
@@ -253,7 +233,7 @@ func (m RssModel) UpdateSelection(msg tea.Msg) (RssModel, tea.Cmd) {
 		}
 
 	case QbtConnMsg:
-		if !msg {
+		if !msg.isOnline {
 			m.state.isOffline = true
 			return m, nil
 		}
@@ -938,8 +918,8 @@ func (m RssModel) testConn() tea.Cmd {
 		port := strconv.Itoa(m.db.Profile().QbtPort)
 		err := qbittorrent.CheckConn(port)
 		if err != nil {
-			return QbtConnMsg(false)
+			return QbtConnMsg{false}
 		}
-		return QbtConnMsg(true)
+		return QbtConnMsg{true}
 	}
 }

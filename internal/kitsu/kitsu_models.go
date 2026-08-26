@@ -9,6 +9,11 @@ import (
 
 const RssRuleName = "(anime)"
 
+type QbtFeed struct {
+	Name    string
+	RuleURI string
+}
+
 type Anime struct {
 	// Anime ID
 	ID string
@@ -24,10 +29,7 @@ type Anime struct {
 	AvgRating string
 	Synopsis  string
 	Slug      string
-	QbtFeed   struct {
-		Name    string
-		RuleURI string
-	}
+	QbtFeed   QbtFeed
 }
 
 type Profile struct {
