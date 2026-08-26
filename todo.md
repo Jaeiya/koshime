@@ -1,3 +1,6 @@
+### Manual RSS Copy
+
+Allow copying the RSS feed to the clipboard from a manual search
 
 ### Rating
 
