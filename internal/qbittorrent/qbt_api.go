@@ -200,7 +200,7 @@ func (qb qBittorrentAPI) DeleteRuleFeed(name, feed string) error {
 	rule.RemoveFeed(feed)
 	err := qb.saveRule(name, rule, ModifyRule)
 	if err != nil {
-		return fmt.Errorf("failed to add rule feed: %w", err)
+		return fmt.Errorf("failed to save updated rule feed: %w", err)
 	}
 
 	ruleCache[name] = rule
