@@ -105,8 +105,8 @@ func (m RssQbtSearchModel) UpdateSearch(msg tea.Msg) (RssQbtSearchModel, tea.Cmd
 			if m.animeList.FilterState() == list.Filtering {
 				break
 			}
-			// Do not allow aborting consent
 			if m.hasFeedConflict() {
+				m = m.reset()
 				return m, nil
 			}
 			if m.hasSelectedAnime() {
