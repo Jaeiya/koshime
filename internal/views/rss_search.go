@@ -1,7 +1,6 @@
 package views
 
 import (
-	"errors"
 	"fmt"
 
 	"charm.land/bubbles/v2/key"
@@ -15,7 +14,6 @@ import (
 )
 
 type RssSearchModel struct {
-	consent      ui.ConsentModel
 	loader       ui.LoaderModel
 	input        textinput.Model
 	list         list.Model
@@ -46,28 +44,34 @@ func (m RssSearchModel) Update(msg tea.Msg) (RssSearchModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.MainMenu):
-			if m.searchResult.Host != "" {
+			if m.hasResults() {
 				m.searchResult = app.RSSResult{}
 				return m, nil
 			}
 			return m, func() tea.Msg { return RssRouteMsg{RssSelection} }
 
 		case key.Matches(msg, ui.KeyMap.Submit):
+			// Do not submit if we already have results
+			if m.hasResults() {
+				return m, nil
+			}
 			if utils.RuneCount(m.input.Value()) < m.minInputLen {
 				break
 			}
 			m.loader, cmd = m.loader.Start("Searching")
-			return m, tea.Batch(cmd, m.search(m.input.Value()))
+			return m, tea.Batch(cmd, func() tea.Msg { return SearchFansubsMsg{m.input.Value()} })
 		}
 
 	case app.RSSResult:
-		var err error
-		m.list, _, err = m.parseRssResult(msg)
-		m.loader.Stop()
-		if err != nil {
-			return m, func() tea.Msg { return err }
-		}
 		m.searchResult = msg
+		return m, func() tea.Msg { return ParseRssMsg{Value: msg} }
+
+	case ParsedRssResults:
+		m.loader.Stop()
+		if msg.Err != nil {
+			return m, func() tea.Msg { return msg.Err }
+		}
+		m.list = msg.List
 	}
 
 	if m.loader.IsLoading() {
@@ -75,12 +79,10 @@ func (m RssSearchModel) Update(msg tea.Msg) (RssSearchModel, tea.Cmd) {
 		cmds = append(cmds, cmd)
 	}
 
-	switch m.searchResult.Host {
-	case "":
+	if !m.hasResults() {
 		m.input, cmd = m.input.Update(msg)
 		cmds = append(cmds, cmd)
-	default:
-		m.consent = m.consent.Update(msg)
+	} else {
 		m.list, cmd = m.list.Update(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -92,13 +94,20 @@ func (m RssSearchModel) View() tea.View {
 	if m.loader.IsLoading() {
 		return tea.NewView(ui.Style.MarginTop(1).Render(m.loader.View()))
 	}
-
-	switch m.searchResult.Host {
-	case "":
+	if !m.hasResults() {
 		return m.ViewSearch()
-	default:
-		return m.ViewReview()
 	}
+	return m.ViewReview()
+}
+
+func (m RssSearchModel) ShortHelp() []key.Binding {
+	if m.loader.IsLoading() {
+		return nil
+	}
+	if !m.hasResults() {
+		return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.MainMenu}
+	}
+	return nil
 }
 
 func (m RssSearchModel) ViewSearch() tea.View {
@@ -114,8 +123,8 @@ func (m RssSearchModel) ViewSearch() tea.View {
 			`Here's an example of a typical search:`,
 			`;dc;asw solo leveling 1080p`,
 			`So if you were searching for the fansub group ;dc;asw;x;, the anime
-	;dc;solo leveling;x;, and the resolution ;dc;1080p;x;, then entering the above
-	line would give you those results.`,
+;dc;solo leveling;x;, and the resolution ;dc;1080p;x;, then entering the above
+line would give you those results.`,
 		}, 1, 0, 1),
 		ui.Style.Render(lipgloss.JoinHorizontal(
 			lipgloss.Left,
@@ -144,70 +153,6 @@ func (m RssSearchModel) ViewReview() tea.View {
 	))
 }
 
-func (m RssSearchModel) search(query string) tea.Cmd {
-	return func() tea.Msg {
-		var rss app.RSS
-		result, err := rss.FindAnimeFansub(app.Nyaa, query)
-		if err != nil {
-			return err
-		}
-		return result
-	}
-}
-
-func (m RssSearchModel) parseRssResult(
-	r app.RSSResult,
-) (list.Model, []app.FansubFileInfo, error) {
-	var parser app.FansubParser
-	items := make([]list.Item, 0, len(r.Entries))
-	rssFansubs := make([]app.FansubFileInfo, 0, len(r.Entries))
-
-	count := 0
-	for _, entry := range r.Entries {
-		info, err := parser.Parse(entry.Title)
-		if err != nil {
-			if errors.Is(err, app.ErrBatchFile) {
-				continue
-			}
-			return list.Model{}, nil, err
-		}
-
-		// If a release doesn't have a readable fansub group name
-		// then we consider it suspicious.
-		if info.Fansub == "" {
-			continue
-		}
-
-		// If a fansub file name does not contain "batch", but doesn't
-		// include an episode #, then it's usually a batch release.
-		if info.Episode == "" {
-			continue
-		}
-
-		rssFansubs = append(rssFansubs, info)
-
-		dateStr := entry.Date.Local().Format("Jan 2, 2006 at 3:04pm")
-		seasonStr := ""
-		if info.Season != "" {
-			seasonStr = " | S" + info.Season
-		}
-		items = append(
-			items, ui.NewListItem(
-				fmt.Sprintf("[%s] %s - %s", info.Fansub, info.Title, info.Episode),
-				fmt.Sprintf("%s | %s | %s%s", dateStr, entry.Size, info.Encoding, seasonStr),
-				count,
-			),
-		)
-		count++
-	}
-
-	return ui.NewList(
-		ui.ListOptions{
-			Items:         items,
-			ShortHelpKeys: []key.Binding{ui.KeyMap.Select, ui.KeyMap.Back},
-			Width:         m.windowSize.Width - 3,
-			MaxHeight:     int(float64(m.windowSize.Height) * 0.66),
-			ItemsPerPage:  5,
-		},
-	), rssFansubs, nil
+func (m RssSearchModel) hasResults() bool {
+	return m.searchResult.Host != ""
 }

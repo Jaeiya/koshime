@@ -1,11 +1,15 @@
 package views
 
 import (
+	"errors"
+	"fmt"
 	"strconv"
 
 	"charm.land/bubbles/v2/key"
+	"charm.land/bubbles/v2/list"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/qbittorrent"
 	"github.com/Jaeiya/koshime/internal/ui"
@@ -16,9 +20,7 @@ type RssView int
 const (
 	RssSelection = RssView(iota)
 	RssSearch
-	RssReview
 	RssQbtSearch
-	RssQbtReview
 )
 
 type RssMenuOption int
@@ -28,13 +30,18 @@ const (
 	RssAutoOpt
 )
 
-type RssRouteMsg struct {
-	View RssView
-}
 type (
+	RssRouteMsg       struct{ View RssView }
 	QbtConnMsg        struct{ isOnline bool }
 	QbtSavedMsg       struct{ err error }
 	QbtRemovedFeedMsg bool
+	ParseRssMsg       struct{ Value app.RSSResult }
+	ParsedRssResults  struct {
+		List list.Model
+		Data []app.FansubFileInfo
+		Err  error
+	}
+	SearchFansubsMsg struct{ Query string }
 )
 
 var menuOptions = [...]string{"Manual", "Automatic"}
@@ -107,6 +114,12 @@ func (m RssMainModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			return m, nil
 		}
 
+	case ParseRssMsg:
+		return m, m.parseRss(msg.Value)
+
+	case SearchFansubsMsg:
+		return m, m.search(msg.Query)
+
 	case ui.MenuIndexMsg:
 		switch RssMenuOption(msg) {
 		case RssManualOpt:
@@ -131,13 +144,14 @@ func (m RssMainModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			m.consent = m.consent.Update(msg)
 		}
 		cmds = append(cmds, cmd)
+
 	case RssSearch:
 		m.searchModel, cmd = m.searchModel.Update(msg)
 		cmds = append(cmds, cmd)
+
 	case RssQbtSearch:
 		m.qbtSearchModel, cmd = m.qbtSearchModel.Update(msg)
 		cmds = append(cmds, cmd)
-	default: // FIXME: remove this once refactor is complete
 	}
 
 	return m, tea.Batch(cmds...)
@@ -155,7 +169,6 @@ func (m RssMainModel) View() tea.View {
 		return m.searchModel.View()
 	case RssQbtSearch:
 		return m.qbtSearchModel.View()
-	default: // FIXME: remove this once refactor is complete
 	}
 	return tea.NewView("")
 }
@@ -196,6 +209,8 @@ func (m RssMainModel) ShortHelp() []key.Binding {
 	switch m.view {
 	case RssSelection:
 		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select}
+	case RssSearch:
+		return m.searchModel.ShortHelp()
 	default:
 		return nil
 	}
@@ -218,5 +233,83 @@ func (m RssMainModel) testConn() tea.Cmd {
 			return QbtConnMsg{false}
 		}
 		return QbtConnMsg{true}
+	}
+}
+
+func (m RssMainModel) search(query string) tea.Cmd {
+	return func() tea.Msg {
+		var rss app.RSS
+		result, err := rss.FindAnimeFansub(app.Nyaa, query)
+		if err != nil {
+			return err
+		}
+		return result
+	}
+}
+
+func (m RssMainModel) parseRss(r app.RSSResult) tea.Cmd {
+	return func() tea.Msg {
+		var parser app.FansubParser
+		items := make([]list.Item, 0, len(r.Entries))
+		rssFansubs := make([]app.FansubFileInfo, 0, len(r.Entries))
+
+		count := 0
+		for _, entry := range r.Entries {
+			info, err := parser.Parse(entry.Title)
+			if err != nil {
+				if errors.Is(err, app.ErrBatchFile) {
+					continue
+				}
+				return ParsedRssResults{List: list.Model{}, Data: nil, Err: err}
+			}
+
+			// If a release doesn't have a readable fansub group name
+			// then we consider it suspicious.
+			if info.Fansub == "" {
+				continue
+			}
+
+			// If a fansub file name does not contain "batch", but doesn't
+			// include an episode #, then it's usually a batch release.
+			if info.Episode == "" {
+				continue
+			}
+
+			rssFansubs = append(rssFansubs, info)
+
+			dateStr := entry.Date.Local().Format("Jan 2, 2006 at 3:04pm")
+			seasonStr := ""
+			if info.Season != "" {
+				seasonStr = " | S" + info.Season
+			}
+			items = append(
+				items, ui.NewListItem(
+					fmt.Sprintf("[%s] %s - %s", info.Fansub, info.Title, info.Episode),
+					fmt.Sprintf(
+						"%s | %s | %s%s",
+						dateStr,
+						entry.Size,
+						info.Encoding,
+						seasonStr,
+					),
+					count,
+				),
+			)
+			count++
+		}
+
+		return ParsedRssResults{
+			List: ui.NewList(
+				ui.ListOptions{
+					Items:         items,
+					ShortHelpKeys: []key.Binding{ui.KeyMap.Select, ui.KeyMap.EscBack},
+					Width:         m.windowSize.Width - 3,
+					MaxHeight:     int(float64(m.windowSize.Height) * 0.66),
+					ItemsPerPage:  5,
+				},
+			),
+			Data: rssFansubs,
+			Err:  nil,
+		}
 	}
 }
