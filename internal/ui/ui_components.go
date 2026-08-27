@@ -73,7 +73,6 @@ func NewList(o ListOptions) list.Model {
 	l.DisableQuitKeybindings()
 	l.FilterInput.SetVirtualCursor(false)
 	l.SetFilteringEnabled(o.EnableFilter)
-	// l.FilterInput.VirtualCursor = false
 
 	l.Help.Styles.ShortDesc = HelpDescStyle
 	l.Help.Styles.FullDesc = HelpDescStyle
