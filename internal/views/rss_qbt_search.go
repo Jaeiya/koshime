@@ -1,7 +1,6 @@
 package views
 
 import (
-	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -28,21 +27,21 @@ type RssQbtSearchModel struct {
 	resultRssList  list.Model
 	refinedRssList list.Model
 	windowSize     tea.WindowSizeMsg
-	fansubs        []app.FansubFileInfo
+	queriedFansubs []app.FansubFileInfo
 	selAnime       kitsu.Anime
 	selFeed        app.RSSResult
 	selAnimeIdx    int
 	minInputLen    int
 	isSaved        bool
+	lastInput      string
+	noResults      bool
 }
 
 func newRssQbtSearchModel(db *database.Database) RssQbtSearchModel {
 	m := RssQbtSearchModel{db: db}
 	m.input = ui.NewTextInput()
+	m.input.Placeholder = "<anime fansub search terms>"
 	m.loader = ui.NewLoader()
-	m.animeList = list.Model{}
-	m.resultRssList = list.Model{}
-	m.refinedRssList = list.Model{}
 	m.input.SetWidth(30)
 	m.minInputLen = 3
 	m.selAnimeIdx = -1
@@ -92,11 +91,19 @@ func (m RssQbtSearchModel) UpdateSearch(msg tea.Msg) (RssQbtSearchModel, tea.Cmd
 		m.selAnime.QbtFeed = kitsu.QbtFeed{}
 
 	case app.RSSResult:
-		var err error
-		m.resultRssList, m.fansubs, err = m.parseRssResult(msg)
+		m.lastInput = m.input.Value()
+		m.noResults = false
+		return m, m.parseRss(msg)
+
+	case ParsedRssResults:
 		m.loader.Stop()
-		if err != nil {
-			return m, func() tea.Msg { return err }
+		if msg.Err != nil {
+			return m, m.sendErr(msg.Err)
+		}
+		m.resultRssList = msg.List
+		m.queriedFansubs = msg.Fansubs
+		if !m.hasRssResult() {
+			m.noResults = true
 		}
 
 	case tea.KeyPressMsg:
@@ -133,7 +140,7 @@ func (m RssQbtSearchModel) UpdateSearch(msg tea.Msg) (RssQbtSearchModel, tea.Cmd
 					break
 				}
 				m.loader, cmd = m.loader.Start("Searching")
-				return m, tea.Batch(cmd, m.search(m.input.Value()))
+				return m, tea.Batch(cmd, m.searchFansubs(m.input.Value()))
 			}
 
 			// Save selected anime
@@ -190,7 +197,7 @@ func (m RssQbtSearchModel) UpdateBinding(msg tea.Msg) (RssQbtSearchModel, tea.Cm
 
 			//nolint:errcheck // it will ALWAYS be a list item
 			itemIdx := m.resultRssList.SelectedItem().(ui.ListItem).Index()
-			fansubInfo := m.fansubs[itemIdx]
+			fansubInfo := m.queriedFansubs[itemIdx]
 
 			searchStr := strings.TrimSpace(fmt.Sprintf(
 				"%s %s %s",
@@ -214,7 +221,7 @@ func (m RssQbtSearchModel) UpdateBinding(msg tea.Msg) (RssQbtSearchModel, tea.Cm
 			}
 
 			m.loader, cmd = m.loader.Start("Refining Feed")
-			return m, tea.Batch(cmd, m.search(searchStr))
+			return m, tea.Batch(cmd, m.searchFansubs(searchStr))
 		}
 
 	case QbtSavedMsg:
@@ -225,13 +232,15 @@ func (m RssQbtSearchModel) UpdateBinding(msg tea.Msg) (RssQbtSearchModel, tea.Cm
 		return m, nil
 
 	case app.RSSResult:
-		var err error
 		m.selFeed = msg
-		m.refinedRssList, m.fansubs, err = m.parseRssResult(msg)
+		return m, m.parseRss(msg)
+
+	case ParsedRssResults:
 		m.loader.Stop()
-		if err != nil {
-			return m, func() tea.Msg { return err }
+		if msg.Err != nil {
+			return m, m.sendErr(msg.Err)
 		}
+		m.refinedRssList = msg.List
 	}
 
 	return m, cmd
@@ -247,6 +256,16 @@ func (m RssQbtSearchModel) View() tea.View {
 	}
 
 	return m.ViewBinding()
+}
+
+func (m RssQbtSearchModel) ShortHelp() []key.Binding {
+	if m.loader.IsLoading() {
+		return nil
+	}
+	if m.hasSelectedAnime() && !m.hasRssResult() {
+		return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.EscBack}
+	}
+	return nil
 }
 
 func (m RssQbtSearchModel) ViewSearch() tea.View {
@@ -289,10 +308,9 @@ func (m RssQbtSearchModel) ViewAnimeSelection(view tea.View) tea.View {
 	view.Content = lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("RSS", "Auto Lookup"),
-		"",
 		ui.DisplayText([]string{
 			`;b;Select the anime you want to bind to an RSS feed:;x;`,
-		}),
+		}, 0, 1),
 		ui.Style.MarginLeft(3).Render(m.animeList.View()),
 	)
 	return view
@@ -319,12 +337,13 @@ auto-download rule. If you continue, the feed will be removed.`,
 
 func (m RssQbtSearchModel) ViewFeedBinding(view tea.View) tea.View {
 	text := []string{
-		`Here is a list of all titles associated with this anime. You can either use
-the full title or words within the titles, as search terms.`,
+		`Here is a list of all titles associated with this anime. Most fansubs
+use the official japanese name or closest alt title. If the title is very long,
+they use either an alt or the ;w;first few words;x; of the japanese title.`,
 	}
 
-	text = append(text, fmt.Sprintf(";c;- ;db;%s;x;", m.selAnime.ENG_Title))
 	text = append(text, fmt.Sprintf(";c;- ;db;%s;x;", m.selAnime.JPN_Title))
+	text = append(text, fmt.Sprintf(";c;- ;db;%s;x;", m.selAnime.ENG_Title))
 
 	for _, title := range m.selAnime.AltTitles {
 		text = append(text, fmt.Sprintf(";c;- ;db;%s;x;", title))
@@ -340,6 +359,13 @@ leveling;x;, the season ;dc;s2;x; and even the resolution ;dc;1080p;x;.`,
 		ui.DisplaySubTitle("RSS", "Fansub Lookup"),
 		ui.DisplayText(text, 1, 1, 1),
 	)
+
+	if m.noResults {
+		display += ui.DisplayText([]string{
+			fmt.Sprintf(";y;Could not find results for: ;c;%s;x;", m.lastInput),
+			";b;Try again:",
+		}, 1, 1, 1)
+	}
 
 	view.Cursor = m.input.Cursor()
 	view.Cursor.Shape = tea.CursorBar
@@ -357,46 +383,30 @@ leveling;x;, the season ;dc;s2;x; and even the resolution ;dc;1080p;x;.`,
 	return view
 }
 
-func (m RssQbtSearchModel) reset() RssQbtSearchModel {
-	m.resultRssList = list.Model{}
-	m.refinedRssList = list.Model{}
-	m.selFeed = app.RSSResult{}
-	m.selAnimeIdx = -1
-	return m
+func (m RssQbtSearchModel) viewRssResults(view tea.View) tea.View {
+	view.Content = lipgloss.JoinVertical(
+		lipgloss.Left,
+		ui.DisplaySubTitle("RSS", "Feed Refiner"),
+		ui.DisplayText([]string{
+			`;b;Select a fansub feed from the list below that most closely
+matches the anime release you're looking for.`,
+		}, 1, 1, 1),
+		ui.DisplayText([]string{";w;Feed Results:"}, 1, 0, 1),
+		ui.Style.MarginLeft(3).Render(m.resultRssList.View()),
+	)
+	return view
 }
 
 func (m RssQbtSearchModel) viewRefinedResults(view tea.View) tea.View {
 	view.Content = lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("RSS", "Save Feed"),
-		"",
 		ui.DisplayText([]string{
-			`Make sure the anime feed results below look like the
+			`;b;Make sure the anime feed results below look like the
 releases you're looking for.`,
-		}, 1),
-		ui.DisplayText([]string{";w;Feed Results:"}, 1),
+		}, 1, 1, 1),
+		ui.DisplayText([]string{";w;Feed Results:"}, 1, 0, 1),
 		ui.Style.MarginLeft(3).Render(m.refinedRssList.View()),
-		"",
-		ui.Style.MarginLeft(3).
-			Foreground(lipgloss.BrightGreen).
-			Background(lipgloss.Black).
-			Render("> Save "),
-	)
-	return view
-}
-
-func (m RssQbtSearchModel) viewRssResults(view tea.View) tea.View {
-	view.Content = lipgloss.JoinVertical(
-		lipgloss.Left,
-		ui.DisplaySubTitle("RSS", "Feed Finder"),
-		"",
-		ui.DisplayText([]string{
-			`Select an anime feed from the list that ;w;most closely;x;
-matches the release you're looking for. The results will then be filtered
-based on that selection.`,
-		}, 1),
-		ui.DisplayText([]string{";w;Feed Results:"}, 1),
-		ui.Style.MarginLeft(3).Render(m.resultRssList.View()),
 	)
 	return view
 }
@@ -423,61 +433,12 @@ func (m RssQbtSearchModel) viewSavedBinding(view tea.View) tea.View {
 	return view
 }
 
-func (m RssQbtSearchModel) parseRssResult(
-	r app.RSSResult,
-) (list.Model, []app.FansubFileInfo, error) {
-	var parser app.FansubParser
-	items := make([]list.Item, 0, len(r.Entries))
-	rssFansubs := make([]app.FansubFileInfo, 0, len(r.Entries))
-
-	count := 0
-	for _, entry := range r.Entries {
-		info, err := parser.Parse(entry.Title)
-		if err != nil {
-			if errors.Is(err, app.ErrBatchFile) {
-				continue
-			}
-			return list.Model{}, nil, err
-		}
-
-		// If a release doesn't have a readable fansub group name
-		// then we consider it suspicious.
-		if info.Fansub == "" {
-			continue
-		}
-
-		// If a fansub file name does not contain "batch", but doesn't
-		// include an episode #, then it's usually a batch release.
-		if info.Episode == "" {
-			continue
-		}
-
-		rssFansubs = append(rssFansubs, info)
-
-		dateStr := entry.Date.Local().Format("Jan 2, 2006 at 3:04pm")
-		seasonStr := ""
-		if info.Season != "" {
-			seasonStr = " | S" + info.Season
-		}
-		items = append(
-			items, ui.NewListItem(
-				fmt.Sprintf("[%s] %s - %s", info.Fansub, info.Title, info.Episode),
-				fmt.Sprintf("%s | %s | %s%s", dateStr, entry.Size, info.Encoding, seasonStr),
-				count,
-			),
-		)
-		count++
-	}
-
-	return ui.NewList(
-		ui.ListOptions{
-			Items:         items,
-			ShortHelpKeys: []key.Binding{ui.KeyMap.Select, ui.KeyMap.Back},
-			Width:         m.windowSize.Width - 3,
-			MaxHeight:     int(float64(m.windowSize.Height) * 0.66),
-			ItemsPerPage:  3,
-		},
-	), rssFansubs, nil
+func (m RssQbtSearchModel) reset() RssQbtSearchModel {
+	m.resultRssList = list.Model{}
+	m.refinedRssList = list.Model{}
+	m.selFeed = app.RSSResult{}
+	m.selAnimeIdx = -1
+	return m
 }
 
 func (m RssQbtSearchModel) removeFeed() tea.Cmd {
@@ -507,17 +468,6 @@ func (m RssQbtSearchModel) removeFeed() tea.Cmd {
 		}
 
 		return QbtRemovedFeedMsg(true)
-	}
-}
-
-func (m RssQbtSearchModel) search(query string) tea.Cmd {
-	return func() tea.Msg {
-		var rss app.RSS
-		result, err := rss.FindAnimeFansub(app.Nyaa, query)
-		if err != nil {
-			return err
-		}
-		return result
 	}
 }
 
@@ -561,11 +511,12 @@ func (m RssQbtSearchModel) createAnimeList() list.Model {
 	}
 
 	return ui.NewList(ui.ListOptions{
-		Items:        items,
-		Width:        m.windowSize.Width - 3,
-		MaxHeight:    int(float64(m.windowSize.Height) * 0.66),
-		ItemsPerPage: 4,
-		EnableFilter: true,
+		Items:         items,
+		Width:         m.windowSize.Width - 3,
+		ShortHelpKeys: []key.Binding{ui.KeyMap.Select, ui.KeyMap.EscBack},
+		MaxHeight:     int(float64(m.windowSize.Height) * 0.66),
+		ItemsPerPage:  4,
+		EnableFilter:  true,
 	})
 }
 
@@ -578,6 +529,24 @@ func (m RssQbtSearchModel) findResolution(encoding string) string {
 		}
 	}
 	return ""
+}
+
+func (m RssQbtSearchModel) searchFansubs(query string) tea.Cmd {
+	return func() tea.Msg {
+		return SearchFansubsMsg{query}
+	}
+}
+
+func (m RssQbtSearchModel) parseRss(r app.RSSResult) tea.Cmd {
+	return func() tea.Msg {
+		return ParseRssMsg{r}
+	}
+}
+
+func (m RssQbtSearchModel) sendErr(err error) tea.Cmd {
+	return func() tea.Msg {
+		return err
+	}
 }
 
 func (m RssQbtSearchModel) hasFeedConflict() bool {

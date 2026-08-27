@@ -37,9 +37,9 @@ type (
 	QbtRemovedFeedMsg bool
 	ParseRssMsg       struct{ Value app.RSSResult }
 	ParsedRssResults  struct {
-		List list.Model
-		Data []app.FansubFileInfo
-		Err  error
+		List    list.Model
+		Fansubs []app.FansubFileInfo
+		Err     error
 	}
 	SearchFansubsMsg struct{ Query string }
 )
@@ -211,6 +211,8 @@ func (m RssMainModel) ShortHelp() []key.Binding {
 		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select}
 	case RssSearch:
 		return m.searchModel.ShortHelp()
+	case RssQbtSearch:
+		return m.qbtSearchModel.ShortHelp()
 	default:
 		return nil
 	}
@@ -260,7 +262,7 @@ func (m RssMainModel) parseRss(r app.RSSResult) tea.Cmd {
 				if errors.Is(err, app.ErrBatchFile) {
 					continue
 				}
-				return ParsedRssResults{List: list.Model{}, Data: nil, Err: err}
+				return ParsedRssResults{List: list.Model{}, Fansubs: nil, Err: err}
 			}
 
 			// If a release doesn't have a readable fansub group name
@@ -308,8 +310,8 @@ func (m RssMainModel) parseRss(r app.RSSResult) tea.Cmd {
 					ItemsPerPage:  5,
 				},
 			),
-			Data: rssFansubs,
-			Err:  nil,
+			Fansubs: rssFansubs,
+			Err:     nil,
 		}
 	}
 }
