@@ -84,7 +84,10 @@ func New() (Model, error) {
 	return m, nil
 }
 
-func (ui Model) Init() tea.Cmd {
+func (m Model) Init() tea.Cmd {
+	if m.db.Exists() {
+		return m.menu.Init()
+	}
 	return nil
 }
 
@@ -113,6 +116,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.CreateMenu()
 		m.menu, _ = m.menu.Update(m.windowSize)
 		m.view = Menu
+		return m, m.menu.Init()
 
 	case AbortMsg:
 		m.HasAborted = true

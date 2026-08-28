@@ -70,6 +70,10 @@ func NewMenuModel(views []MenuView, db *database.Database) MenuModel {
 	return m
 }
 
+func (m MenuModel) Init() tea.Cmd {
+	return m.initQbtState()
+}
+
 func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
@@ -140,11 +144,6 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 	case QbtStateMsg:
 		m.qbtState = msg.Value
 
-	}
-
-	if !m.isQbtInit {
-		m, cmd = m.initQbtState()
-		cmds = append(cmds, cmd)
 	}
 
 	m.menu, cmd = m.menu.Update(msg)
@@ -263,23 +262,18 @@ func (m *MenuModel) updateMenu() {
 	m.menu = ui.NewMenuModel(items, ui.WithMenuRotation(), ui.WithMenuDescriptions(menuDesc))
 }
 
-func (m MenuModel) initQbtState() (MenuModel, tea.Cmd) {
-	cmd := func() tea.Msg {
+func (m MenuModel) initQbtState() tea.Cmd {
+	return func() tea.Msg {
 		p := m.db.Profile()
 		if p.QbtPort <= 0 {
 			return QbtStateMsg{None}
 		}
-
 		strPort := strconv.Itoa(p.QbtPort)
 		if err := qbittorrent.CheckConn(strPort); err != nil {
 			return QbtStateMsg{Offline}
 		}
-
 		return QbtStateMsg{Online}
 	}
-
-	m.isQbtInit = true
-	return m, cmd
 }
 
 func exitToMenu() tea.Msg {
