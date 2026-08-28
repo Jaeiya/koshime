@@ -82,6 +82,10 @@ release:
 test:
 	@gotestsum -f testdox --watch
 
+testall:
+	@gotestsum -- ./...
+
+
 # Define variables and dummy target evaluations at top level
 RUN_ARGS := $(wordlist 2,$(words $(MAKECMDGOALS)),$(MAKECMDGOALS))
 $(eval $(RUN_ARGS):;@:)
