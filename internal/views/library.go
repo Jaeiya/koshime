@@ -711,7 +711,7 @@ func (m Library_Model) reloadLibrary() tea.Msg {
 	if err != nil {
 		return err
 	}
-	err = m.db.LoadLibrary(anime)
+	err = m.db.UpdateAllAnime(anime)
 	if err != nil {
 		return fmt.Errorf("failed to reload library: %w", err)
 	}

@@ -73,33 +73,6 @@ func TestDatabaseLoadData(t *testing.T) {
 	assert.Equal(t, expectedData, loadedDb.data, "loads existing data")
 }
 
-func TestDatabaseLoadLibrary(t *testing.T) {
-	t.Parallel()
-	rw := newFakeRWriter()
-	db, err := NewDatabase(rw)
-	require.NoError(t, err)
-	db.data.Profile = kitsu.Profile{
-		ID: "1234",
-	}
-
-	expected := []kitsu.Anime{
-		{ID: "1234"},
-		{ID: "4321"},
-		{ID: "5678"},
-	}
-
-	err = db.LoadLibrary(expected)
-	require.NoError(t, err)
-
-	assert.Len(t, db.data.Library, len(expected), "has exactly 3 entries")
-	assert.Equal(t, expected, db.data.Library, "has exactly the same entries and values")
-
-	loadedDb, err := NewDatabase(rw)
-	require.NoError(t, err)
-	assert.Equal(t, "1234", loadedDb.data.Profile.ID, "profile was loaded")
-	assert.Equal(t, expected, loadedDb.data.Library, "library was saved")
-}
-
 func TestDatabaseAddAnime(t *testing.T) {
 	t.Parallel()
 	rw := newFakeRWriter()

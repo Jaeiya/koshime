@@ -107,24 +107,6 @@ func (db *Database) LoadData(d Data) error {
 	return db.Save()
 }
 
-// LoadProfile overwrites existing profile data and saves it.
-//
-// 🟠 This is destructive and should only be used to
-// bootstrap or refresh the user profile.
-func (db *Database) LoadProfile(p kitsu.Profile) error {
-	db.data.Profile = p
-	return db.Save()
-}
-
-// LoadLibrary overwrites existing library data and saves it.
-//
-// 🟠 This is destructive and should only be used to
-// bootstrap or refresh the library.
-func (db *Database) LoadLibrary(entries []kitsu.Anime) error {
-	db.data.Library = entries
-	return db.Save()
-}
-
 // FindAnime fuzzy-finds an anime by searching all titles & synopsis
 // then returns all possible matches.
 func (db Database) FindAnime(query string) ([]kitsu.Anime, error) {
@@ -218,7 +200,7 @@ func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) err
 		it ourselves by adding the unix time.
 	*/
 	db.data.Profile.TokenExpirationSec = int64(expiresIn) + time.Now().Unix()
-	return db.LoadProfile(db.data.Profile)
+	return db.Save()
 }
 
 func (db Database) Save() error {
