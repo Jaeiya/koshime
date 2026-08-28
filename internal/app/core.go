@@ -50,8 +50,7 @@ func CompleteAnime(db *database.Database, libID string) error {
 	if err := RemoveFeed(p.QbtPort, anime.QbtFeed.Name); err != nil {
 		return fmt.Errorf("failed to delete completed anime feed: %w", err)
 	}
-	_, err := kitsu.SetAnimeStatus(libID, p.AccessToken, kitsu.LibAnimeCompleted)
-	if err != nil {
+	if _, err := kitsu.SetAnimeStatus(libID, p.AccessToken, kitsu.LibAnimeCompleted); err != nil {
 		return err
 	}
 	if err := db.DeleteAnime(libID); err != nil {
@@ -64,12 +63,17 @@ func CompleteAnime(db *database.Database, libID string) error {
 // and local database.
 func DeleteAnime(db *database.Database, libID string) error {
 	p := db.Profile()
-	_, err := kitsu.DeleteAnime(libID, p.AccessToken)
-	if err != nil {
-		return fmt.Errorf("failed to delete anime from Library: %w", err)
+	anime, ok := db.FindAnimeByLibId(libID)
+	if !ok {
+		return fmt.Errorf("failed to find anime to delete")
 	}
-	err = db.DeleteAnime(libID)
-	if err != nil {
+	if err := RemoveFeed(p.QbtPort, anime.QbtFeed.Name); err != nil {
+		return fmt.Errorf("failed to remove deleted anime feed: %w", err)
+	}
+	if _, err := kitsu.DeleteAnime(libID, p.AccessToken); err != nil {
+		return fmt.Errorf("failed to delete anime from library: %w", err)
+	}
+	if err := db.DeleteAnime(libID); err != nil {
 		return fmt.Errorf("failed to delete anime from database: %w", err)
 	}
 	return nil
@@ -89,8 +93,8 @@ func DeleteFansub(anime kitsu.Anime) error {
 		return fmt.Errorf("failed to filter files for deletion: %w", err)
 	}
 	for _, file := range fileNames {
-		err := os.Remove(filepath.Join(fs.GetWorkingDir(), file))
-		if err != nil {
+		path := filepath.Join(fs.GetWorkingDir(), file)
+		if err := os.Remove(path); err != nil {
 			return fmt.Errorf("failed to delete fansub file: %w", err)
 		}
 	}
@@ -105,8 +109,7 @@ func RemoveFeed(port int, feedName string) error {
 		if err != nil {
 			return err
 		}
-		err = qbt.DeleteFeed(feedName)
-		if err != nil {
+		if err = qbt.DeleteFeed(feedName); err != nil {
 			return err
 		}
 	}
