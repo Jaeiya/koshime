@@ -48,7 +48,7 @@ type (
 	}
 )
 
-type Library_Model struct {
+type LibraryModel struct {
 	windowSize tea.WindowSizeMsg
 	ui         struct {
 		loader       ui.LoaderModel
@@ -80,8 +80,8 @@ type Library_State struct {
 	filesNotFound bool
 }
 
-func newLibraryModel(db *database.Database) Library_Model {
-	m := Library_Model{db: db, minInputLen: 4}
+func newLibraryModel(db *database.Database) LibraryModel {
+	m := LibraryModel{db: db, minInputLen: 4}
 	m.ui.list = ui.NewList(ui.ListOptions{})
 	m.ui.loader = ui.NewLoader()
 	m.ui.animeDisplay = NewAnimeDisplayModel()
@@ -104,11 +104,11 @@ func newLibraryModel(db *database.Database) Library_Model {
 	return m
 }
 
-func (m Library_Model) Init() tea.Cmd {
+func (m LibraryModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m LibraryModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -200,7 +200,7 @@ func (m Library_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Library_Model) View() tea.View {
+func (m LibraryModel) View() tea.View {
 	if m.ui.loader.IsLoading() {
 		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
@@ -229,7 +229,7 @@ func (m Library_Model) View() tea.View {
 	}
 }
 
-func (m Library_Model) ShortHelp() []key.Binding {
+func (m LibraryModel) ShortHelp() []key.Binding {
 	keys := []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down}
 
 	if m.state.filesNotFound {
@@ -269,7 +269,7 @@ func (m Library_Model) ShortHelp() []key.Binding {
 	return keys
 }
 
-func (m Library_Model) FullHelp() [][]key.Binding {
+func (m LibraryModel) FullHelp() [][]key.Binding {
 	// Prevent conflicts with list component
 	if m.state.view == LibrarySearch {
 		return nil
@@ -300,7 +300,7 @@ func (m Library_Model) FullHelp() [][]key.Binding {
 	}
 }
 
-func (m Library_Model) UpdateMenu(msg tea.Msg) (Library_Model, tea.Cmd) {
+func (m LibraryModel) UpdateMenu(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -340,7 +340,7 @@ func (m Library_Model) UpdateMenu(msg tea.Msg) (Library_Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Library_Model) ViewMenu() tea.View {
+func (m LibraryModel) ViewMenu() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplayTitle("Library"),
@@ -360,7 +360,7 @@ func (m Library_Model) ViewMenu() tea.View {
 	))
 }
 
-func (m Library_Model) UpdateSearch(msg tea.Msg) (Library_Model, tea.Cmd) {
+func (m LibraryModel) UpdateSearch(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -405,7 +405,7 @@ func (m Library_Model) UpdateSearch(msg tea.Msg) (Library_Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Library_Model) ViewSearch() tea.View {
+func (m LibraryModel) ViewSearch() tea.View {
 	v := tea.NewView("")
 	v.Cursor = m.ui.input.Cursor()
 	v.Cursor.Shape = tea.CursorBar
@@ -442,7 +442,7 @@ func (m Library_Model) ViewSearch() tea.View {
 	return v
 }
 
-func (m Library_Model) UpdateReload(msg tea.Msg) (Library_Model, tea.Cmd) {
+func (m LibraryModel) UpdateReload(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
@@ -465,7 +465,7 @@ func (m Library_Model) UpdateReload(msg tea.Msg) (Library_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Library_Model) ViewReload() tea.View {
+func (m LibraryModel) ViewReload() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Library", "Reloading"),
@@ -486,7 +486,7 @@ manually update your Kitsu library from the website.`,
 	))
 }
 
-func (m Library_Model) UpdateFeed(msg tea.Msg) (Library_Model, tea.Cmd) {
+func (m LibraryModel) UpdateFeed(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
@@ -509,7 +509,7 @@ func (m Library_Model) UpdateFeed(msg tea.Msg) (Library_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Library_Model) ViewFeed() tea.View {
+func (m LibraryModel) ViewFeed() tea.View {
 	return tea.NewView(lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Library", "Update Feeds"),
@@ -530,7 +530,7 @@ your database.`,
 	))
 }
 
-func (m Library_Model) UpdateDelete(msg tea.Msg) (Library_Model, tea.Cmd) {
+func (m LibraryModel) UpdateDelete(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	var cmd tea.Cmd
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
@@ -557,7 +557,7 @@ func (m Library_Model) UpdateDelete(msg tea.Msg) (Library_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Library_Model) ViewDeleting() tea.View {
+func (m LibraryModel) ViewDeleting() tea.View {
 	anime := m.state.anime[m.state.animeIndex]
 	if m.state.searchAnimeResult.Found {
 		anime = m.state.searchAnimeResult.Value
@@ -587,7 +587,7 @@ the local database.`, title,
 	))
 }
 
-func (m Library_Model) UpdateDrop(msg tea.Msg) (Library_Model, tea.Cmd) {
+func (m LibraryModel) UpdateDrop(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -615,7 +615,7 @@ func (m Library_Model) UpdateDrop(msg tea.Msg) (Library_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Library_Model) ViewDrop() tea.View {
+func (m LibraryModel) ViewDrop() tea.View {
 	anime := m.state.anime[m.state.animeIndex]
 	if m.state.searchAnimeResult.Found {
 		anime = m.state.searchAnimeResult.Value
@@ -642,7 +642,7 @@ accurate.`,
 	))
 }
 
-func (m Library_Model) UpdateCompleted(msg tea.Msg) (Library_Model, tea.Cmd) {
+func (m LibraryModel) UpdateCompleted(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -670,7 +670,7 @@ func (m Library_Model) UpdateCompleted(msg tea.Msg) (Library_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Library_Model) ViewCompleted() tea.View {
+func (m LibraryModel) ViewCompleted() tea.View {
 	anime := m.state.anime[m.state.animeIndex]
 	if m.state.searchAnimeResult.Found {
 		anime = m.state.searchAnimeResult.Value
@@ -694,7 +694,7 @@ Updating the progress of an anime will auto-complete it on the last episode of a
 	))
 }
 
-func (m Library_Model) searchLibrary(search string) tea.Cmd {
+func (m LibraryModel) searchLibrary(search string) tea.Cmd {
 	anime := m.db.Anime()
 	return func() tea.Msg {
 		a, found := app.FuzzyFindAnime(anime, search)
@@ -705,7 +705,7 @@ func (m Library_Model) searchLibrary(search string) tea.Cmd {
 	}
 }
 
-func (m Library_Model) reloadLibrary() tea.Msg {
+func (m LibraryModel) reloadLibrary() tea.Msg {
 	profile := m.db.Profile()
 	anime, err := kitsu.GetUserAnime(profile.ID, kitsu.LibAnimeWatching)
 	if err != nil {
@@ -723,7 +723,7 @@ func (m Library_Model) reloadLibrary() tea.Msg {
 	return LibraryReloadedMsg{anime, 0}
 }
 
-func (m Library_Model) updateFeeds() tea.Msg {
+func (m LibraryModel) updateFeeds() tea.Msg {
 	err := app.UpdateFeeds(m.db)
 	if err != nil {
 		return err
@@ -733,7 +733,7 @@ func (m Library_Model) updateFeeds() tea.Msg {
 	return LibraryFeedMsg{m.db.Anime()}
 }
 
-func (m Library_Model) deleteAnime() tea.Msg {
+func (m LibraryModel) deleteAnime() tea.Msg {
 	index := m.state.animeIndex
 	libID := m.state.anime[index].LibID
 	if m.state.searchAnimeResult.Found {
@@ -748,7 +748,7 @@ func (m Library_Model) deleteAnime() tea.Msg {
 	return LibraryReloadedMsg{anime, index}
 }
 
-func (m Library_Model) dropAnime() tea.Msg {
+func (m LibraryModel) dropAnime() tea.Msg {
 	index := m.state.animeIndex
 	libID := m.state.anime[index].LibID
 	if m.state.searchAnimeResult.Found {
@@ -763,7 +763,7 @@ func (m Library_Model) dropAnime() tea.Msg {
 	return LibraryReloadedMsg{anime, index}
 }
 
-func (m Library_Model) completeAnime() tea.Msg {
+func (m LibraryModel) completeAnime() tea.Msg {
 	index := m.state.animeIndex
 	libID := m.state.anime[index].LibID
 	if m.state.searchAnimeResult.Found {
