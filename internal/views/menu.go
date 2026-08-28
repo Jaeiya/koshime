@@ -48,7 +48,6 @@ type MenuModel struct {
 	menuIndex     int
 	activeIndex   int
 	qbtState      QbtState
-	isQbtInit     bool
 	inSubMenu     bool
 }
 
