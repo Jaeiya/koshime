@@ -108,7 +108,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case SetupUserFinishedMsg:
-		err := m.db.LoadData(msg.Value)
+		err := m.db.Overwrite(msg.Value)
 		if err != nil {
 			// This should never happen
 			panic(fmt.Errorf("failed to load new user data: %w", err))

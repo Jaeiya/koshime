@@ -64,7 +64,7 @@ func TestDatabaseLoadData(t *testing.T) {
 		Library: expectedLib,
 	}
 
-	err = db.LoadData(expectedData)
+	err = db.Overwrite(expectedData)
 	require.NoError(t, err)
 	assert.Equal(t, expectedData, db.data, "overwrites existing data")
 

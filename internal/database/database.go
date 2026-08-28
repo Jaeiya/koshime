@@ -98,15 +98,6 @@ func (db Database) Exists() bool {
 	return db.rw.Exists()
 }
 
-// LoadData overwrites all existing data and saves it.
-//
-// 🟠 This is destructive and should only be used to
-// bootstrap or refresh the database.
-func (db *Database) LoadData(d Data) error {
-	db.data = d
-	return db.Save()
-}
-
 // FindAnime fuzzy-finds an anime by searching all titles & synopsis
 // then returns all possible matches.
 func (db Database) FindAnime(query string) ([]kitsu.Anime, error) {
@@ -200,6 +191,15 @@ func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) err
 		it ourselves by adding the unix time.
 	*/
 	db.data.Profile.TokenExpirationSec = int64(expiresIn) + time.Now().Unix()
+	return db.Save()
+}
+
+// Overwrite overwrites all existing data and saves it.
+//
+// 🟠 This is destructive and should only be used to
+// bootstrap or refresh the database.
+func (db *Database) Overwrite(d Data) error {
+	db.data = d
 	return db.Save()
 }
 
