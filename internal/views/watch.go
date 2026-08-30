@@ -90,11 +90,12 @@ func newWatchModel(db *database.Database) WatchModel {
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
 	m.ui.list = ui.NewList(ui.ListOptions{})
 	m.db = db
+	m.ui.loader, _ = m.ui.loader.Start("Discovering Anime")
 	return m
 }
 
 func (m WatchModel) Init() tea.Cmd {
-	return nil
+	return tea.Sequence(m.ui.loader.Init(), m.LoadAnime)
 }
 
 func (m WatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
@@ -139,12 +140,6 @@ func (m WatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			m.ui.loader.Stop()
 		}
 		m.state.err = msg
-	}
-
-	// This should only execute once
-	if m.state.filteredAnime == nil && !m.ui.loader.IsLoading() {
-		m.ui.loader, cmd = m.ui.loader.Start("Discovering Anime")
-		cmds = append(cmds, cmd, m.LoadAnime)
 	}
 
 	switch m.state.view {
