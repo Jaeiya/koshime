@@ -3,7 +3,6 @@ package views
 import (
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -1000,11 +999,8 @@ func (m SetupUserModel) createWatchDir() tea.Msg {
 }
 
 func (m SetupUserModel) deleteWatchDir() {
-	err := os.Remove(app.WatchDir())
-	if errors.Is(err, os.ErrNotExist) {
-		return
-	}
-	if err != nil {
+	if err := app.DeleteWatchDir(); err != nil {
+		// WARN should return error through setup view
 		panic(err)
 	}
 }
