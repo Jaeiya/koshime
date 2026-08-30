@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"charm.land/bubbles/v2/key"
 	"charm.land/bubbles/v2/list"
@@ -524,6 +525,12 @@ func (m WatchModel) LoadAnime() tea.Msg {
 		return app.CompareAnime(a.Anime, b.Anime)
 	})
 
+	/*
+		INFO:
+		Without this, the loader can look/feel like its glitchy. This timing
+		makes the loading feel fast and meaningful.
+	*/
+	time.Sleep(180 * time.Millisecond)
 	return WatchLoadedAnimeMsg{items}
 }
 
