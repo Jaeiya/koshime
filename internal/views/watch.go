@@ -21,10 +21,10 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-type WatchState int
+type WatchFileState int
 
 const (
-	_ = WatchState(iota)
+	_ = WatchFileState(iota)
 	Pilot
 	WatchedAlready
 	NonSeasonalCount
@@ -42,14 +42,14 @@ type (
 	WatchLoadedAnimeMsg struct{ Value []app.FilteredAnime }
 )
 
-type Watch_View int
+type WatchView int
 
 const (
-	Watch_Selection = Watch_View(iota)
-	Watch_Progress
+	WatchSelection = WatchView(iota)
+	WatchProgress
 )
 
-type Watch_Model struct {
+type WatchModel struct {
 	windowSize tea.WindowSizeMsg
 	ui         struct {
 		list    list.Model
@@ -61,11 +61,11 @@ type Watch_Model struct {
 		enter  key.Binding
 	}
 	db    *database.Database
-	state Watch_State
+	state WatchState
 }
 
-type Watch_State struct {
-	view          Watch_View
+type WatchState struct {
+	view          WatchView
 	err           error
 	filteredAnime []app.FilteredAnime
 	lastSelected  struct {
@@ -74,7 +74,7 @@ type Watch_State struct {
 	}
 	selection struct {
 		anime     app.FilteredAnime
-		fileState WatchState
+		fileState WatchFileState
 	}
 	progress struct {
 		isUpdated   bool
@@ -84,8 +84,8 @@ type Watch_State struct {
 	}
 }
 
-func newWatchModel(db *database.Database) Watch_Model {
-	m := Watch_Model{}
+func newWatchModel(db *database.Database) WatchModel {
+	m := WatchModel{}
 	m.ui.loader = ui.NewLoader()
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
 	m.ui.list = ui.NewList(ui.ListOptions{})
@@ -93,11 +93,11 @@ func newWatchModel(db *database.Database) Watch_Model {
 	return m
 }
 
-func (m Watch_Model) Init() tea.Cmd {
+func (m WatchModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m Watch_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m WatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -117,7 +117,7 @@ func (m Watch_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.EscBack):
 			if m.state.err != nil {
-				m.state = Watch_State{}
+				m.state = WatchState{}
 				return m, func() tea.Msg { return "forceUpdateToReload" }
 			}
 
@@ -148,10 +148,10 @@ func (m Watch_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	}
 
 	switch m.state.view {
-	case Watch_Selection:
+	case WatchSelection:
 		m, cmd = m.UpdateSelection(msg)
 		cmds = append(cmds, cmd)
-	case Watch_Progress:
+	case WatchProgress:
 		m, cmd = m.UpdateProgress(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -159,7 +159,7 @@ func (m Watch_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m Watch_Model) View() tea.View {
+func (m WatchModel) View() tea.View {
 	state := m.state
 
 	if state.err != nil {
@@ -176,26 +176,26 @@ func (m Watch_Model) View() tea.View {
 	}
 
 	switch state.view {
-	case Watch_Selection:
+	case WatchSelection:
 		return m.ViewSelection()
-	case Watch_Progress:
+	case WatchProgress:
 		return m.ViewProgress()
 	}
 
 	return tea.NewView("missing WatchAnime view")
 }
 
-func (m Watch_Model) ShortHelp() []key.Binding {
+func (m WatchModel) ShortHelp() []key.Binding {
 	if m.state.err != nil {
 		return []key.Binding{ui.KeyMap.EscBack}
 	}
 
 	switch m.state.view {
-	case Watch_Selection:
+	case WatchSelection:
 		if len(m.state.filteredAnime) == 0 {
 			return []key.Binding{ui.KeyMap.EscBack}
 		}
-	case Watch_Progress:
+	case WatchProgress:
 		if m.state.progress.isUpdated {
 			return []key.Binding{ui.KeyMap.Select}
 		}
@@ -204,11 +204,11 @@ func (m Watch_Model) ShortHelp() []key.Binding {
 	return []key.Binding{}
 }
 
-func (m Watch_Model) FullHelp() [][]key.Binding {
+func (m WatchModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m Watch_Model) UpdateSelection(msg tea.Msg) (Watch_Model, tea.Cmd) {
+func (m WatchModel) UpdateSelection(msg tea.Msg) (WatchModel, tea.Cmd) {
 	var cmd tea.Cmd
 
 	switch msg := msg.(type) {
@@ -223,7 +223,7 @@ func (m Watch_Model) UpdateSelection(msg tea.Msg) (Watch_Model, tea.Cmd) {
 			if m.ui.list.FilterState() > list.Unfiltered {
 				break
 			}
-			m.state = Watch_State{}
+			m.state = WatchState{}
 			return m, func() tea.Msg { return "forceUpdateToReload" }
 
 		case key.Matches(msg, ui.KeyMap.Submit):
@@ -267,14 +267,14 @@ func (m Watch_Model) UpdateSelection(msg tea.Msg) (Watch_Model, tea.Cmd) {
 		}
 
 	case WatchPlayMsg:
-		m.state.view = Watch_Progress
+		m.state.view = WatchProgress
 	}
 
 	m.ui.list, cmd = m.ui.list.Update(msg)
 	return m, cmd
 }
 
-func (m Watch_Model) ViewSelection() tea.View {
+func (m WatchModel) ViewSelection() tea.View {
 	if len(m.state.filteredAnime) == 0 {
 		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -291,7 +291,7 @@ func (m Watch_Model) ViewSelection() tea.View {
 	))
 }
 
-func (m Watch_Model) UpdateProgress(msg tea.Msg) (Watch_Model, tea.Cmd) {
+func (m WatchModel) UpdateProgress(msg tea.Msg) (WatchModel, tea.Cmd) {
 	var cmd tea.Cmd
 	m.ui.consent = m.ui.consent.Update(msg)
 
@@ -306,7 +306,7 @@ func (m Watch_Model) UpdateProgress(msg tea.Msg) (Watch_Model, tea.Cmd) {
 			// Continue & Reload watch list
 			if m.state.progress.isUpdated {
 				ls := m.state.lastSelected
-				m.state = Watch_State{}
+				m.state = WatchState{}
 				m.state.lastSelected = ls
 				return m, func() tea.Msg { return "forceUpdateToReload" }
 			}
@@ -332,14 +332,14 @@ func (m Watch_Model) UpdateProgress(msg tea.Msg) (Watch_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Watch_Model) ViewProgress() tea.View {
+func (m WatchModel) ViewProgress() tea.View {
 	if m.state.progress.isUpdated {
 		return tea.NewView(m.displayUpdatedProgress())
 	}
 	return tea.NewView(m.displayProgress())
 }
 
-func (m Watch_Model) displayUpdatedProgress() string {
+func (m WatchModel) displayUpdatedProgress() string {
 	progressStr := ui.DisplayText([]string{
 		fmt.Sprintf(
 			"Episode ;w;updated ;x;from ;y;%d ;x;to ;g;%d",
@@ -373,7 +373,7 @@ moved to the watched directory.`, m.state.progress.last),
 	return view
 }
 
-func (m Watch_Model) displayProgress() string {
+func (m WatchModel) displayProgress() string {
 	header := lipgloss.JoinVertical(
 		lipgloss.Left,
 		ui.DisplaySubTitle("Watch", "Watching"),
@@ -469,7 +469,7 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 	return view
 }
 
-func (m *Watch_Model) PopulateAnimeList() {
+func (m *WatchModel) PopulateAnimeList() {
 	listItems := make([]list.Item, len(m.state.filteredAnime))
 	for i, item := range m.state.filteredAnime {
 		title := item.Anime.ENG_Title
@@ -505,15 +505,15 @@ func (m *Watch_Model) PopulateAnimeList() {
 	}
 }
 
-func (m *Watch_Model) cancelProgress() {
+func (m *WatchModel) cancelProgress() {
 	anime := m.state.filteredAnime
 	ls := m.state.lastSelected
-	m.state = Watch_State{}
+	m.state = WatchState{}
 	m.state.lastSelected = ls
 	m.state.filteredAnime = anime
 }
 
-func (m Watch_Model) LoadAnime() tea.Msg {
+func (m WatchModel) LoadAnime() tea.Msg {
 	stream, err := fileSys.NewFilenameStream(fileSys.GetWorkingDir())
 	if err != nil {
 		return fmt.Errorf("failed creating filename stream: %w", err)
@@ -532,7 +532,7 @@ func (m Watch_Model) LoadAnime() tea.Msg {
 	return WatchLoadedAnimeMsg{items}
 }
 
-func (m Watch_Model) PlayAnime() tea.Msg {
+func (m WatchModel) PlayAnime() tea.Msg {
 	wd := fileSys.GetWorkingDir()
 	var cmd *exec.Cmd
 	filePath := filepath.Join(wd, m.state.selection.anime.FileInfo.Filename)
@@ -552,7 +552,7 @@ func (m Watch_Model) PlayAnime() tea.Msg {
 	return WatchPlayMsg{}
 }
 
-func (m *Watch_Model) SaveProgress() tea.Msg {
+func (m *WatchModel) SaveProgress() tea.Msg {
 	libEntry := m.state.selection.anime.Anime
 	fileInfo := m.state.selection.anime.FileInfo
 
@@ -623,13 +623,8 @@ func (m *Watch_Model) SaveProgress() tea.Msg {
 	}
 }
 
-func (m Watch_Model) moveFansubFile() error {
-	anime := m.state.selection.anime
-	err := fileSys.MoveFile(
-		anime.FileInfo.Filename,
-		filepath.Join(fileSys.WatchDir(), anime.FileInfo.Filename),
-	)
-	if err != nil {
+func (m WatchModel) moveFansubFile() error {
+	if err := app.MoveFansub(m.state.selection.anime); err != nil {
 		return fmt.Errorf("failed to move fansub file: %w", err)
 	}
 	return nil

@@ -46,6 +46,16 @@ func DeleteWatchDir() error {
 	return nil
 }
 
+func MoveFansub(anime FilteredAnime) error {
+	animeFile := anime.FileInfo.Filename
+	watchPath := filepath.Join(WatchDir(), animeFile)
+	fs := utils.FileSys{}
+	if err := fs.MoveFile(animeFile, watchPath); err != nil {
+		return err
+	}
+	return nil
+}
+
 // DropAnime sets the status of an anime to 'dropped', deletes the
 // anime from the local database, and attempts to remove an
 // assigned qBittorrent feed.
