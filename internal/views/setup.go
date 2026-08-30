@@ -993,18 +993,9 @@ func (m SetupUserModel) getAuthToken() tea.Msg {
 }
 
 func (m SetupUserModel) createWatchDir() tea.Msg {
-	_, err := os.Stat(fileSys.WatchDir())
-	if errors.Is(err, os.ErrNotExist) {
-		if err = os.Mkdir(fileSys.WatchDir(), 0o750); err != nil {
-			return DefaultErrorMsg{err}
-		}
-		return nil
-	}
-
-	if err != nil {
+	if err := app.CreateWatchDir(); err != nil {
 		return DefaultErrorMsg{err}
 	}
-
 	return nil
 }
 

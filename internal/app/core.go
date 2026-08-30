@@ -23,6 +23,19 @@ func WatchDir() string {
 	return filepath.Join(utils.FileSys{}.GetWorkingDir(), watchDir)
 }
 
+func CreateWatchDir() error {
+	if _, err := os.Stat(WatchDir()); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			if err = os.Mkdir(WatchDir(), 0o750); err != nil {
+				return err
+			}
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
 // DropAnime sets the status of an anime to 'dropped', deletes the
 // anime from the local database, and attempts to remove an
 // assigned qBittorrent feed.
