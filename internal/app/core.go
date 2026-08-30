@@ -15,7 +15,13 @@ import (
 	"github.com/Jaeiya/koshime/internal/utils"
 )
 
+const watchDir = "(watched)"
+
 var ErrDropAnimeFailed = errors.New("failed to drop anime")
+
+func WatchDir() string {
+	return filepath.Join(utils.FileSys{}.GetWorkingDir(), watchDir)
+}
 
 // DropAnime sets the status of an anime to 'dropped', deletes the
 // anime from the local database, and attempts to remove an

@@ -6,8 +6,6 @@ import (
 	"path/filepath"
 )
 
-const watchDirName = "(watched)"
-
 type FileSys struct{}
 
 // GetWorkingDir gets the working directory without returning
@@ -54,11 +52,6 @@ func (FileSys) FileExists(path string) bool {
 		panic(err)
 	}
 	return !info.IsDir()
-}
-
-func (fs FileSys) WatchDir() string {
-	wd := fs.GetWorkingDir()
-	return filepath.Join(wd, watchDirName)
 }
 
 func (fs FileSys) ReadDirFiles(path string) ([]string, error) {

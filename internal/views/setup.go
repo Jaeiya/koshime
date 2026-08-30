@@ -1009,7 +1009,7 @@ func (m SetupUserModel) createWatchDir() tea.Msg {
 }
 
 func (m SetupUserModel) deleteWatchDir() {
-	err := os.Remove(fileSys.WatchDir())
+	err := os.Remove(app.WatchDir())
 	if errors.Is(err, os.ErrNotExist) {
 		return
 	}
