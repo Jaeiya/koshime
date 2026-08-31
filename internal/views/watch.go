@@ -46,7 +46,8 @@ type (
 type WatchView int
 
 const (
-	WatchSelection = WatchView(iota)
+	WatchLoading = WatchView(iota)
+	WatchSelection
 	WatchProgress
 )
 
@@ -89,7 +90,7 @@ func newWatchModel(db *database.Database) WatchModel {
 	m := WatchModel{}
 	m.ui.loader = ui.NewLoader()
 	m.keys.reload = key.NewBinding(key.WithKeys("r"), key.WithHelp("r", "reload"))
-	m.ui.list = ui.NewList(ui.ListOptions{})
+	m.ui.list = list.Model{}
 	m.db = db
 	m.ui.loader, _ = m.ui.loader.Start("Discovering Anime")
 	return m
@@ -132,8 +133,9 @@ func (m WatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		}
 
 	case WatchLoadedAnimeMsg:
+		m.state.view = WatchSelection
 		m.state.filteredAnime = msg.Value
-		m.PopulateAnimeList()
+		m.ui.list = m.CreateAnimeList()
 		m.ui.loader.Stop()
 
 	case error:
@@ -144,6 +146,8 @@ func (m WatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	}
 
 	switch m.state.view {
+	case WatchLoading:
+		// We do nothing while loading
 	case WatchSelection:
 		m, cmd = m.UpdateSelection(msg)
 		cmds = append(cmds, cmd)
@@ -465,7 +469,7 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 	return view
 }
 
-func (m *WatchModel) PopulateAnimeList() {
+func (m WatchModel) CreateAnimeList() list.Model {
 	listItems := make([]list.Item, len(m.state.filteredAnime))
 	for i, item := range m.state.filteredAnime {
 		title := item.Anime.ENG_Title
@@ -479,7 +483,7 @@ func (m *WatchModel) PopulateAnimeList() {
 		}
 		listItems[i] = ui.NewListItem(title, item.Anime.JPN_Title, i)
 	}
-	m.ui.list = ui.NewList(ui.ListOptions{
+	list := ui.NewList(ui.ListOptions{
 		Items:         listItems,
 		ShortHelpKeys: []key.Binding{m.keys.reload},
 		Width:         m.windowSize.Width - 5,
@@ -488,17 +492,18 @@ func (m *WatchModel) PopulateAnimeList() {
 		EnableFilter:  true,
 	})
 	if m.state.lastSelected.title != "" {
-		items := m.ui.list.VisibleItems()
+		items := list.VisibleItems()
 		if len(items) > 0 {
 			for _, item := range items {
 				listItem, _ := item.(ui.ListItem)
 				if listItem.Title() == m.state.lastSelected.title {
-					m.ui.list.Select(m.state.lastSelected.index)
+					list.Select(m.state.lastSelected.index)
 					break
 				}
 			}
 		}
 	}
+	return list
 }
 
 func (m *WatchModel) cancelProgress() {
