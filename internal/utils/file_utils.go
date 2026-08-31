@@ -8,12 +8,12 @@ import (
 
 type FileSys struct{}
 
-// GetWorkingDir gets the working directory without returning
+// WorkingDir gets the working directory without returning
 // an error.
 //
 // 🔴 Panics on error. We always expect standard file
 // operations to succeed.
-func (FileSys) GetWorkingDir() string {
+func (FileSys) WorkingDir() string {
 	wd, err := os.Getwd()
 	if err != nil {
 		panic(err)

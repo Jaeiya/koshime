@@ -20,7 +20,7 @@ const watchDir = "(watched)"
 var ErrDropAnimeFailed = errors.New("failed to drop anime")
 
 func WatchDir() string {
-	return filepath.Join(utils.FileSys{}.GetWorkingDir(), watchDir)
+	return filepath.Join(utils.FileSys{}.WorkingDir(), watchDir)
 }
 
 func CreateWatchDir() error {
@@ -123,7 +123,7 @@ func DeleteAnime(db *database.Database, libID string) error {
 func DeleteFansub(anime kitsu.Anime) error {
 	fs := utils.FileSys{}
 	ff := FansubFilter{}
-	stream, err := fs.NewFilenameStream(fs.GetWorkingDir())
+	stream, err := fs.NewFilenameStream(fs.WorkingDir())
 	if err != nil {
 		return fmt.Errorf("failed get file list for deletion: %w", err)
 	}
@@ -132,7 +132,7 @@ func DeleteFansub(anime kitsu.Anime) error {
 		return fmt.Errorf("failed to filter files for deletion: %w", err)
 	}
 	for _, file := range fileNames {
-		path := filepath.Join(fs.GetWorkingDir(), file)
+		path := filepath.Join(fs.WorkingDir(), file)
 		if err := os.Remove(path); err != nil {
 			return fmt.Errorf("failed to delete fansub file: %w", err)
 		}

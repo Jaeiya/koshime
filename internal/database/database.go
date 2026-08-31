@@ -20,7 +20,7 @@ import (
 var (
 	fileSys    utils.FileSys
 	dbFilePath = func() string {
-		return filepath.Join(fileSys.GetWorkingDir(), "koshime.db")
+		return filepath.Join(fileSys.WorkingDir(), "koshime.db")
 	}()
 	flateWriterPool = sync.Pool{
 		New: func() any {

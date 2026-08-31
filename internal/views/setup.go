@@ -945,7 +945,7 @@ func (m SetupUserModel) setupQbtLogin(port string) tea.Cmd {
 				Enabled:        true,
 				MustNotContain: "batch|BATCH",
 				UseRegex:       true,
-				SavePath:       fileSys.GetWorkingDir(),
+				SavePath:       fileSys.WorkingDir(),
 			},
 		)
 		if err != nil {

@@ -519,7 +519,7 @@ func (m *WatchModel) cancelProgress() {
 }
 
 func (m WatchModel) LoadAnime() tea.Msg {
-	stream, err := fileSys.NewFilenameStream(fileSys.GetWorkingDir())
+	stream, err := fileSys.NewFilenameStream(fileSys.WorkingDir())
 	if err != nil {
 		return fmt.Errorf("failed creating filename stream: %w", err)
 	}
@@ -544,7 +544,7 @@ func (m WatchModel) LoadAnime() tea.Msg {
 }
 
 func (m WatchModel) PlayAnime() tea.Msg {
-	wd := fileSys.GetWorkingDir()
+	wd := fileSys.WorkingDir()
 	var cmd *exec.Cmd
 	filePath := filepath.Join(wd, m.state.selection.anime.FileInfo.Filename)
 
@@ -567,7 +567,7 @@ func (m *WatchModel) SaveProgress() tea.Msg {
 	libEntry := m.state.selection.anime.Anime
 	fileInfo := m.state.selection.anime.FileInfo
 
-	if !fileSys.FileExists(filepath.Join(fileSys.GetWorkingDir(), fileInfo.Filename)) {
+	if !fileSys.FileExists(filepath.Join(fileSys.WorkingDir(), fileInfo.Filename)) {
 		return fmt.Errorf("the fansub file has been moved or deleted")
 	}
 
