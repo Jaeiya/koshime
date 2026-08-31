@@ -249,12 +249,12 @@ func (m WatchModel) UpdateSelection(msg tea.Msg) (WatchModel, tea.Cmd) {
 					return m, nil
 				}
 
-				nextProgress := anime.Anime.Progress + 1
+				nextProgress := anime.Value.Progress + 1
 				switch {
 				case fileEp == 0:
 					m.state.selection.fileState = Pilot
 
-				case anime.Anime.Episodes > 0 && fileEp > anime.Anime.Episodes:
+				case anime.Value.Episodes > 0 && fileEp > anime.Value.Episodes:
 					m.state.selection.fileState = NonSeasonalCount
 
 				case fileEp > nextProgress:
@@ -390,7 +390,7 @@ func (m WatchModel) displayProgress() string {
 		),
 	)
 
-	anime := m.state.selection.anime.Anime
+	anime := m.state.selection.anime.Value
 	title := anime.ENG_Title
 	if title == "" {
 		title = anime.JPN_Title
@@ -436,7 +436,7 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 		warnText = `;m;You have already seen this episode according to your progress.`
 	}
 
-	progress := m.state.selection.anime.Anime.Progress
+	progress := m.state.selection.anime.Value.Progress
 	switch {
 	case m.state.selection.fileState == Pilot:
 		progress = 0
@@ -449,7 +449,7 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 	}
 
 	progressStr := utils.ColorText(fmt.Sprintf(
-		";db; Progress: ;y;%d ;bk;(current)", m.state.selection.anime.Anime.Progress,
+		";db; Progress: ;y;%d ;bk;(current)", m.state.selection.anime.Value.Progress,
 	))
 
 	episodeLine := utils.ColorText(fmt.Sprintf("  ;db;Episode: ;g;%d ;bk;(watching)", progress))
@@ -476,16 +476,16 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 func (m WatchModel) createAnimeList() list.Model {
 	listItems := make([]list.Item, len(m.state.filteredAnime))
 	for i, item := range m.state.filteredAnime {
-		title := item.Anime.ENG_Title
+		title := item.Value.ENG_Title
 		if title == "" {
-			title = item.Anime.JPN_Title
+			title = item.Value.JPN_Title
 			// Kitsu has a bad habit of making alt english titles and
 			// not assigning one as the actual eng title.
-			if len(item.Anime.AltTitles) > 0 {
-				title = item.Anime.AltTitles[0]
+			if len(item.Value.AltTitles) > 0 {
+				title = item.Value.AltTitles[0]
 			}
 		}
-		listItems[i] = ui.NewListItem(title, item.Anime.JPN_Title, i)
+		listItems[i] = ui.NewListItem(title, item.Value.JPN_Title, i)
 	}
 	list := ui.NewList(ui.ListOptions{
 		Items:         listItems,
@@ -541,7 +541,7 @@ func (m WatchModel) playAnime() tea.Msg {
 }
 
 func (m *WatchModel) saveProgress() tea.Msg {
-	libEntry := m.state.selection.anime.Anime
+	libEntry := m.state.selection.anime.Value
 	fileInfo := m.state.selection.anime.FileInfo
 
 	if !fileSys.FileExists(filepath.Join(fileSys.WorkingDir(), fileInfo.Filename)) {

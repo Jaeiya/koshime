@@ -72,7 +72,7 @@ func ListWorkingAnime(db *database.Database) ([]FilteredAnime, error) {
 	}
 
 	slices.SortFunc(items, func(a, b FilteredAnime) int {
-		return CompareAnime(a.Anime, b.Anime)
+		return CompareAnime(a.Value, b.Value)
 	})
 
 	return items, nil

@@ -80,7 +80,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 			},
 			expected: []FilteredAnime{
 				{
-					Anime: kitsu.Anime{JPN_Title: "is a match"},
+					Value: kitsu.Anime{JPN_Title: "is a match"},
 					FileInfo: FansubFileInfo{
 						Fansub:   "group",
 						Title:    "is a match",
@@ -100,7 +100,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 			},
 			expected: []FilteredAnime{
 				{
-					Anime: kitsu.Anime{JPN_Title: "is a match"},
+					Value: kitsu.Anime{JPN_Title: "is a match"},
 					FileInfo: FansubFileInfo{
 						Fansub:   "group",
 						Title:    "match is a",
@@ -120,7 +120,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 			},
 			expected: []FilteredAnime{
 				{
-					Anime: kitsu.Anime{JPN_Title: "match is a"},
+					Value: kitsu.Anime{JPN_Title: "match is a"},
 					FileInfo: FansubFileInfo{
 						Fansub:   "group",
 						Title:    "is a match",
@@ -140,7 +140,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 			},
 			expected: []FilteredAnime{
 				{
-					Anime: kitsu.Anime{JPN_Title: "partial match"},
+					Value: kitsu.Anime{JPN_Title: "partial match"},
 					FileInfo: FansubFileInfo{
 						Fansub:   "group",
 						Title:    "a partial match",
@@ -160,7 +160,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 			},
 			expected: []FilteredAnime{
 				{
-					Anime: kitsu.Anime{JPN_Title: "a partial match"},
+					Value: kitsu.Anime{JPN_Title: "a partial match"},
 					FileInfo: FansubFileInfo{
 						Fansub:   "group",
 						Title:    "partial match",
@@ -187,7 +187,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 			},
 			expected: []FilteredAnime{
 				{
-					Anime: kitsu.Anime{ID: "0", JPN_Title: "file name"},
+					Value: kitsu.Anime{ID: "0", JPN_Title: "file name"},
 					FileInfo: FansubFileInfo{
 						Fansub:   "group",
 						Title:    "file name",
@@ -197,7 +197,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 					Score: 100,
 				},
 				{
-					Anime: kitsu.Anime{ID: "1", JPN_Title: "another file name"},
+					Value: kitsu.Anime{ID: "1", JPN_Title: "another file name"},
 					FileInfo: FansubFileInfo{
 						Fansub:   "group",
 						Title:    "another file name",
@@ -233,7 +233,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 			},
 			expected: []FilteredAnime{
 				{
-					Anime: kitsu.Anime{
+					Value: kitsu.Anime{
 						ID:        "2",
 						JPN_Title: "a b c d e f g h i j k l m n o p q r s t u v",
 					},
@@ -259,7 +259,7 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 			},
 			expected: []FilteredAnime{
 				{
-					Anime: kitsu.Anime{
+					Value: kitsu.Anime{
 						JPN_Title: "a b c d e f g h i j k l m n o p q r s t u v w x y z",
 					},
 					FileInfo: FansubFileInfo{

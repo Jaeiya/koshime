@@ -10,7 +10,7 @@ import (
 )
 
 type FilteredAnime struct {
-	Anime    kitsu.Anime
+	Value    kitsu.Anime
 	FileInfo FansubFileInfo
 	Score    int
 }
@@ -84,19 +84,19 @@ func (ff FansubFilter) FilterByAnime(
 		for _, anime := range animeList {
 			s := ff.Score(fansub.Title, anime, scoreThreshold)
 			if s > found.Score {
-				found.Anime = anime
+				found.Value = anime
 				found.FileInfo = fansub
 				found.Score = s
 			}
 		}
 
 		if found.Score > 0 {
-			if f, exists := animeFoundStore[found.Anime.ID]; exists {
+			if f, exists := animeFoundStore[found.Value.ID]; exists {
 				if found.Score > f.Score {
-					animeFoundStore[found.Anime.ID] = found
+					animeFoundStore[found.Value.ID] = found
 				}
 			} else {
-				animeFoundStore[found.Anime.ID] = found
+				animeFoundStore[found.Value.ID] = found
 			}
 		}
 
