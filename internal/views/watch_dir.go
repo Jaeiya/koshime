@@ -293,7 +293,7 @@ func (m WatchDir_Model) ViewCleaned() tea.View {
 }
 
 func (m WatchDir_Model) loadFiles() tea.Msg {
-	dirPath := app.WatchDir()
+	dirPath := app.WatchedDir()
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return fmt.Errorf("could not read watch dir: %w", err)
@@ -320,7 +320,7 @@ func (m WatchDir_Model) loadFiles() tea.Msg {
 }
 
 func (m WatchDir_Model) cleanRecentFiles() tea.Msg {
-	fileNames, err := fileSys.ReadDirFiles(app.WatchDir())
+	fileNames, err := fileSys.ReadDirFiles(app.WatchedDir())
 	if err != nil {
 		return fmt.Errorf("failed to read watch dir: %w", err)
 	}
@@ -338,7 +338,7 @@ func (m WatchDir_Model) cleanRecentFiles() tea.Msg {
 		if err != nil {
 			return fmt.Errorf("failed to parse fansub file: %w", err)
 		}
-		stats, err := os.Stat(filepath.Join(app.WatchDir(), name))
+		stats, err := os.Stat(filepath.Join(app.WatchedDir(), name))
 		if err != nil {
 			return fmt.Errorf("failed to get file stats: %w", err)
 		}
@@ -370,7 +370,7 @@ func (m WatchDir_Model) cleanRecentFiles() tea.Msg {
 
 		sortMostRecent(info)
 		for _, info := range info[1:] {
-			err := os.Remove(filepath.Join(app.WatchDir(), info.fileName))
+			err := os.Remove(filepath.Join(app.WatchedDir(), info.fileName))
 			if err != nil {
 				return fmt.Errorf("failed to remove fansub: %w", err)
 			}
@@ -383,7 +383,7 @@ func (m WatchDir_Model) cleanRecentFiles() tea.Msg {
 }
 
 func (m WatchDir_Model) cleanAll() tea.Msg {
-	fileNames, err := fileSys.ReadDirFiles(app.WatchDir())
+	fileNames, err := fileSys.ReadDirFiles(app.WatchedDir())
 	if err != nil {
 		return fmt.Errorf("failed to read watch dir: %w", err)
 	}
@@ -392,7 +392,7 @@ func (m WatchDir_Model) cleanAll() tea.Msg {
 	var count int
 
 	for _, fn := range fileNames {
-		path := filepath.Join(app.WatchDir(), fn)
+		path := filepath.Join(app.WatchedDir(), fn)
 		stats, err := os.Stat(path)
 		if err != nil {
 			return fmt.Errorf("failed to get file stats: %w", err)

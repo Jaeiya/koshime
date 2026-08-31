@@ -636,7 +636,7 @@ func (m *WatchModel) saveProgress() tea.Msg {
 }
 
 func (m WatchModel) moveFansubFile() error {
-	if err := app.MoveFansub(m.state.selection.anime); err != nil {
+	if err := app.MoveFansubFile(m.state.selection.anime); err != nil {
 		return fmt.Errorf("failed to move fansub file: %w", err)
 	}
 	return nil

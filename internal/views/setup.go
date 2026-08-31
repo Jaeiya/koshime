@@ -992,14 +992,14 @@ func (m SetupUserModel) getAuthToken() tea.Msg {
 }
 
 func (m SetupUserModel) createWatchDir() tea.Msg {
-	if err := app.CreateWatchDir(); err != nil {
+	if err := app.CreateWatchedDir(); err != nil {
 		return DefaultErrorMsg{err}
 	}
 	return nil
 }
 
 func (m SetupUserModel) deleteWatchDir() {
-	if err := app.DeleteWatchDir(); err != nil {
+	if err := app.DeleteWatchedDir(); err != nil {
 		// WARN should return error through setup view
 		panic(err)
 	}

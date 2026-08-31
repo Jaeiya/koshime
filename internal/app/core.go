@@ -15,18 +15,18 @@ import (
 	"github.com/Jaeiya/koshime/internal/utils"
 )
 
-const watchDir = "(watched)"
+const watchedDir = "(watched)"
 
 var ErrDropAnimeFailed = errors.New("failed to drop anime")
 
-func WatchDir() string {
-	return filepath.Join(utils.FileSys{}.WorkingDir(), watchDir)
+func WatchedDir() string {
+	return filepath.Join(utils.FileSys{}.WorkingDir(), watchedDir)
 }
 
-func CreateWatchDir() error {
-	if _, err := os.Stat(WatchDir()); err != nil {
+func CreateWatchedDir() error {
+	if _, err := os.Stat(WatchedDir()); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			if err = os.Mkdir(WatchDir(), 0o750); err != nil {
+			if err = os.Mkdir(WatchedDir(), 0o750); err != nil {
 				return err
 			}
 			return nil
@@ -36,8 +36,8 @@ func CreateWatchDir() error {
 	return nil
 }
 
-func DeleteWatchDir() error {
-	if err := os.Remove(WatchDir()); err != nil {
+func DeleteWatchedDir() error {
+	if err := os.Remove(WatchedDir()); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
@@ -46,9 +46,9 @@ func DeleteWatchDir() error {
 	return nil
 }
 
-func MoveFansub(anime FilteredAnime) error {
+func MoveFansubFile(anime FilteredAnime) error {
 	animeFile := anime.FileInfo.Filename
-	watchPath := filepath.Join(WatchDir(), animeFile)
+	watchPath := filepath.Join(WatchedDir(), animeFile)
 	fs := utils.FileSys{}
 	if err := fs.MoveFile(animeFile, watchPath); err != nil {
 		return err
