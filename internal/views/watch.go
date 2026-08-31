@@ -118,7 +118,8 @@ func (m WatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		case key.Matches(msg, ui.KeyMap.EscBack):
 			if m.state.err != nil {
 				m.state = WatchState{}
-				return m, func() tea.Msg { return "forceUpdateToReload" }
+				m.ui.loader, cmd = m.ui.loader.Start("Reloading Anime")
+				return m, tea.Sequence(cmd, m.loadAnime)
 			}
 
 		// Prevent accidental submissions when in error state
@@ -225,7 +226,8 @@ func (m WatchModel) UpdateSelection(msg tea.Msg) (WatchModel, tea.Cmd) {
 				break
 			}
 			m.state = WatchState{}
-			return m, func() tea.Msg { return "forceUpdateToReload" }
+			m.ui.loader, cmd = m.ui.loader.Start("Reloading Anime")
+			return m, tea.Sequence(cmd, m.loadAnime)
 
 		case key.Matches(msg, ui.KeyMap.Submit):
 			// do not allow submission of nothing
@@ -309,7 +311,8 @@ func (m WatchModel) UpdateProgress(msg tea.Msg) (WatchModel, tea.Cmd) {
 				ls := m.state.lastSelected
 				m.state = WatchState{}
 				m.state.lastSelected = ls
-				return m, func() tea.Msg { return "forceUpdateToReload" }
+				m.ui.loader, cmd = m.ui.loader.Start("Reloading Anime")
+				return m, tea.Sequence(cmd, m.loadAnime)
 			}
 
 			if m.ui.consent.Select() == ui.No {
