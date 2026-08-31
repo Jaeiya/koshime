@@ -2,10 +2,7 @@ package views
 
 import (
 	"fmt"
-	"os/exec"
 	"path/filepath"
-	"runtime"
-	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -520,45 +517,21 @@ func (m *WatchModel) cancelProgress() {
 }
 
 func (m WatchModel) loadAnime() tea.Msg {
-	stream, err := fileSys.NewFilenameStream(fileSys.WorkingDir())
-	if err != nil {
-		return fmt.Errorf("failed creating filename stream: %w", err)
-	}
-
-	ff := app.FansubFilter{}
-	items, err := ff.FilterByAnime(stream, m.db.Anime(), 25)
-	if err != nil {
-		return fmt.Errorf("failed to filter fansubs: %w", err)
-	}
-
-	slices.SortFunc(items, func(a, b app.FilteredAnime) int {
-		return app.CompareAnime(a.Anime, b.Anime)
-	})
-
 	/*
 		INFO:
 		Without this, the loader can look/feel like its glitchy. This timing
 		makes the loading feel fast and meaningful.
 	*/
 	time.Sleep(180 * time.Millisecond)
+	items, err := app.ListWorkingAnime(m.db)
+	if err != nil {
+		return err
+	}
 	return WatchLoadedAnimeMsg{items}
 }
 
 func (m WatchModel) playAnime() tea.Msg {
-	wd := fileSys.WorkingDir()
-	var cmd *exec.Cmd
-	filePath := filepath.Join(wd, m.state.selection.anime.FileInfo.Filename)
-
-	switch runtime.GOOS {
-	case "windows":
-		cmd = exec.Command("cmd", "/C", "start", "", filePath)
-	case "darwin":
-		cmd = exec.Command("open", filePath)
-	default:
-		cmd = exec.Command("xdg-open", filePath)
-	}
-	err := cmd.Run()
-	if err != nil {
+	if err := app.PlayAnime(m.state.selection.anime.FileInfo.Filename); err != nil {
 		return err
 	}
 	return WatchPlayMsg{}

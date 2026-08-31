@@ -4,7 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"slices"
 	"strconv"
 	"strings"
@@ -52,6 +54,49 @@ func MoveFansubFile(anime FilteredAnime) error {
 	fs := utils.FileSys{}
 	if err := fs.MoveFile(animeFile, watchPath); err != nil {
 		return err
+	}
+	return nil
+}
+
+func ListWorkingAnime(db *database.Database) ([]FilteredAnime, error) {
+	fs := utils.FileSys{}
+	stream, err := fs.NewFilenameStream(fs.WorkingDir())
+	if err != nil {
+		return nil, fmt.Errorf("failed to list working anime: %w", err)
+	}
+
+	ff := FansubFilter{}
+	items, err := ff.FilterByAnime(stream, db.Anime(), 25)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list working anime: %w", err)
+	}
+
+	slices.SortFunc(items, func(a, b FilteredAnime) int {
+		return CompareAnime(a.Anime, b.Anime)
+	})
+
+	return items, nil
+}
+
+func PlayAnime(fileName string) error {
+	fs := utils.FileSys{}
+	var cmd *exec.Cmd
+
+	filePath := filepath.Join(fs.WorkingDir(), fileName)
+	if !fs.FileExists(filePath) {
+		return fmt.Errorf("failed to play file: file not found")
+	}
+
+	switch runtime.GOOS {
+	case "windows":
+		cmd = exec.Command("cmd", "/C", "start", "", filePath)
+	case "darwin":
+		cmd = exec.Command("open", filePath)
+	default:
+		cmd = exec.Command("xdg-open", filePath)
+	}
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("failed to play file: %w", err)
 	}
 	return nil
 }
