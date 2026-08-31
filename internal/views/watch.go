@@ -97,7 +97,7 @@ func newWatchModel(db *database.Database) WatchModel {
 }
 
 func (m WatchModel) Init() tea.Cmd {
-	return tea.Sequence(m.ui.loader.Init(), m.LoadAnime)
+	return tea.Sequence(m.ui.loader.Init(), m.loadAnime)
 }
 
 func (m WatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
@@ -135,7 +135,7 @@ func (m WatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	case WatchLoadedAnimeMsg:
 		m.state.view = WatchSelection
 		m.state.filteredAnime = msg.Value
-		m.ui.list = m.CreateAnimeList()
+		m.ui.list = m.createAnimeList()
 		m.ui.loader.Stop()
 
 	case error:
@@ -265,7 +265,7 @@ func (m WatchModel) UpdateSelection(msg tea.Msg) (WatchModel, tea.Cmd) {
 					m.state.selection.fileState = WatchedAlready
 				}
 
-				return m, m.PlayAnime
+				return m, m.playAnime
 			}
 
 		}
@@ -321,7 +321,7 @@ func (m WatchModel) UpdateProgress(msg tea.Msg) (WatchModel, tea.Cmd) {
 			}
 
 			m.ui.loader, cmd = m.ui.loader.Start("Updating Anime")
-			return m, tea.Batch(cmd, m.SaveProgress)
+			return m, tea.Batch(cmd, m.saveProgress)
 		}
 
 	case WatchUpdateSuccessMsg:
@@ -473,7 +473,7 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 	return view
 }
 
-func (m WatchModel) CreateAnimeList() list.Model {
+func (m WatchModel) createAnimeList() list.Model {
 	listItems := make([]list.Item, len(m.state.filteredAnime))
 	for i, item := range m.state.filteredAnime {
 		title := item.Anime.ENG_Title
@@ -518,7 +518,7 @@ func (m *WatchModel) cancelProgress() {
 	m.state.filteredAnime = anime
 }
 
-func (m WatchModel) LoadAnime() tea.Msg {
+func (m WatchModel) loadAnime() tea.Msg {
 	stream, err := fileSys.NewFilenameStream(fileSys.WorkingDir())
 	if err != nil {
 		return fmt.Errorf("failed creating filename stream: %w", err)
@@ -543,7 +543,7 @@ func (m WatchModel) LoadAnime() tea.Msg {
 	return WatchLoadedAnimeMsg{items}
 }
 
-func (m WatchModel) PlayAnime() tea.Msg {
+func (m WatchModel) playAnime() tea.Msg {
 	wd := fileSys.WorkingDir()
 	var cmd *exec.Cmd
 	filePath := filepath.Join(wd, m.state.selection.anime.FileInfo.Filename)
@@ -563,7 +563,7 @@ func (m WatchModel) PlayAnime() tea.Msg {
 	return WatchPlayMsg{}
 }
 
-func (m *WatchModel) SaveProgress() tea.Msg {
+func (m *WatchModel) saveProgress() tea.Msg {
 	libEntry := m.state.selection.anime.Anime
 	fileInfo := m.state.selection.anime.FileInfo
 
