@@ -176,6 +176,8 @@ func (m WatchModel) View() tea.View {
 	}
 
 	switch state.view {
+	case WatchLoading:
+		// We do not need a view for initial loading
 	case WatchSelection:
 		return m.ViewSelection()
 	case WatchProgress:
@@ -191,6 +193,8 @@ func (m WatchModel) ShortHelp() []key.Binding {
 	}
 
 	switch m.state.view {
+	case WatchLoading:
+		return nil
 	case WatchSelection:
 		if len(m.state.filteredAnime) == 0 {
 			return []key.Binding{ui.KeyMap.EscBack}
