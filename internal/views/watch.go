@@ -514,6 +514,7 @@ func (m *WatchModel) cancelProgress() {
 	anime := m.state.filteredAnime
 	ls := m.state.lastSelected
 	m.state = WatchState{}
+	m.state.view = WatchSelection
 	m.state.lastSelected = ls
 	m.state.filteredAnime = anime
 }
