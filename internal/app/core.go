@@ -168,12 +168,18 @@ func SaveAnimeProgress(
 			return p, err
 		}
 		p.IsCompleted = true
+		if err = MoveFansubFile(anime); err != nil {
+			return p, err
+		}
 		return p, nil
 	}
 
 	anime.Value.Progress = p.NextEp
 	if err = db.UpdateAnime(anime.Value); err != nil {
 		return p, fmt.Errorf("failed to update database: %w", err)
+	}
+	if err = MoveFansubFile(anime); err != nil {
+		return p, err
 	}
 	return p, nil
 }
