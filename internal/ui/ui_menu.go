@@ -12,7 +12,7 @@ import (
 )
 
 type (
-	MenuItemSelMsg int
+	MenuItemSelMsg struct{ Value int }
 	OptionFunc     func(m MenuModel) MenuModel
 )
 
@@ -80,7 +80,7 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 			}
 
 		case key.Matches(msg, KeyMap.Select):
-			return m, func() tea.Msg { return MenuItemSelMsg(m.menuIndex) }
+			return m, func() tea.Msg { return MenuItemSelMsg{m.menuIndex} }
 		}
 	}
 	return m, nil

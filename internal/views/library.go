@@ -16,8 +16,10 @@ import (
 	"github.com/Jaeiya/koshime/internal/utils"
 )
 
+type LibMenuItem int
+
 const (
-	MenuDrop = ui.MenuItemSelMsg(iota)
+	MenuDrop = LibMenuItem(iota)
 	MenuComplete
 	MenuDelete
 )
@@ -322,7 +324,7 @@ func (m LibraryModel) UpdateMenu(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case ui.MenuItemSelMsg:
-		switch msg {
+		switch LibMenuItem(msg.Value) {
 		case MenuDrop:
 			m.state.view = LibraryDrop
 		case MenuComplete:

@@ -121,7 +121,7 @@ func (m RssMainModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		return m, m.search(msg.Query)
 
 	case ui.MenuItemSelMsg:
-		switch RssMenuOption(msg) {
+		switch RssMenuOption(msg.Value) {
 		case RssManualOpt:
 			m.view = RssSearch
 		default:

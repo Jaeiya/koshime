@@ -117,10 +117,10 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 		}
 
 	case ui.MenuItemSelMsg:
-		chosen := m.activeItems[msg]
+		chosen := m.activeItems[msg.Value]
 		if chosen.SubViews != nil {
 			m.inSubMenu = true
-			m.menuIndex = int(msg)
+			m.menuIndex = msg.Value
 			m.activeItems = chosen.SubViews
 			m.updateMenu()
 		} else {

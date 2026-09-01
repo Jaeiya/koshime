@@ -167,7 +167,7 @@ func (m WatchDir_Model) UpdateMenu(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 			return m, nil
 		}
 		m.ui.loader, cmd = m.ui.loader.Start("Cleaning Files")
-		switch msg {
+		switch msg.Value {
 		case 0:
 			m.state.view = WatchDir_CleanRecent
 			return m, tea.Batch(cmd, m.cleanRecentFiles)
