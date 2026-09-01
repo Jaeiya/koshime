@@ -508,7 +508,7 @@ func (m WatchModel) loadAnime() tea.Msg {
 		makes the loading feel fast and meaningful.
 	*/
 	time.Sleep(180 * time.Millisecond)
-	items, err := app.ListWorkingAnime(m.db)
+	items, err := app.ListWorkingAnime(m.db, 10)
 	if err != nil {
 		return err
 	}

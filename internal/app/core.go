@@ -74,7 +74,10 @@ func MoveFansubFile(anime FilteredAnime) error {
 	return nil
 }
 
-func ListWorkingAnime(db *database.Database) ([]FilteredAnime, error) {
+// ListWorkingAnime returns a list of all anime that potentially match an
+// existing fansub file in the working directory. The threshold
+// is the similarity percent required to match.
+func ListWorkingAnime(db *database.Database, threshold int) ([]FilteredAnime, error) {
 	fs := utils.FileSys{}
 	stream, err := fs.NewFilenameStream(fs.WorkingDir())
 	if err != nil {
@@ -82,7 +85,7 @@ func ListWorkingAnime(db *database.Database) ([]FilteredAnime, error) {
 	}
 
 	ff := FansubFilter{}
-	items, err := ff.FilterByAnime(stream, db.Anime(), 25)
+	items, err := ff.FilterByAnime(stream, db.Anime(), threshold)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list working anime: %w", err)
 	}
