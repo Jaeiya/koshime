@@ -2,7 +2,6 @@ package views
 
 import (
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -13,20 +12,9 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/database"
-	"github.com/Jaeiya/koshime/internal/kitsu"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/charmbracelet/x/ansi"
-)
-
-type WatchFileState int
-
-const (
-	_ = WatchFileState(iota)
-	Pilot
-	WatchedAlready
-	NonSeasonalCount
-	Mismatched
 )
 
 type (
@@ -73,7 +61,7 @@ type WatchState struct {
 	}
 	selection struct {
 		anime     app.FilteredAnime
-		fileState WatchFileState
+		fileState app.WatchState
 	}
 	progress struct {
 		isUpdated   bool
@@ -252,16 +240,16 @@ func (m WatchModel) UpdateSelection(msg tea.Msg) (WatchModel, tea.Cmd) {
 				nextProgress := anime.Value.Progress + 1
 				switch {
 				case fileEp == 0:
-					m.state.selection.fileState = Pilot
+					m.state.selection.fileState = app.Pilot
 
 				case anime.Value.Episodes > 0 && fileEp > anime.Value.Episodes:
-					m.state.selection.fileState = NonSeasonalCount
+					m.state.selection.fileState = app.NonSeasonal
 
 				case fileEp > nextProgress:
-					m.state.selection.fileState = Mismatched
+					m.state.selection.fileState = app.Mismatched
 
 				case fileEp < nextProgress:
-					m.state.selection.fileState = WatchedAlready
+					m.state.selection.fileState = app.Watched
 				}
 
 				return m, m.playAnime
@@ -324,12 +312,12 @@ func (m WatchModel) UpdateProgress(msg tea.Msg) (WatchModel, tea.Cmd) {
 			return m, tea.Batch(cmd, m.saveProgress)
 		}
 
-	case WatchUpdateSuccessMsg:
+	case app.Progress:
 		p := &m.state.progress
 		p.isUpdated = true
-		p.isCompleted = msg.isCompleted
-		p.last = msg.lastEpisode
-		p.next = msg.nextEpisode
+		p.isCompleted = msg.IsCompleted
+		p.last = msg.LastEp
+		p.next = msg.NextEp
 		m.ui.loader.Stop()
 
 	}
@@ -356,7 +344,7 @@ func (m WatchModel) displayUpdatedProgress() string {
 		progressStr = ui.DisplayText([]string{`Anime has been ;g;Completed;x;!`})
 	}
 
-	if m.state.selection.fileState == WatchedAlready || m.state.selection.fileState == Pilot {
+	if m.state.selection.fileState == app.Watched || m.state.selection.fileState == app.Pilot {
 		progressStr = ui.DisplayText([]string{
 			utils.ColorText(
 				fmt.Sprintf(`Progress remains at ;g;%d;x;, but the file ;dc;has been;x;
@@ -420,25 +408,25 @@ func (m WatchModel) displayProgress() string {
 
 	warnText := ""
 	switch m.state.selection.fileState {
-	case Pilot:
+	case app.Pilot:
 		warnText = `;m;Pilot episode detected; '00' episodes do not count towards
 your kitsu library progress.`
 
-	case NonSeasonalCount:
+	case app.NonSeasonal:
 		warnText = `;m;This fansub group is not following seasonal episode counts, which is
 why the file episode does not match the actual episode number.`
 
-	case Mismatched:
+	case app.Mismatched:
 		warnText = `;m;File episode count mismatch; you're either watching an episode
 ahead of your progress, or the fansub group is not following seasonal episode counts.`
 
-	case WatchedAlready:
+	case app.Watched:
 		warnText = `;m;You have already seen this episode according to your progress.`
 	}
 
 	progress := m.state.selection.anime.Value.Progress
 	switch {
-	case m.state.selection.fileState == Pilot:
+	case m.state.selection.fileState == app.Pilot:
 		progress = 0
 
 	case fileEp >= progress+1:
@@ -541,79 +529,9 @@ func (m WatchModel) playAnime() tea.Msg {
 }
 
 func (m *WatchModel) saveProgress() tea.Msg {
-	libEntry := m.state.selection.anime.Value
-	fileInfo := m.state.selection.anime.FileInfo
-
-	if !fileSys.FileExists(filepath.Join(fileSys.WorkingDir(), fileInfo.Filename)) {
-		return fmt.Errorf("the fansub file has been moved or deleted")
-	}
-
-	lastProgress := libEntry.Progress
-
-	// 🟡 This only works for fansubs that follow seasonal episode counts.
-	// A seasonal count means that each new season's first episode,
-	// starts at 1.
-	if m.state.selection.fileState == WatchedAlready || m.state.selection.fileState == Pilot {
-		if err := m.moveFansubFile(); err != nil {
-			return err
-		}
-		return WatchUpdateSuccessMsg{
-			lastEpisode: lastProgress,
-		}
-	}
-
-	/*
-	 * INFO: We assume the user is downloading anime in the order they want to
-	 * watch it, therefore no matter what the file episode says, we update
-	 * to next episode number. This allows support for non-seasonal episode
-	 * counts.
-	 */
-	nextProgress := lastProgress + 1
-
-	progResp, err := kitsu.UpdateAnimeProgress(
-		libEntry.LibID,
-		m.db.Profile().AccessToken,
-		nextProgress,
-	)
+	progress, err := app.SaveAnimeProgress(m.db, m.state.selection.anime, app.Watched)
 	if err != nil {
-		return fmt.Errorf("failed to update Kitsu progress: %w", err)
-	}
-
-	// 🟢 Kitsu does not always know the correct total episodes for a series
-	// until the series is about to end.
-	libEntry.Episodes = progResp.Included[0].Attributes.EpisodeCount
-
-	// 🟢 When an anime is completed (progress updated to match total episodes), the
-	// anime status is automatically updated by Kitsu, unless the episode count
-	// is unknown (0).
-	isCompleted := false
-	if libEntry.Episodes == nextProgress {
-		if err = app.CompleteAnime(m.db, libEntry.LibID); err != nil {
-			return err
-		}
-		isCompleted = true
-	} else {
-		libEntry.Progress = nextProgress
-		err = m.db.UpdateAnime(libEntry)
-		if err != nil {
-			return fmt.Errorf("failed to update database: %w", err)
-		}
-	}
-
-	if err = m.moveFansubFile(); err != nil {
 		return err
 	}
-
-	return WatchUpdateSuccessMsg{
-		lastEpisode: lastProgress,
-		nextEpisode: nextProgress,
-		isCompleted: isCompleted,
-	}
-}
-
-func (m WatchModel) moveFansubFile() error {
-	if err := app.MoveFansubFile(m.state.selection.anime); err != nil {
-		return fmt.Errorf("failed to move fansub file: %w", err)
-	}
-	return nil
+	return progress
 }

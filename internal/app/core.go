@@ -19,7 +19,22 @@ import (
 
 const watchedDir = "(watched)"
 
+type WatchState int
+
+const (
+	Pilot       = WatchState(iota) // 00 episodes
+	Watched                        // Already watched episodes
+	NonSeasonal                    // Episodes that are not following seasonal numbering
+	Mismatched
+)
+
 var ErrDropAnimeFailed = errors.New("failed to drop anime")
+
+type Progress struct {
+	LastEp      int
+	NextEp      int
+	IsCompleted bool
+}
 
 func WatchedDir() string {
 	return filepath.Join(utils.FileSys{}.WorkingDir(), watchedDir)
@@ -99,6 +114,67 @@ func PlayAnime(fileName string) error {
 		return fmt.Errorf("failed to play file: %w", err)
 	}
 	return nil
+}
+
+func SaveAnimeProgress(
+	db *database.Database,
+	anime FilteredAnime,
+	state WatchState,
+) (Progress, error) {
+	fs := utils.FileSys{}
+	if !fs.FileExists(filepath.Join(fs.WorkingDir(), anime.FileInfo.Filename)) {
+		return Progress{}, fmt.Errorf("the fansub file has been moved or deleted")
+	}
+
+	p := Progress{LastEp: anime.Value.Progress}
+
+	// 🟡 This only works for fansubs that follow seasonal episode counts.
+	// A seasonal count means that each new season's first episode
+	// starts at 1.
+	if state == Watched || state == Pilot {
+		if err := MoveFansubFile(anime); err != nil {
+			return Progress{}, err
+		}
+		return p, nil
+	}
+
+	/*
+	 * INFO: We assume the user is downloading anime in the order they want to
+	 * watch it, therefore no matter what the file episode says, we update
+	 * to next episode number. This allows support for non-seasonal episode
+	 * counts.
+	 */
+	p.NextEp = p.LastEp + 1
+
+	progResp, err := kitsu.UpdateAnimeProgress(
+		anime.Value.LibID,
+		db.Profile().AccessToken,
+		p.NextEp,
+	)
+	if err != nil {
+		return Progress{}, fmt.Errorf("failed to update Kitsu progress: %w", err)
+	}
+
+	// 🟢 Kitsu does not always know the correct total episodes for a series
+	// until the series is about to end.
+	anime.Value.Episodes = progResp.Included[0].Attributes.EpisodeCount
+
+	// 🟢 When an anime is completed (progress updated to match total episodes), the
+	// anime status is automatically updated by Kitsu, unless the episode count
+	// is unknown (0).
+	if p.NextEp == anime.Value.Episodes {
+		if err = CompleteAnime(db, anime.Value.LibID); err != nil {
+			return p, err
+		}
+		p.IsCompleted = true
+		return p, nil
+	}
+
+	anime.Value.Progress = p.NextEp
+	if err = db.UpdateAnime(anime.Value); err != nil {
+		return p, fmt.Errorf("failed to update database: %w", err)
+	}
+	return p, nil
 }
 
 // DropAnime sets the status of an anime to 'dropped', deletes the
