@@ -22,9 +22,10 @@ const watchedDir = "(watched)"
 type WatchState int
 
 const (
-	Pilot       = WatchState(iota) // 00 episodes
-	Watched                        // Already watched episodes
-	NonSeasonal                    // Episodes that are not following seasonal numbering
+	_           = WatchState(iota)
+	Pilot       // 00 episodes
+	Watched     // Already watched episodes
+	NonSeasonal // Episodes that are not following seasonal numbering
 	Mismatched
 )
 
