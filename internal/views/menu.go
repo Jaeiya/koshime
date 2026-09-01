@@ -63,8 +63,7 @@ func NewMenuModel(views []MenuView, db *database.Database) MenuModel {
 
 	m.menuItems = views
 	m.activeItems = views
-
-	m.updateMenu()
+	m.menu = m.newMenu(m.activeItems)
 	return m
 }
 
@@ -107,7 +106,7 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 			if m.inSubMenu {
 				m.inSubMenu = false
 				m.activeItems = m.menuItems
-				m.updateMenu()
+				m.menu = m.newMenu(m.menuItems)
 				if err := m.menu.Select(m.menuIndex); err != nil {
 					return m, func() tea.Msg { return err }
 				}
@@ -122,7 +121,7 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 			m.inSubMenu = true
 			m.menuIndex = msg.Value
 			m.activeItems = chosen.SubViews
-			m.updateMenu()
+			m.menu = m.newMenu(chosen.SubViews)
 		} else {
 			m.selectedModel = chosen.ModelFunc()
 			m.selectedModel, cmd = m.selectedModel.Update(m.windowSize)
@@ -239,14 +238,14 @@ func (m MenuModel) DisplayProfile() string {
 	)
 }
 
-func (m *MenuModel) updateMenu() {
-	items := make([]string, len(m.activeItems))
-	menuDesc := make([]string, len(m.activeItems))
-	for i, item := range m.activeItems {
+func (m MenuModel) newMenu(views []MenuView) ui.MenuModel {
+	items := make([]string, len(views))
+	menuDesc := make([]string, len(views))
+	for i, item := range views {
 		menuDesc[i] = item.Desc
 		items[i] = item.Name
 	}
-	m.menu = ui.NewMenuModel(items, ui.WithMenuRotation(), ui.WithMenuDescriptions(menuDesc))
+	return ui.NewMenuModel(items, ui.WithMenuRotation(), ui.WithMenuDescriptions(menuDesc))
 }
 
 func (m MenuModel) initQbtState() tea.Cmd {
