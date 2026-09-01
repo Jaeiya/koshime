@@ -46,7 +46,6 @@ type MenuModel struct {
 	help          help.Model
 	menu          ui.MenuModel
 	menuIndex     int
-	activeIndex   int
 	qbtState      QbtState
 	inSubMenu     bool
 }
@@ -107,21 +106,22 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 		case key.Matches(msg, ui.KeyMap.EscBack):
 			if m.inSubMenu {
 				m.inSubMenu = false
-				m.activeIndex = m.menuIndex
 				m.activeItems = m.menuItems
 				m.updateMenu()
+				if err := m.menu.Select(m.menuIndex); err != nil {
+					return m, func() tea.Msg { return err }
+				}
 				return m, nil
 			}
 			return m, exit
 		}
 
-	case ui.MenuIndexMsg:
+	case ui.MenuItemSelMsg:
 		chosen := m.activeItems[msg]
 		if chosen.SubViews != nil {
 			m.inSubMenu = true
-			m.activeIndex = int(msg)
-			m.activeItems = chosen.SubViews
 			m.menuIndex = int(msg)
+			m.activeItems = chosen.SubViews
 			m.updateMenu()
 		} else {
 			m.selectedModel = chosen.ModelFunc()
@@ -131,7 +131,6 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 
 	case QbtStateMsg:
 		m.qbtState = msg.Value
-
 	}
 
 	m.menu, cmd = m.menu.Update(msg)

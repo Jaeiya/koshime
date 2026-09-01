@@ -162,7 +162,7 @@ func (m WatchDir_Model) UpdateMenu(msg tea.Msg) (WatchDir_Model, tea.Cmd) {
 			return m, exitToMenu
 		}
 
-	case ui.MenuIndexMsg:
+	case ui.MenuItemSelMsg:
 		if m.state.folderInfo.fileCount == 0 {
 			return m, nil
 		}

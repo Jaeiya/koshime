@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 
@@ -11,8 +12,8 @@ import (
 )
 
 type (
-	MenuIndexMsg int
-	OptionFunc   func(m MenuModel) MenuModel
+	MenuItemSelMsg int
+	OptionFunc     func(m MenuModel) MenuModel
 )
 
 type MenuModel struct {
@@ -79,7 +80,7 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 			}
 
 		case key.Matches(msg, KeyMap.Select):
-			return m, func() tea.Msg { return MenuIndexMsg(m.menuIndex) }
+			return m, func() tea.Msg { return MenuItemSelMsg(m.menuIndex) }
 		}
 	}
 	return m, nil

@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	MenuDrop = ui.MenuIndexMsg(iota)
+	MenuDrop = ui.MenuItemSelMsg(iota)
 	MenuComplete
 	MenuDelete
 )
@@ -321,7 +321,7 @@ func (m LibraryModel) UpdateMenu(msg tea.Msg) (LibraryModel, tea.Cmd) {
 
 		}
 
-	case ui.MenuIndexMsg:
+	case ui.MenuItemSelMsg:
 		switch msg {
 		case MenuDrop:
 			m.state.view = LibraryDrop
