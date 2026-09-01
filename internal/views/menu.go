@@ -113,17 +113,6 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 				return m, nil
 			}
 			return m, exit
-
-		case key.Matches(msg, ui.KeyMap.Back):
-			if m.inSubMenu {
-				m.inSubMenu = false
-				m.activeIndex = m.menuIndex
-				m.activeItems = m.menuItems
-				m.updateMenu()
-				return m, nil
-			}
-			return m, nil
-
 		}
 
 	case ui.MenuIndexMsg:
