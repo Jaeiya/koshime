@@ -103,6 +103,14 @@ func (m MenuModel) View() string {
 	return m.displayMenuItems(m.menuItems, m.menuIndex)
 }
 
+func (m *MenuModel) Select(idx int) error {
+	if idx < 0 || idx >= len(m.menuItems) {
+		return fmt.Errorf("cannot select menu item index: out of bounds")
+	}
+	m.menuIndex = idx
+	return nil
+}
+
 func (m MenuModel) displayMenuItems(items []string, selectedIndex int) string {
 	items = slices.Clone(items)
 
