@@ -56,9 +56,9 @@ func NewMenuModel(views []MenuView, db *database.Database) MenuModel {
 
 	m.help = help.New()
 	m.help.Styles.ShortKey = ui.HelpKeyStyle
-	m.help.Styles.FullKey = m.help.Styles.ShortKey
+	m.help.Styles.FullKey = ui.HelpKeyStyle
 	m.help.Styles.ShortDesc = ui.HelpDescStyle
-	m.help.Styles.FullDesc = m.help.Styles.ShortDesc
+	m.help.Styles.FullDesc = ui.HelpDescStyle
 	m.qbtState = Pending
 
 	m.menuItems = views
