@@ -36,6 +36,14 @@ const (
 	LibraryDelete
 )
 
+type LibSearchState uint8
+
+const (
+	LibNone = LibSearchState(iota)
+	LibFound
+	LibNotFound
+)
+
 type (
 	LibraryReloadedMsg struct {
 		Value     []kitsu.Anime
@@ -43,7 +51,7 @@ type (
 	}
 	LibraryAnimeSearchMsg struct {
 		Value kitsu.Anime
-		Found bool
+		State LibSearchState
 	}
 	LibraryFeedMsg struct {
 		Value []kitsu.Anime
@@ -77,7 +85,7 @@ type LibraryState struct {
 	animeIndex        int
 	searchAnimeResult struct {
 		Value kitsu.Anime
-		Found bool
+		State LibSearchState
 	}
 	filesNotFound bool
 }
@@ -149,11 +157,14 @@ func (m LibraryModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 			if m.state.view == LibraryMenu {
 				return m, exitToMenu
 			}
-			if m.state.view == LibrarySearch && m.state.searchAnimeResult.Found {
-				break
+			searchState := m.state.searchAnimeResult.State
+			if m.state.view == LibrarySearch {
+				if searchState == LibFound || searchState == LibNotFound {
+					break
+				}
 			}
-			// If we were moved to another view via search view
-			if m.state.searchAnimeResult.Found {
+			// If we were moved to a sub-view (complete, drop, etc...) from the search view
+			if m.state.searchAnimeResult.State == LibFound {
 				m.state.view = LibrarySearch
 				return m, nil
 			}
@@ -239,7 +250,10 @@ func (m LibraryModel) ShortHelp() []key.Binding {
 	}
 
 	if m.state.view == LibrarySearch {
-		if m.state.searchAnimeResult.Found {
+		if m.state.searchAnimeResult.State == LibNotFound {
+			return []key.Binding{ui.KeyMap.EscBack}
+		}
+		if m.state.searchAnimeResult.State == LibFound {
 			keys = append(keys, m.ui.animeDisplay.ShortHelp()[0], ui.KeyMap.EscBack)
 			return keys
 		}
@@ -370,24 +384,29 @@ func (m LibraryModel) UpdateSearch(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Left), key.Matches(msg, ui.KeyMap.Right):
-			// Do not accidentally pass these key events to the UpdateMenu method
-			if m.state.searchAnimeResult.Found {
+			switch m.state.searchAnimeResult.State {
+			case LibFound, LibNotFound:
 				return m, nil
+			default:
 			}
 
 		case key.Matches(msg, ui.KeyMap.Submit):
-			if m.state.searchAnimeResult.Found {
+			searchState := m.state.searchAnimeResult.State
+			if LibFound == searchState || LibNotFound == searchState {
 				break
 			}
+
 			if utils.RuneCount(m.ui.input.Value()) >= m.minInputLen {
 				return m, m.searchLibrary(m.ui.input.Value())
 			}
 
 		case key.Matches(msg, ui.KeyMap.EscBack):
-			if m.state.searchAnimeResult.Found {
-				m.state.searchAnimeResult.Found = false
+			switch m.state.searchAnimeResult.State {
+			case LibFound, LibNotFound:
+				m.state.searchAnimeResult.State = LibNone
 				m.ui.input.Reset()
 				return m, nil
+			default:
 			}
 		}
 
@@ -395,7 +414,7 @@ func (m LibraryModel) UpdateSearch(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		m.state.searchAnimeResult = msg
 	}
 
-	if m.state.searchAnimeResult.Found {
+	if m.state.searchAnimeResult.State == LibFound {
 		m.ui.animeDisplay.Update(msg)
 		m, cmd = m.UpdateMenu(msg)
 		cmds = append(cmds, cmd)
@@ -425,7 +444,21 @@ func (m LibraryModel) ViewSearch() tea.View {
 	)
 	v.Cursor.Y = lipgloss.Height(v.Content) - 1
 
-	if m.state.searchAnimeResult.Found {
+	if m.state.searchAnimeResult.State == LibNotFound {
+		v.Content = lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplaySubTitle("Library", "No Results"),
+			ui.DisplayText([]string{
+				fmt.Sprintf(
+					"Sorry, I couldn't find any results for: ;c;%s",
+					m.ui.input.Value(),
+				),
+			}, 0, 1, 0),
+		)
+		v.Cursor = nil
+	}
+
+	if m.state.searchAnimeResult.State == LibFound {
 		v.Content = lipgloss.JoinVertical(
 			lipgloss.Left,
 			ui.DisplaySubTitle("Library", "Search Results"),
@@ -561,7 +594,7 @@ func (m LibraryModel) UpdateDelete(msg tea.Msg) (LibraryModel, tea.Cmd) {
 
 func (m LibraryModel) ViewDeleting() tea.View {
 	anime := m.state.anime[m.state.animeIndex]
-	if m.state.searchAnimeResult.Found {
+	if m.state.searchAnimeResult.State == LibFound {
 		anime = m.state.searchAnimeResult.Value
 	}
 
@@ -619,7 +652,7 @@ func (m LibraryModel) UpdateDrop(msg tea.Msg) (LibraryModel, tea.Cmd) {
 
 func (m LibraryModel) ViewDrop() tea.View {
 	anime := m.state.anime[m.state.animeIndex]
-	if m.state.searchAnimeResult.Found {
+	if m.state.searchAnimeResult.State == LibFound {
 		anime = m.state.searchAnimeResult.Value
 	}
 
@@ -674,7 +707,7 @@ func (m LibraryModel) UpdateCompleted(msg tea.Msg) (LibraryModel, tea.Cmd) {
 
 func (m LibraryModel) ViewCompleted() tea.View {
 	anime := m.state.anime[m.state.animeIndex]
-	if m.state.searchAnimeResult.Found {
+	if m.state.searchAnimeResult.State == LibFound {
 		anime = m.state.searchAnimeResult.Value
 	}
 
@@ -700,9 +733,13 @@ func (m LibraryModel) searchLibrary(search string) tea.Cmd {
 	anime := m.db.Anime()
 	return func() tea.Msg {
 		a, found := app.FuzzyFindAnime(anime, search)
+		state := LibNotFound
+		if found {
+			state = LibFound
+		}
 		return LibraryAnimeSearchMsg{
 			Value: a,
-			Found: found,
+			State: state,
 		}
 	}
 }
@@ -738,7 +775,7 @@ func (m LibraryModel) updateFeeds() tea.Msg {
 func (m LibraryModel) deleteAnime() tea.Msg {
 	index := m.state.animeIndex
 	libID := m.state.anime[index].LibID
-	if m.state.searchAnimeResult.Found {
+	if m.state.searchAnimeResult.State == LibFound {
 		index = 0
 		libID = m.state.searchAnimeResult.Value.LibID
 	}
@@ -753,7 +790,7 @@ func (m LibraryModel) deleteAnime() tea.Msg {
 func (m LibraryModel) dropAnime() tea.Msg {
 	index := m.state.animeIndex
 	libID := m.state.anime[index].LibID
-	if m.state.searchAnimeResult.Found {
+	if m.state.searchAnimeResult.State == LibFound {
 		index = 0
 		libID = m.state.searchAnimeResult.Value.LibID
 	}
@@ -768,7 +805,7 @@ func (m LibraryModel) dropAnime() tea.Msg {
 func (m LibraryModel) completeAnime() tea.Msg {
 	index := m.state.animeIndex
 	libID := m.state.anime[index].LibID
-	if m.state.searchAnimeResult.Found {
+	if m.state.searchAnimeResult.State == LibFound {
 		index = 0
 		libID = m.state.searchAnimeResult.Value.LibID
 	}
