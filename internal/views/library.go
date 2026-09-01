@@ -415,7 +415,6 @@ func (m LibraryModel) UpdateSearch(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	}
 
 	if m.state.searchAnimeResult.State == LibFound {
-		m.ui.animeDisplay.Update(msg)
 		m, cmd = m.UpdateMenu(msg)
 		cmds = append(cmds, cmd)
 	} else {
