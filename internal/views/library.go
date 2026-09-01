@@ -24,10 +24,10 @@ const (
 	MenuDelete
 )
 
-type Library_View int
+type LibraryView int
 
 const (
-	LibraryMenu = Library_View(iota)
+	LibraryMenu = LibraryView(iota)
 	LibrarySearch
 	LibraryReload
 	LibraryFeed
@@ -66,13 +66,13 @@ type LibraryModel struct {
 		feed   key.Binding
 	}
 	db          *database.Database
-	state       Library_State
+	state       LibraryState
 	minInputLen int
 }
 
-type Library_State struct {
+type LibraryState struct {
 	err               error
-	view              Library_View
+	view              LibraryView
 	anime             []kitsu.Anime
 	animeIndex        int
 	searchAnimeResult struct {
@@ -459,7 +459,7 @@ func (m LibraryModel) UpdateReload(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case LibraryReloadedMsg:
-		m.state = Library_State{}
+		m.state = LibraryState{}
 		m.state.anime = msg.Value
 		m.ui.loader.Stop()
 	}
@@ -503,7 +503,7 @@ func (m LibraryModel) UpdateFeed(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case LibraryFeedMsg:
-		m.state = Library_State{}
+		m.state = LibraryState{}
 		m.state.anime = msg.Value
 		m.ui.loader.Stop()
 	}
@@ -547,7 +547,7 @@ func (m LibraryModel) UpdateDelete(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case LibraryReloadedMsg:
-		m.state = Library_State{}
+		m.state = LibraryState{}
 		m.state.anime = msg.Value
 		if msg.LastIndex > 0 {
 			m.state.animeIndex = msg.LastIndex - 1
@@ -605,7 +605,7 @@ func (m LibraryModel) UpdateDrop(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case LibraryReloadedMsg:
-		m.state = Library_State{}
+		m.state = LibraryState{}
 		m.state.anime = msg.Value
 		if msg.LastIndex > 0 {
 			m.state.animeIndex = msg.LastIndex - 1
@@ -660,7 +660,7 @@ func (m LibraryModel) UpdateCompleted(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case LibraryReloadedMsg:
-		m.state = Library_State{}
+		m.state = LibraryState{}
 		m.state.anime = msg.Value
 		if msg.LastIndex > 0 {
 			m.state.animeIndex = msg.LastIndex - 1
