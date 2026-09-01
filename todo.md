@@ -1,3 +1,22 @@
+### Minor Issues
+
+1.) When escaping from the maintenance menu, the main menu resets the menu position 
+2.) When searching the library, the display view toggle doesn't work as expected
+
+### Auto Renew Token
+
+Check if token has some `n` expiration time and execute renew process
+automatically. It should be somewhere within **1 week** left. 
+
+If token has just been auto-renewed, update the profile with that info.
+
+### Profile Updates
+
+After each anime, technically the users profile has been updated, but we
+don't need to do this for every anime watched. It should be on an
+interval. If it has been `n` time since last update, then we update
+the profile info.
+
 ### Manual RSS Copy
 
 Allow copying the RSS feed to the clipboard from a manual search
