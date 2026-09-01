@@ -102,9 +102,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.menu, _ = m.menu.Update(m.windowSize)
 
 	case tea.KeyPressMsg:
+		// This is typically a forced abort so we assume the user
+		// wanted to abort, rather than just exit.
 		if msg.String() == "ctrl+c" {
 			m.view = Abort
 			return m, abort
+		}
+
+		// Allows easy exit from any view
+		if msg.String() == "ctrl+x" {
+			m.view = Exit
+			return m, exit
 		}
 
 	case SetupUserFinishedMsg:
