@@ -89,8 +89,6 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 			}
 
 		case ExitToMenuMsg:
-			// Short help should always be default
-			m.help.ShowAll = false
 			m.selectedModel = nil
 		}
 		return m, cmd
