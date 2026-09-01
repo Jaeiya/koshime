@@ -18,13 +18,7 @@ import (
 )
 
 type (
-	WatchPlayMsg struct{}
-	// Holds previous episode progress value
-	WatchUpdateSuccessMsg struct {
-		lastEpisode int
-		nextEpisode int
-		isCompleted bool
-	}
+	WatchPlayMsg        struct{}
 	WatchLoadedAnimeMsg struct{ Value []app.FilteredAnime }
 )
 
@@ -529,7 +523,11 @@ func (m WatchModel) playAnime() tea.Msg {
 }
 
 func (m *WatchModel) saveProgress() tea.Msg {
-	progress, err := app.SaveAnimeProgress(m.db, m.state.selection.anime, app.Watched)
+	progress, err := app.SaveAnimeProgress(
+		m.db,
+		m.state.selection.anime,
+		m.state.selection.fileState,
+	)
 	if err != nil {
 		return err
 	}
