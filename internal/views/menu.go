@@ -81,7 +81,7 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 		case tea.KeyPressMsg:
 			switch {
 			case key.Matches(msg, ui.KeyMap.HelpMore):
-				if m.selectedModel == nil || len(m.selectedModel.FullHelp()) == 0 {
+				if m.selectedModel == nil || m.selectedModel.FullHelp() == nil {
 					break
 				}
 				m.help.ShowAll = !m.help.ShowAll
