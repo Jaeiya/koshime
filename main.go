@@ -17,9 +17,6 @@ var (
 )
 
 func main() {
-	// Cleanup residual cursor issues
-	// defer fmt.Print("\x1b[0 q")
-
 	app.Version = version
 	app.CommitHash = commitSha
 	app.BuildDate = buildDate
