@@ -12,6 +12,7 @@ import (
 	"github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/kitsu"
+	"github.com/Jaeiya/koshime/internal/logger"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
 )
@@ -53,7 +54,7 @@ type (
 		Value kitsu.Anime
 		State LibSearchState
 	}
-	LibraryFeedMsg struct {
+	UpdatedFeedMsg struct {
 		Value []kitsu.Anime
 	}
 )
@@ -172,6 +173,7 @@ func (m LibraryModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		}
 
 	case error:
+		logger.Log(logger.Error, m.state.err.Error())
 		m.state.err = msg
 	}
 
@@ -338,6 +340,7 @@ func (m LibraryModel) UpdateMenu(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case ui.MenuItemSelMsg:
+		logger.Log(logger.Debug, "UpdateMenu(): select menu item [%d]", msg.Value)
 		switch LibMenuItem(msg.Value) {
 		case MenuDrop:
 			m.state.view = LibraryDrop
@@ -386,13 +389,16 @@ func (m LibraryModel) UpdateSearch(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		case key.Matches(msg, ui.KeyMap.Left), key.Matches(msg, ui.KeyMap.Right):
 			switch m.state.searchAnimeResult.State {
 			case LibFound, LibNotFound:
+				logger.Log(logger.Debug, "UpdateSearch(): prevent next/prev while searching library")
 				return m, nil
 			default:
+				logger.Log(logger.Debug, "UpdateSearch(): select next/prev library entry")
 			}
 
 		case key.Matches(msg, ui.KeyMap.Submit):
 			searchState := m.state.searchAnimeResult.State
 			if LibFound == searchState || LibNotFound == searchState {
+				logger.Log(logger.Debug, "UpdateSearch(): ignore submit-key based on searchState")
 				break
 			}
 
@@ -403,6 +409,7 @@ func (m LibraryModel) UpdateSearch(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		case key.Matches(msg, ui.KeyMap.EscBack):
 			switch m.state.searchAnimeResult.State {
 			case LibFound, LibNotFound:
+				logger.Log(logger.Debug, "UpdateSearch(): reset state on EscBack")
 				m.state.searchAnimeResult.State = LibNone
 				m.ui.input.Reset()
 				return m, nil
@@ -411,6 +418,7 @@ func (m LibraryModel) UpdateSearch(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case LibraryAnimeSearchMsg:
+		logger.Log(logger.Debug, "UpdateSearch(): received search result msg")
 		m.state.searchAnimeResult = msg
 	}
 
@@ -482,6 +490,7 @@ func (m LibraryModel) UpdateReload(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
+			logger.Log(logger.Debug, "UpdateReload(): ask for consent to reload anime")
 			if m.ui.consent.Select() == ui.No {
 				m.state.view = LibraryMenu
 				return m, nil
@@ -491,6 +500,7 @@ func (m LibraryModel) UpdateReload(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case LibraryReloadedMsg:
+		logger.Log(logger.Debug, "UpdateReload(): received library reloaded msg")
 		m.state = LibraryState{}
 		m.state.anime = msg.Value
 		m.ui.loader.Stop()
@@ -526,6 +536,7 @@ func (m LibraryModel) UpdateFeed(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
+			logger.Log(logger.Debug, "UpdateFeed(): ask for consent to update feeds")
 			if m.ui.consent.Select() == ui.No {
 				m.state.view = LibraryMenu
 				return m, nil
@@ -534,7 +545,8 @@ func (m LibraryModel) UpdateFeed(msg tea.Msg) (LibraryModel, tea.Cmd) {
 			return m, tea.Batch(cmd, m.updateFeeds)
 		}
 
-	case LibraryFeedMsg:
+	case UpdatedFeedMsg:
+		logger.Log(logger.Debug, "UpdateFeed(): received updated anime feed msg")
 		m.state = LibraryState{}
 		m.state.anime = msg.Value
 		m.ui.loader.Stop()
@@ -570,6 +582,7 @@ func (m LibraryModel) UpdateDelete(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
+			logger.Log(logger.Debug, "UpdateDelete(): ask for consent to delete anime")
 			if m.ui.consent.Select() == ui.No {
 				m.state.view = LibraryMenu
 				return m, nil
@@ -579,6 +592,7 @@ func (m LibraryModel) UpdateDelete(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case LibraryReloadedMsg:
+		logger.Log(logger.Debug, "UpdateDelete(): received anime deleted msg")
 		m.state = LibraryState{}
 		m.state.anime = msg.Value
 		if msg.LastIndex > 0 {
@@ -628,6 +642,7 @@ func (m LibraryModel) UpdateDrop(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
+			logger.Log(logger.Debug, "UpdateDrop(): ask for consent to drop anime")
 			if m.ui.consent.Select() == ui.No {
 				m.state.view = LibraryMenu
 				return m, nil
@@ -637,6 +652,7 @@ func (m LibraryModel) UpdateDrop(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case LibraryReloadedMsg:
+		logger.Log(logger.Debug, "UpdateDrop(): received anime dropped msg")
 		m.state = LibraryState{}
 		m.state.anime = msg.Value
 		if msg.LastIndex > 0 {
@@ -683,6 +699,7 @@ func (m LibraryModel) UpdateCompleted(msg tea.Msg) (LibraryModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
+			logger.Log(logger.Debug, "UpdateCompleted(): ask for consent to complete anime")
 			if m.ui.consent.Select() == ui.No {
 				m.state.view = LibraryMenu
 				return m, nil
@@ -692,6 +709,7 @@ func (m LibraryModel) UpdateCompleted(msg tea.Msg) (LibraryModel, tea.Cmd) {
 		}
 
 	case LibraryReloadedMsg:
+		logger.Log(logger.Debug, "UpdateCompleted(): received anime completed msg")
 		m.state = LibraryState{}
 		m.state.anime = msg.Value
 		if msg.LastIndex > 0 {
@@ -731,11 +749,13 @@ Updating the progress of an anime will auto-complete it on the last episode of a
 func (m LibraryModel) searchLibrary(search string) tea.Cmd {
 	anime := m.db.Anime()
 	return func() tea.Msg {
+		logger.Log(logger.Debug, "searchLibrary(): attempt to fuzzy-find anime [%s]", search)
 		a, found := app.FuzzyFindAnime(anime, search)
 		state := LibNotFound
 		if found {
 			state = LibFound
 		}
+		logger.Log(logger.Debug, "searchLibrary(): send search result msg")
 		return LibraryAnimeSearchMsg{
 			Value: a,
 			State: state,
@@ -745,14 +765,23 @@ func (m LibraryModel) searchLibrary(search string) tea.Cmd {
 
 func (m LibraryModel) reloadLibrary() tea.Msg {
 	profile := m.db.Profile()
+	logger.Log(logger.Debug, "reloadLibrary(): requesting users anime from kitsu")
 	anime, err := kitsu.GetUserAnime(profile.ID, kitsu.LibAnimeWatching)
 	if err != nil {
 		return err
 	}
+	logger.Log(
+		logger.Debug,
+		"reloadLibrary(): attempting to overwrite [%d] anime with [%d] anime",
+		len(m.db.Anime()),
+		len(anime),
+	)
 	err = m.db.OverwriteLib(anime)
 	if err != nil {
 		return fmt.Errorf("failed to reload library: %w", err)
 	}
+
+	logger.Log(logger.Debug, "reloadLibrary(): attempting to update anime feeds")
 	err = app.UpdateFeeds(m.db)
 	if err != nil {
 		return fmt.Errorf("failed to reload library: %w", err)
@@ -762,13 +791,15 @@ func (m LibraryModel) reloadLibrary() tea.Msg {
 }
 
 func (m LibraryModel) updateFeeds() tea.Msg {
+	logger.Log(logger.Debug, "updateFeeds(): attempting to update anime feeds")
 	err := app.UpdateFeeds(m.db)
 	if err != nil {
 		return err
 	}
 	anime := m.db.Anime()
 	slices.SortFunc(anime, app.CompareAnime)
-	return LibraryFeedMsg{m.db.Anime()}
+	logger.Log(logger.Debug, "updateFeeds(): sending success msg")
+	return UpdatedFeedMsg{m.db.Anime()}
 }
 
 func (m LibraryModel) deleteAnime() tea.Msg {
@@ -778,11 +809,13 @@ func (m LibraryModel) deleteAnime() tea.Msg {
 		index = 0
 		libID = m.state.searchAnimeResult.Value.LibID
 	}
+	logger.Log(logger.Debug, "deleteAnime(): attempting to delete anime")
 	if err := app.DeleteAnime(m.db, libID); err != nil {
 		return err
 	}
 	anime := m.db.Anime()
 	slices.SortFunc(anime, app.CompareAnime)
+	logger.Log(logger.Debug, "deleteAnime(): sending success msg")
 	return LibraryReloadedMsg{anime, index}
 }
 
@@ -793,11 +826,13 @@ func (m LibraryModel) dropAnime() tea.Msg {
 		index = 0
 		libID = m.state.searchAnimeResult.Value.LibID
 	}
+	logger.Log(logger.Debug, "dropAnime(): attempting to drop anime")
 	if err := app.DropAnime(m.db, libID); err != nil {
 		return err
 	}
 	anime := m.db.Anime()
 	slices.SortFunc(anime, app.CompareAnime)
+	logger.Log(logger.Debug, "dropAnime(): sending success msg")
 	return LibraryReloadedMsg{anime, index}
 }
 
@@ -808,10 +843,12 @@ func (m LibraryModel) completeAnime() tea.Msg {
 		index = 0
 		libID = m.state.searchAnimeResult.Value.LibID
 	}
+	logger.Log(logger.Debug, "completeAnime(): attempting to complete anime")
 	if err := app.CompleteAnime(m.db, libID); err != nil {
 		return err
 	}
 	anime := m.db.Anime()
 	slices.SortFunc(anime, app.CompareAnime)
+	logger.Log(logger.Debug, "completeAnime(): sending success msg")
 	return LibraryReloadedMsg{anime, index}
 }
