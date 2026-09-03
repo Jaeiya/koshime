@@ -13,6 +13,7 @@ import (
 
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/kitsu"
+	"github.com/Jaeiya/koshime/internal/logger"
 	"github.com/Jaeiya/koshime/internal/qbittorrent"
 	"github.com/Jaeiya/koshime/internal/utils"
 )
@@ -29,7 +30,10 @@ const (
 	Mismatched
 )
 
-var ErrDropAnimeFailed = errors.New("failed to drop anime")
+var (
+	ErrDropAnimeFailed = errors.New("failed to drop anime")
+	ErrSaveProgress    = errors.New("an error occurred while saving anime")
+)
 
 type Progress struct {
 	LastEp      int
@@ -42,6 +46,7 @@ func WatchedDir() string {
 }
 
 func CreateWatchedDir() error {
+	logger.Log(logger.Debug, "creating watched dir")
 	if _, err := os.Stat(WatchedDir()); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			if err = os.Mkdir(WatchedDir(), 0o750); err != nil {
@@ -55,6 +60,7 @@ func CreateWatchedDir() error {
 }
 
 func DeleteWatchedDir() error {
+	logger.Log(logger.Debug, "deleting watched dir")
 	if err := os.Remove(WatchedDir()); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
@@ -69,7 +75,7 @@ func MoveFansubFile(anime FilteredAnime) error {
 	watchPath := filepath.Join(WatchedDir(), animeFile)
 	fs := utils.FileSys{}
 	if err := fs.MoveFile(animeFile, watchPath); err != nil {
-		return err
+		return fmt.Errorf("failed to move fansub file: %w", err)
 	}
 	return nil
 }
@@ -120,14 +126,17 @@ func PlayAnime(fileName string) error {
 	return nil
 }
 
-func SaveAnimeProgress(
+func SaveProgress(
 	db *database.Database,
 	anime FilteredAnime,
 	state WatchState,
 ) (Progress, error) {
 	fs := utils.FileSys{}
 	if !fs.FileExists(filepath.Join(fs.WorkingDir(), anime.FileInfo.Filename)) {
-		return Progress{}, fmt.Errorf("the fansub file has been moved or deleted")
+		return Progress{}, fmt.Errorf(
+			"%w: fansub file has been moved or deleted",
+			ErrSaveProgress,
+		)
 	}
 
 	p := Progress{LastEp: anime.Value.Progress}
@@ -137,7 +146,7 @@ func SaveAnimeProgress(
 	// starts at 1.
 	if state == Watched || state == Pilot {
 		if err := MoveFansubFile(anime); err != nil {
-			return Progress{}, err
+			return Progress{}, fmt.Errorf("%w: %w", ErrSaveProgress, err)
 		}
 		return p, nil
 	}
@@ -156,7 +165,7 @@ func SaveAnimeProgress(
 		p.NextEp,
 	)
 	if err != nil {
-		return Progress{}, fmt.Errorf("failed to update Kitsu progress: %w", err)
+		return Progress{}, fmt.Errorf("%w: %w", ErrSaveProgress, err)
 	}
 
 	// 🟢 Kitsu does not always know the correct total episodes for a series
@@ -168,21 +177,22 @@ func SaveAnimeProgress(
 	// is unknown (0).
 	if p.NextEp == anime.Value.Episodes {
 		if err = CompleteAnime(db, anime.Value.LibID); err != nil {
-			return p, err
+			return p, fmt.Errorf("%w: %w", ErrSaveProgress, err)
 		}
 		p.IsCompleted = true
 		if err = MoveFansubFile(anime); err != nil {
-			return p, err
+			return p, fmt.Errorf("%w: %w", ErrSaveProgress, err)
 		}
 		return p, nil
 	}
 
 	anime.Value.Progress = p.NextEp
 	if err = db.UpdateAnime(anime.Value); err != nil {
-		return p, fmt.Errorf("failed to update database: %w", err)
+		return p, fmt.Errorf("%w: %w", ErrSaveProgress, err)
 	}
+
 	if err = MoveFansubFile(anime); err != nil {
-		return p, err
+		return p, fmt.Errorf("%w: %w", ErrSaveProgress, err)
 	}
 	return p, nil
 }
@@ -192,16 +202,20 @@ func SaveAnimeProgress(
 // assigned qBittorrent feed.
 func DropAnime(db *database.Database, libID string) error {
 	p := db.Profile()
+	logger.Log(logger.Debug, "DropAnime(): finding anime")
 	anime, ok := db.FindAnimeByLibId(libID)
 	if !ok {
 		return fmt.Errorf("failed to find anime to drop: %w", ErrDropAnimeFailed)
 	}
+	logger.Log(logger.Debug, "DropAnime(): removing feed")
 	if err := RemoveFeed(p.QbtPort, anime.QbtFeed.Name); err != nil {
 		return fmt.Errorf("failed to remove dropped anime feed: %w", err)
 	}
+	logger.Log(logger.Debug, "DropAnime(): setting anime status to dropped")
 	if err := kitsu.DropAnime(libID, p.AccessToken); err != nil {
 		return ErrDropAnimeFailed
 	}
+	logger.Log(logger.Debug, "DropAnime(): deleting anime from database")
 	if err := db.DeleteAnime(libID); err != nil {
 		return fmt.Errorf("failed to delete anime while dropping: %w", err)
 	}
@@ -213,16 +227,20 @@ func DropAnime(db *database.Database, libID string) error {
 // assigned qBittorrent feed.
 func CompleteAnime(db *database.Database, libID string) error {
 	p := db.Profile()
+	logger.Log(logger.Debug, "CompleteAnime(): finding anime")
 	anime, ok := db.FindAnimeByLibId(libID)
 	if !ok {
 		return fmt.Errorf("failed to find anime to complete")
 	}
+	logger.Log(logger.Debug, "CompleteAnime(): removing anime feed")
 	if err := RemoveFeed(p.QbtPort, anime.QbtFeed.Name); err != nil {
 		return fmt.Errorf("failed to delete completed anime feed: %w", err)
 	}
+	logger.Log(logger.Debug, "CompleteAnime(): setting anime status to completed")
 	if _, err := kitsu.SetAnimeStatus(libID, p.AccessToken, kitsu.LibAnimeCompleted); err != nil {
 		return err
 	}
+	logger.Log(logger.Debug, "CompleteAnime(): deleting anime from database")
 	if err := db.DeleteAnime(libID); err != nil {
 		return fmt.Errorf("failed to delete completed anime: %w", err)
 	}
@@ -233,16 +251,20 @@ func CompleteAnime(db *database.Database, libID string) error {
 // and local database.
 func DeleteAnime(db *database.Database, libID string) error {
 	p := db.Profile()
+	logger.Log(logger.Debug, "DeleteAnime(): finding anime")
 	anime, ok := db.FindAnimeByLibId(libID)
 	if !ok {
 		return fmt.Errorf("failed to find anime to delete")
 	}
+	logger.Log(logger.Debug, "DeleteAnime(): removing feed")
 	if err := RemoveFeed(p.QbtPort, anime.QbtFeed.Name); err != nil {
 		return fmt.Errorf("failed to remove deleted anime feed: %w", err)
 	}
+	logger.Log(logger.Debug, "DeleteAnime(): deleting anime from kitsu library")
 	if _, err := kitsu.DeleteAnime(libID, p.AccessToken); err != nil {
 		return fmt.Errorf("failed to delete anime from library: %w", err)
 	}
+	logger.Log(logger.Debug, "DeleteAnime(): deleting anime from database")
 	if err := db.DeleteAnime(libID); err != nil {
 		return fmt.Errorf("failed to delete anime from database: %w", err)
 	}
@@ -254,14 +276,17 @@ func DeleteAnime(db *database.Database, libID string) error {
 func DeleteFansub(anime kitsu.Anime) error {
 	fs := utils.FileSys{}
 	ff := FansubFilter{}
+	logger.Log(logger.Debug, "DeleteFansub(): getting working file stream")
 	stream, err := fs.NewFilenameStream(fs.WorkingDir())
 	if err != nil {
 		return fmt.Errorf("failed get file list for deletion: %w", err)
 	}
+	logger.Log(logger.Debug, "DeleteFansub(): filtering file names by anime")
 	fileNames, err := ff.FilterFilenamesByAnime(anime, stream, 33)
 	if err != nil {
 		return fmt.Errorf("failed to filter files for deletion: %w", err)
 	}
+	logger.Log(logger.Debug, "DeleteFansub(): deleting fansub files")
 	for _, file := range fileNames {
 		path := filepath.Join(fs.WorkingDir(), file)
 		if err := os.Remove(path); err != nil {
@@ -275,10 +300,12 @@ func DeleteFansub(anime kitsu.Anime) error {
 // the user has setup qBittorrent.
 func RemoveFeed(port int, feedName string) error {
 	if port > 0 && feedName != "" {
+		logger.Log(logger.Debug, "RemoveFeed(): logging into qbt")
 		qbt, err := qbittorrent.NewLogin(strconv.Itoa(port))
 		if err != nil {
 			return err
 		}
+		logger.Log(logger.Debug, "RemoveFeed(): deleting feed")
 		if err = qbt.DeleteFeed(feedName); err != nil {
 			return err
 		}
@@ -309,11 +336,13 @@ func UpdateFeeds(db *database.Database) error {
 		return nil
 	}
 
+	logger.Log(logger.Debug, "UpdateFeeds(): logging into qbt")
 	qb, err := qbittorrent.NewLogin(strconv.Itoa(db.Profile().QbtPort))
 	if err != nil {
 		return fmt.Errorf("failed to login to update feeds: %w", err)
 	}
 
+	logger.Log(logger.Debug, "UpdateFeeds(): loading feeds")
 	feeds, err := qb.Feeds()
 	if err != nil {
 		return fmt.Errorf("failed to load feeds to update: %w", err)
@@ -324,6 +353,12 @@ func UpdateFeeds(db *database.Database) error {
 	})
 	updatedAnime := make([]kitsu.Anime, 0, len(feeds))
 
+	logger.Log(
+		logger.Debug,
+		"UpdateFeeds(): updating [%d] anime against [%d] feeds",
+		len(anime),
+		len(feeds),
+	)
 	for _, feed := range feeds {
 		head, tail, found := strings.Cut(feed.Name, "(")
 		if !found { // All feeds added by Koshime have open/closing paren

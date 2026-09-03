@@ -533,7 +533,7 @@ func (m WatchModel) playAnime() tea.Msg {
 }
 
 func (m *WatchModel) saveProgress() tea.Msg {
-	progress, err := app.SaveAnimeProgress(
+	progress, err := app.SaveProgress(
 		m.db,
 		m.state.selection.anime,
 		m.state.selection.fileState,
