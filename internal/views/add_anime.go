@@ -25,7 +25,6 @@ const (
 
 type (
 	AnimeAddedMsg struct{}
-	AddAnimeHelp  map[AddAnimeView]ui.KeyHelpInfo[AddAnimeModel]
 )
 
 type AddAnimeModel struct {
@@ -42,9 +41,8 @@ type AddAnimeModel struct {
 		consent     ui.ConsentModel
 		animeSearch *AnimeSearchModel
 	}
-	helpMap AddAnimeHelp
-	db      *database.Database
-	state   AddAnimeState
+	db    *database.Database
+	state AddAnimeState
 }
 
 type AddAnimeState struct {
@@ -66,13 +64,6 @@ func newAddAnimeModel(db *database.Database) AddAnimeModel {
 	m.ui.input.Placeholder = "Enter query"
 	m.ui.loader = ui.NewLoader()
 
-	m.helpMap = AddAnimeHelp{
-		AddAnimeQuery: {
-			ShortHelp: func(AddAnimeModel) []key.Binding {
-				return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.Abort}
-			},
-		},
-	}
 	return m
 }
 
@@ -136,19 +127,23 @@ func (m AddAnimeModel) ShortHelp() []key.Binding {
 		return []key.Binding{ui.KeyMap.EscBack}
 	}
 
-	if m.state.view == AddAnimeSelection {
-		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
-	}
-
-	if m.state.view == AddAnimeQuery {
+	switch m.state.view {
+	case AddAnimeQuery:
 		return m.ui.animeSearch.ShortHelp()
+	case AddAnimeSelection:
+		return []key.Binding{
+			ui.KeyMap.Up,
+			ui.KeyMap.Down,
+			ui.KeyMap.Select,
+			ui.KeyMap.EscBack,
+		}
+	case AddAnimeReview:
+		return []key.Binding{
+			ui.KeyMap.Select,
+		}
+	default:
+		return []key.Binding{}
 	}
-
-	if bindings, exists := m.helpMap[m.state.view]; exists {
-		return bindings.ShortHelp(m)
-	}
-
-	return []key.Binding{}
 }
 
 func (m AddAnimeModel) FullHelp() [][]key.Binding {
