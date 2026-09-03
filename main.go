@@ -48,8 +48,6 @@ func main() {
 		)
 	}
 
-	logger.Log(logger.Info, "exiting program")
-
 	model, _ := updatedModel.(views.Model)
 	if model.FatalErr.Msg != "" {
 		model.FatalErr.Desc += "; report immediately!"
