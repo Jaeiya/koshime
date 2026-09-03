@@ -24,11 +24,11 @@ const (
 var fileSys = utils.FileSys{}
 
 type FetchErrorMsg struct {
-	Msg string
+	Value string
 }
 
 func (e FetchErrorMsg) Error() string {
-	return e.Msg
+	return e.Value
 }
 
 type DefaultErrorMsg struct {

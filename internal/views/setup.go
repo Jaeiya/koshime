@@ -964,7 +964,7 @@ func (m SetupUserModel) getProfile(profileSlug string) tea.Cmd {
 		slug := strings.ReplaceAll(strings.TrimSpace(profileSlug), " ", "-")
 		p, err := kitsu.GetProfile(slug)
 		if err != nil {
-			return FetchErrorMsg{Msg: err.Error()}
+			return FetchErrorMsg{Value: err.Error()}
 		}
 		return KitsuProfileMsg{p}
 	}
@@ -974,7 +974,7 @@ func (m SetupUserModel) getAnimeLibrary(userID string) func() tea.Msg {
 	return func() tea.Msg {
 		data, err := kitsu.GetUserAnime(userID, kitsu.LibAnimeWatching)
 		if err != nil {
-			return FetchErrorMsg{Msg: err.Error()}
+			return FetchErrorMsg{Value: err.Error()}
 		}
 		return data
 	}
@@ -986,7 +986,7 @@ func (m SetupUserModel) getAuthToken() tea.Msg {
 		m.ui.password.Value(),
 	)
 	if err != nil {
-		return FetchErrorMsg{Msg: err.Error()}
+		return FetchErrorMsg{Value: err.Error()}
 	}
 	return tokenData
 }
