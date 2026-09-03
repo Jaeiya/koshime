@@ -34,6 +34,11 @@ type DefaultErrorMsg struct {
 	err error
 }
 
+type FatalErrorMsg struct {
+	Msg  string
+	Desc string
+}
+
 func (e DefaultErrorMsg) Error() string {
 	return e.err.Error()
 }
@@ -57,6 +62,7 @@ type Model struct {
 	help       help.Model
 	setupUser  SetupUserModel
 	view       UIView
+	FatalErr   FatalErrorMsg
 	HasAborted bool
 }
 
@@ -101,6 +107,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.windowSize = msg
 		m.menu, _ = m.menu.Update(m.windowSize)
 
+	case FatalErrorMsg:
+		m.FatalErr = msg
+		return m, abort
+
 	case tea.KeyPressMsg:
 		// This is typically a forced abort so we assume the user
 		// wanted to abort, rather than just exit.
@@ -116,10 +126,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 	case SetupUserFinishedMsg:
-		err := m.db.Overwrite(msg.Value)
-		if err != nil {
-			// This should never happen
-			panic(fmt.Errorf("failed to load new user data: %w", err))
+		if err := m.db.Overwrite(msg.Value); err != nil {
+			return m, sendFatal(
+				fmt.Errorf("failed to load new user data: %w", err).Error(),
+				"Failed to save data to database after user setup",
+			)
 		}
 		m.CreateMenu()
 		m.menu, _ = m.menu.Update(m.windowSize)
@@ -216,6 +227,15 @@ func (m *Model) CreateMenu() {
 			Desc:      "View the nitty-gritty details of Koshime",
 		},
 	}, m.db)
+}
+
+func sendFatal(errMsg, desc string) tea.Cmd {
+	return func() tea.Msg {
+		return FatalErrorMsg{
+			Msg:  errMsg,
+			Desc: desc,
+		}
+	}
 }
 
 func abort() tea.Msg {
