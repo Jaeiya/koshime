@@ -15,20 +15,20 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-type AddAnime_View int
+type AddAnimeView int
 
 const (
-	AddAnime_Selection = AddAnime_View(iota)
-	AddAnime_Query
-	AddAnime_Review
+	AddAnimeSelection = AddAnimeView(iota)
+	AddAnimeQuery
+	AddAnimeReview
 )
 
 type (
 	AnimeAddedMsg struct{}
-	AddAnime_Help map[AddAnime_View]ui.KeyHelpInfo[AddAnime_Model]
+	AddAnimeHelp  map[AddAnimeView]ui.KeyHelpInfo[AddAnimeModel]
 )
 
-type AddAnime_Model struct {
+type AddAnimeModel struct {
 	windowSize tea.WindowSizeMsg
 	config     struct {
 		maxInputWidth   int
@@ -42,20 +42,20 @@ type AddAnime_Model struct {
 		consent     ui.ConsentModel
 		animeSearch *AnimeSearchModel
 	}
-	helpMap AddAnime_Help
+	helpMap AddAnimeHelp
 	db      *database.Database
-	state   AddAnime_State
+	state   AddAnimeState
 }
 
-type AddAnime_State struct {
-	view          AddAnime_View
+type AddAnimeState struct {
+	view          AddAnimeView
 	fetchErr      error
 	selectedAnime kitsu.Anime
 	menuIndex     int
 }
 
-func newAddAnimeModel(db *database.Database) AddAnime_Model {
-	m := AddAnime_Model{db: db}
+func newAddAnimeModel(db *database.Database) AddAnimeModel {
+	m := AddAnimeModel{db: db}
 	m.config.minInputLen = 4
 	m.config.maxInputWidth = 30
 	m.config.itemsPerPage = 5
@@ -66,9 +66,9 @@ func newAddAnimeModel(db *database.Database) AddAnime_Model {
 	m.ui.input.Placeholder = "Enter query"
 	m.ui.loader = ui.NewLoader()
 
-	m.helpMap = AddAnime_Help{
-		AddAnime_Query: {
-			ShortHelp: func(AddAnime_Model) []key.Binding {
+	m.helpMap = AddAnimeHelp{
+		AddAnimeQuery: {
+			ShortHelp: func(AddAnimeModel) []key.Binding {
 				return []key.Binding{ui.KeyMap.Submit, ui.KeyMap.Abort}
 			},
 		},
@@ -76,11 +76,11 @@ func newAddAnimeModel(db *database.Database) AddAnime_Model {
 	return m
 }
 
-func (m AddAnime_Model) Init() tea.Cmd {
+func (m AddAnimeModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m AddAnimeModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -94,7 +94,7 @@ func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 
 	case SelectedAnimeMsg:
 		m.ui.loader, cmd = m.ui.loader.Start("Adding Anime")
-		m.state.view = AddAnime_Review
+		m.state.view = AddAnimeReview
 		m.state.selectedAnime = msg.Value
 		return m, tea.Batch(cmd, m.addAnime(msg.Value.ID))
 	}
@@ -105,13 +105,13 @@ func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	}
 
 	switch m.state.view {
-	case AddAnime_Selection:
+	case AddAnimeSelection:
 		m, cmd = m.UpdateSelection(msg)
 		cmds = append(cmds, cmd)
-	case AddAnime_Query:
+	case AddAnimeQuery:
 		cmd = m.ui.animeSearch.Update(msg)
 		cmds = append(cmds, cmd)
-	case AddAnime_Review:
+	case AddAnimeReview:
 		m, cmd = m.UpdateReview(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -119,28 +119,28 @@ func (m AddAnime_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m AddAnime_Model) View() tea.View {
+func (m AddAnimeModel) View() tea.View {
 	switch m.state.view {
-	case AddAnime_Selection:
+	case AddAnimeSelection:
 		return m.ViewSelection()
-	case AddAnime_Query:
+	case AddAnimeQuery:
 		return m.ui.animeSearch.View()
-	case AddAnime_Review:
+	case AddAnimeReview:
 		return m.ViewReview()
 	}
 	return tea.NewView("missing AddAnime view")
 }
 
-func (m AddAnime_Model) ShortHelp() []key.Binding {
+func (m AddAnimeModel) ShortHelp() []key.Binding {
 	if m.state.fetchErr != nil {
 		return []key.Binding{ui.KeyMap.EscBack}
 	}
 
-	if m.state.view == AddAnime_Selection {
+	if m.state.view == AddAnimeSelection {
 		return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.EscBack}
 	}
 
-	if m.state.view == AddAnime_Query {
+	if m.state.view == AddAnimeQuery {
 		return m.ui.animeSearch.ShortHelp()
 	}
 
@@ -151,11 +151,11 @@ func (m AddAnime_Model) ShortHelp() []key.Binding {
 	return []key.Binding{}
 }
 
-func (m AddAnime_Model) FullHelp() [][]key.Binding {
+func (m AddAnimeModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m AddAnime_Model) UpdateSelection(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
+func (m AddAnimeModel) UpdateSelection(msg tea.Msg) (AddAnimeModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
@@ -187,13 +187,13 @@ func (m AddAnime_Model) UpdateSelection(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
 				m.InitAnimeSearch([]kitsu.AnimeStatus{kitsu.AnimeFinished})
 			}
 			m.ui.animeSearch.Update(m.windowSize)
-			m.state.view = AddAnime_Query
+			m.state.view = AddAnimeQuery
 		}
 	}
 	return m, nil
 }
 
-func (m AddAnime_Model) ViewSelection() tea.View {
+func (m AddAnimeModel) ViewSelection() tea.View {
 	var menu string
 	menuStyle := ui.Style.MarginLeft(3).
 		Width(15).
@@ -230,7 +230,7 @@ then it's probably ;dc;completed;x;.`,
 	return tea.NewView(view)
 }
 
-func (m AddAnime_Model) UpdateReview(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
+func (m AddAnimeModel) UpdateReview(msg tea.Msg) (AddAnimeModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
@@ -261,7 +261,7 @@ func (m AddAnime_Model) UpdateReview(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m AddAnime_Model) ViewReview() tea.View {
+func (m AddAnimeModel) ViewReview() tea.View {
 	if m.ui.loader.IsLoading() {
 		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
 	}
@@ -279,7 +279,7 @@ func (m AddAnime_Model) ViewReview() tea.View {
 	return tea.NewView(str)
 }
 
-func (m *AddAnime_Model) InitAnimeSearch(animeStatus []kitsu.AnimeStatus) {
+func (m *AddAnimeModel) InitAnimeSearch(animeStatus []kitsu.AnimeStatus) {
 	logger.Log(logger.Debug, "creating anime search using: %+v", animeStatus)
 	m.ui.animeSearch = NewAnimeSearchModel(
 		m.db,
@@ -294,16 +294,16 @@ func (m *AddAnime_Model) InitAnimeSearch(animeStatus []kitsu.AnimeStatus) {
 	)
 }
 
-func (m *AddAnime_Model) reset() {
-	m.state = AddAnime_State{
-		view: AddAnime_Selection,
+func (m *AddAnimeModel) reset() {
+	m.state = AddAnimeState{
+		view: AddAnimeSelection,
 	}
 	m.ui.animeSearch.Reset()
 	m.ui.input.Reset()
 	logger.Log(logger.Debug, "model state reset")
 }
 
-func (m AddAnime_Model) addAnime(animeID string) tea.Cmd {
+func (m AddAnimeModel) addAnime(animeID string) tea.Cmd {
 	return func() tea.Msg {
 		p := m.db.Profile()
 		logger.Log(logger.Debug, "addAnime(): adding anime to kitsu")
