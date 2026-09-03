@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/internal/database"
+	"github.com/Jaeiya/koshime/internal/logger"
 	"github.com/Jaeiya/koshime/internal/qbittorrent"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
@@ -68,6 +69,7 @@ func NewMenuModel(views []MenuView, db *database.Database) MenuModel {
 }
 
 func (m MenuModel) Init() tea.Cmd {
+	logger.Log(logger.Debug, "Init(): getting qbt state")
 	return m.initQbtState()
 }
 
@@ -89,6 +91,7 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 			}
 
 		case ExitToMenuMsg:
+			logger.Log(logger.Info, "exiting to main menu")
 			m.selectedModel = nil
 		}
 		return m, cmd
@@ -102,6 +105,7 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.EscBack):
 			if m.inSubMenu {
+				logger.Log(logger.Debug, "Update(): escaping back to main menu")
 				m.inSubMenu = false
 				m.activeItems = m.menuItems
 				m.menu = m.newMenu(m.menuItems)
@@ -116,17 +120,20 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 	case ui.MenuItemSelMsg:
 		chosen := m.activeItems[msg.Value]
 		if chosen.SubViews != nil {
+			logger.Log(logger.Debug, "Update(): select sub-menu item: %s", chosen.Name)
 			m.inSubMenu = true
 			m.menuIndex = msg.Value
 			m.activeItems = chosen.SubViews
 			m.menu = m.newMenu(chosen.SubViews)
 		} else {
+			logger.Log(logger.Debug, "Update(): select menu item: %s", chosen.Name)
 			m.selectedModel = chosen.ModelFunc()
 			m.selectedModel, cmd = m.selectedModel.Update(m.windowSize)
 			cmds = append(cmds, cmd, m.selectedModel.Init())
 		}
 
 	case QbtStateMsg:
+		logger.Log(logger.Debug, "Update(): received qbt state: %+v", msg.Value)
 		m.qbtState = msg.Value
 	}
 
@@ -237,6 +244,7 @@ func (m MenuModel) DisplayProfile() string {
 }
 
 func (m MenuModel) newMenu(views []MenuView) ui.MenuModel {
+	logger.Log(logger.Debug, "creating menu")
 	items := make([]string, len(views))
 	menuDesc := make([]string, len(views))
 	for i, item := range views {
@@ -250,12 +258,15 @@ func (m MenuModel) initQbtState() tea.Cmd {
 	return func() tea.Msg {
 		p := m.db.Profile()
 		if p.QbtPort <= 0 {
+			logger.Log(logger.Debug, "sending qbt state: None")
 			return QbtStateMsg{None}
 		}
 		strPort := strconv.Itoa(p.QbtPort)
 		if err := qbittorrent.CheckConn(strPort); err != nil {
+			logger.Log(logger.Debug, "sending qbt state: Offline")
 			return QbtStateMsg{Offline}
 		}
+		logger.Log(logger.Debug, "sending qbt state: Online")
 		return QbtStateMsg{Online}
 	}
 }
