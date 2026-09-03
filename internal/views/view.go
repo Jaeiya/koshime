@@ -7,6 +7,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/internal/database"
+	"github.com/Jaeiya/koshime/internal/logger"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
 )
@@ -76,11 +77,14 @@ func New() (Model, error) {
 	m.help.Styles.ShortDesc = ui.HelpDescStyle
 	m.help.Styles.FullDesc = m.help.Styles.ShortDesc
 
+	logger.Log(logger.Info, "loading database")
 	m.db, err = database.NewDatabase(nil)
 	if err != nil {
 		return m, fmt.Errorf("failed to initialize database: %w", err)
 	}
+
 	if !m.db.Exists() {
+		logger.Log(logger.Info, "Database not found: begin user setup")
 		m.setupUser = newSetupUserModel()
 		return m, nil
 	}
@@ -92,6 +96,7 @@ func New() (Model, error) {
 
 func (m Model) Init() tea.Cmd {
 	if m.db.Exists() {
+		logger.Log(logger.Debug, "Init(): initializing menu")
 		return m.menu.Init()
 	}
 	return nil
@@ -108,6 +113,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.menu, _ = m.menu.Update(m.windowSize)
 
 	case FatalErrorMsg:
+		logger.Log(logger.Debug, "Update(): received fatal error message")
 		m.FatalErr = msg
 		return m, abort
 
@@ -115,17 +121,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// This is typically a forced abort so we assume the user
 		// wanted to abort, rather than just exit.
 		if msg.String() == "ctrl+c" {
+			logger.Log(logger.Debug, "Update(): user aborted application with ctrl+c")
 			m.view = Abort
 			return m, abort
 		}
 
 		// Allows easy exit from any view
 		if msg.String() == "ctrl+x" {
+			logger.Log(logger.Debug, "Update(): user exited application using ctrl+x")
 			m.view = Exit
 			return m, exit
 		}
 
 	case SetupUserFinishedMsg:
+		logger.Log(logger.Debug, "Update(): finishing user setup")
 		if err := m.db.Overwrite(msg.Value); err != nil {
 			return m, sendFatal(
 				fmt.Errorf("failed to load new user data: %w", err).Error(),
@@ -138,11 +147,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.menu.Init()
 
 	case AbortMsg:
+		logger.Log(logger.Debug, "Update(): aborting application")
 		m.HasAborted = true
 		m.view = Abort
 		return m, tea.Quit
 
 	case ExitMsg:
+		logger.Log(logger.Debug, "Update(): exiting application")
 		m.view = Exit
 		return m, tea.Quit
 
@@ -183,6 +194,7 @@ func (m Model) View() tea.View {
 }
 
 func (m *Model) CreateMenu() {
+	logger.Log(logger.Info, "creating main menu")
 	m.menu = NewMenuModel([]MenuView{
 		{
 			Name:      "Watch",
@@ -230,6 +242,7 @@ func (m *Model) CreateMenu() {
 }
 
 func sendFatal(errMsg, desc string) tea.Cmd {
+	logger.Log(logger.Debug, "sending fatal error message")
 	return func() tea.Msg {
 		return FatalErrorMsg{
 			Msg:  errMsg,
