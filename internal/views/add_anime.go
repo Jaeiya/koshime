@@ -9,6 +9,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/internal/database"
 	"github.com/Jaeiya/koshime/internal/kitsu"
+	"github.com/Jaeiya/koshime/internal/logger"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/charmbracelet/x/ansi"
@@ -176,6 +177,7 @@ func (m AddAnime_Model) UpdateSelection(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
 			return m, nil
 
 		case key.Matches(msg, ui.KeyMap.Select):
+			logger.Log(logger.Debug, "UpdateSelection(): select anime airing option: %d", m.state.menuIndex)
 			switch m.state.menuIndex {
 			// Airing or Upcoming anime
 			case 0:
@@ -234,21 +236,26 @@ func (m AddAnime_Model) UpdateReview(msg tea.Msg) (AddAnime_Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
 			if m.state.fetchErr == nil {
+				logger.Log(logger.Debug, "UpdateReview(): continue to main menu")
 				m.reset()
 				return m, exitToMenu
 			}
 
 		case key.Matches(msg, ui.KeyMap.EscBack):
 			if m.state.fetchErr != nil {
+				logger.Log(logger.Debug, "UpdateReview(): resetting model state on EscBack")
 				m.reset()
 			}
 		}
 
 	case AnimeAddedMsg:
+		logger.Log(logger.Debug, "UpdateReview(): received added anime success msg")
 		m.ui.loader.Stop()
 
 	case FetchErrorMsg:
+		logger.Log(logger.Debug, "UpdateReview(): received fetch error msg")
 		m.ui.loader.Stop()
+		logger.Log(logger.Error, msg.Error())
 		m.state.fetchErr = msg
 	}
 	return m, nil
@@ -273,6 +280,7 @@ func (m AddAnime_Model) ViewReview() tea.View {
 }
 
 func (m *AddAnime_Model) InitAnimeSearch(animeStatus []kitsu.AnimeStatus) {
+	logger.Log(logger.Debug, "creating anime search using: %+v", animeStatus)
 	m.ui.animeSearch = NewAnimeSearchModel(
 		m.db,
 		WithHeader("Add Anime"),
@@ -292,11 +300,13 @@ func (m *AddAnime_Model) reset() {
 	}
 	m.ui.animeSearch.Reset()
 	m.ui.input.Reset()
+	logger.Log(logger.Debug, "model state reset")
 }
 
 func (m AddAnime_Model) addAnime(animeID string) tea.Cmd {
 	return func() tea.Msg {
 		p := m.db.Profile()
+		logger.Log(logger.Debug, "addAnime(): adding anime to kitsu")
 		libID, err := kitsu.AddAnime(animeID, p.ID, p.AccessToken, kitsu.LibAnimeWatching)
 		if err != nil {
 			return FetchErrorMsg{Msg: err.Error()}
@@ -310,12 +320,16 @@ func (m AddAnime_Model) addAnime(animeID string) tea.Cmd {
 			RuleURI string
 		}{}
 
+		logger.Log(logger.Debug, "addAnime(): adding anime to database")
 		err = m.db.AddAnime(anime)
 		if err != nil {
+			logger.Log(logger.Debug, "addAnime(): sending fetch error")
 			return FetchErrorMsg{
 				Msg: fmt.Errorf("failed to add anime to database: %w", err).Error(),
 			}
 		}
+
+		logger.Log(logger.Debug, "addAnime(): sending anime added success msg")
 		return AnimeAddedMsg{}
 	}
 }
