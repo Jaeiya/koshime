@@ -106,7 +106,7 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 				m.activeItems = m.menuItems
 				m.menu = m.newMenu(m.menuItems)
 				if err := m.menu.Select(m.menuIndex); err != nil {
-					return m, func() tea.Msg { return err }
+					panic(err) // Unrecoverable
 				}
 				return m, nil
 			}
