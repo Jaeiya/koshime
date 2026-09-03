@@ -352,13 +352,13 @@ func TestScore(t *testing.T) {
 			desc:      "match score threshold with abused anime title",
 			title:     "Kokaku no Ou",
 			anime:     kitsu.Anime{JPN_Title: "Kokakunoou"},
-			wantScore: 33,
+			wantScore: 99,
 		},
 		{
 			desc:      "match score threshold with abused file name",
 			title:     "Kokakunoou",
 			anime:     kitsu.Anime{JPN_Title: "Kokaku no Ou"},
-			wantScore: 33,
+			wantScore: 99,
 		},
 	}
 

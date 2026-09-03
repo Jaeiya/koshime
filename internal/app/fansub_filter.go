@@ -231,18 +231,9 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime, threshold int) int
 	// This attempts to capture titles/file names that abuse titles
 	// =======================================
 	smashedTitle := strings.Join(titleWords, "")
-	if ff.normalizeTitle(anime.JPN_Title) == smashedTitle ||
-		ff.normalizeTitle(anime.ENG_Title) == smashedTitle {
-		return threshold
-	}
-	for _, alt := range anime.AltTitles {
-		if ff.normalizeTitle(alt) == smashedTitle {
-			return threshold
-		}
-	}
 	for _, slice := range wordSlices {
-		if strings.Join(slice, "") == title {
-			return threshold
+		if strings.Join(slice, "") == smashedTitle {
+			return 99
 		}
 	}
 
