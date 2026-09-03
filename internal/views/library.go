@@ -749,7 +749,7 @@ func (m LibraryModel) reloadLibrary() tea.Msg {
 	if err != nil {
 		return err
 	}
-	err = m.db.UpdateAllAnime(anime)
+	err = m.db.OverwriteLib(anime)
 	if err != nil {
 		return fmt.Errorf("failed to reload library: %w", err)
 	}
