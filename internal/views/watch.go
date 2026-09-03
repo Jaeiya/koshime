@@ -12,6 +12,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/database"
+	"github.com/Jaeiya/koshime/internal/logger"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
 	"github.com/charmbracelet/x/ansi"
@@ -76,6 +77,7 @@ func newWatchModel(db *database.Database) WatchModel {
 }
 
 func (m WatchModel) Init() tea.Cmd {
+	logger.Log(logger.Info, "Init(): loading anime")
 	return tea.Sequence(m.ui.loader.Init(), m.loadAnime)
 }
 
@@ -113,6 +115,7 @@ func (m WatchModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		}
 
 	case WatchLoadedAnimeMsg:
+		logger.Log(logger.Debug, "Update(): loaded %d anime", len(msg.Value))
 		m.state.view = WatchSelection
 		m.state.filteredAnime = msg.Value
 		m.ui.list = m.createAnimeList()
@@ -225,9 +228,13 @@ func (m WatchModel) UpdateSelection(msg tea.Msg) (WatchModel, tea.Cmd) {
 				m.state.selection.anime = m.state.filteredAnime[item.Index()]
 				anime := m.state.selection.anime
 
+				logger.Log(logger.Debug, "UpdateSelection(): selecting anime: %s", item.Title())
+
 				fileEp, err := strconv.Atoi(anime.FileInfo.Episode)
 				if err != nil {
-					m.state.err = fmt.Errorf("failed to parse fansub episode: %w", err)
+					err = fmt.Errorf("failed to parse fansub episode: %w", err)
+					logger.Log(logger.Error, err.Error())
+					m.state.err = err
 					return m, nil
 				}
 
@@ -245,6 +252,8 @@ func (m WatchModel) UpdateSelection(msg tea.Msg) (WatchModel, tea.Cmd) {
 				case fileEp < nextProgress:
 					m.state.selection.fileState = app.Watched
 				}
+
+				logger.Log(logger.Debug, "UpdateSelection(): setting file state: %d", m.state.selection.fileState)
 
 				return m, m.playAnime
 			}
@@ -456,6 +465,7 @@ ahead of your progress, or the fansub group is not following seasonal episode co
 }
 
 func (m WatchModel) createAnimeList() list.Model {
+	logger.Log(logger.Debug, "creating anime list")
 	listItems := make([]list.Item, len(m.state.filteredAnime))
 	for i, item := range m.state.filteredAnime {
 		title := item.Value.ENG_Title
