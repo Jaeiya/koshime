@@ -149,6 +149,7 @@ func (db *Database) UpdateAnime(anime kitsu.Anime) error {
 	if idx < 0 {
 		return fmt.Errorf("library id not found for: %s", anime.ENG_Title)
 	}
+
 	db.data.Library[idx] = anime
 	err := db.Save()
 	if err != nil {
@@ -165,6 +166,7 @@ func (db *Database) UpdateAllAnime(animeList []kitsu.Anime) error {
 		}
 		db.data.Library[idx] = anime
 	}
+
 	err := db.Save()
 	if err != nil {
 		return fmt.Errorf("failed to save updated anime: %w", err)
@@ -200,6 +202,15 @@ func (db *Database) SaveTokenData(token, refreshToken string, expiresIn int) err
 // bootstrap or refresh the database.
 func (db *Database) Overwrite(d Data) error {
 	db.data = d
+	return db.Save()
+}
+
+// OverwriteLib overwrites all existing database anime and saves it.
+//
+// 🟠 This is destructive and should only be used to
+// bootstrap or refresh the database.
+func (db *Database) OverwriteLib(anime []kitsu.Anime) error {
+	db.data.Library = anime
 	return db.Save()
 }
 
