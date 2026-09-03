@@ -7,6 +7,7 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
+	"github.com/Jaeiya/koshime/internal/logger"
 )
 
 type LoaderModel struct {
@@ -25,6 +26,7 @@ func NewLoader() LoaderModel {
 }
 
 func (m LoaderModel) Init() tea.Cmd {
+	logger.Log(logger.Debug, "Init(): send spinner tick")
 	if m.IsLoading() {
 		return m.spinner.Tick
 	}
@@ -56,6 +58,7 @@ func (m LoaderModel) IsLoading() bool {
 }
 
 func (m LoaderModel) Start(text string) (LoaderModel, tea.Cmd) {
+	logger.Log(logger.Debug, "starting loader: %s", text)
 	m.active = true
 	if text != "" {
 		m.text = text
@@ -64,5 +67,6 @@ func (m LoaderModel) Start(text string) (LoaderModel, tea.Cmd) {
 }
 
 func (m *LoaderModel) Stop() {
+	logger.Log(logger.Debug, "stopping loader: %s", m.text)
 	m.active = false
 }
