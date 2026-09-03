@@ -110,7 +110,7 @@ func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
 				m.activeItems = m.menuItems
 				m.menu = m.newMenu(m.menuItems)
 				if err := m.menu.Select(m.menuIndex); err != nil {
-					panic(err) // Unrecoverable
+					return m, sendFatal(err.Error(), "We're selecting a menu index that doesn't exist")
 				}
 				return m, nil
 			}
