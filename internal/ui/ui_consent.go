@@ -1,8 +1,11 @@
 package ui
 
 import (
+	"fmt"
+
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/Jaeiya/koshime/internal/logger"
 )
 
 type Consent int
@@ -21,8 +24,10 @@ func (m ConsentModel) Update(msg tea.Msg) ConsentModel {
 	case tea.KeyPressMsg:
 		switch msg.String() {
 		case "j", "down":
+			logger.Log(logger.Hot, "Update(): highlight Yes")
 			m.pos = Yes
 		case "k", "up":
+			logger.Log(logger.Hot, "Update(): highlight No")
 			m.pos = No
 		}
 	}
@@ -46,6 +51,13 @@ func (m ConsentModel) View(msg ...string) string {
 // Select returns the currently selected consent value
 // and resets the consent position to a default of No.
 func (m *ConsentModel) Select() Consent {
+	logger.LogFunc(logger.Debug, func() string {
+		selStr := "Yes"
+		if m.pos == No {
+			selStr = "No"
+		}
+		return fmt.Sprintf("Select(): %s", selStr)
+	})
 	lastPos := m.pos
 	// Reset for re-use
 	m.pos = No
@@ -53,6 +65,7 @@ func (m *ConsentModel) Select() Consent {
 }
 
 func (m *ConsentModel) SetConsentPos(pos Consent) {
+	logger.Log(logger.Debug, "SetConsentPos(): %d", pos)
 	m.pos = pos
 }
 
