@@ -227,7 +227,7 @@ func (m ManDirModel) UpdateCleaned(msg tea.Msg) (ManDirModel, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Select):
-			// m.state = WatchDirState{}
+			m.reset()
 			return m, m.loadWatchDir
 		}
 
