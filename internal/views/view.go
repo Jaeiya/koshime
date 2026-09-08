@@ -2,11 +2,14 @@ package views
 
 import (
 	"fmt"
+	"time"
 
 	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/internal/database"
+	"github.com/Jaeiya/koshime/internal/kitsu"
 	"github.com/Jaeiya/koshime/internal/logger"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
@@ -17,6 +20,7 @@ type UIView int
 const (
 	SetupUser = UIView(iota)
 	Menu
+	TokenExpiring
 	Abort
 	Exit
 )
@@ -35,13 +39,17 @@ type DefaultErrorMsg struct {
 	err error
 }
 
+func (e DefaultErrorMsg) Error() string {
+	return e.err.Error()
+}
+
 type FatalErrorMsg struct {
 	Msg  string
 	Desc string
 }
 
-func (e DefaultErrorMsg) Error() string {
-	return e.err.Error()
+type viewRefreshTokenMsg struct {
+	err error
 }
 
 type ViewModel interface {
@@ -49,6 +57,16 @@ type ViewModel interface {
 	Update(msg tea.Msg) (ViewModel, tea.Cmd)
 	View() tea.View
 	Init() tea.Cmd
+}
+
+type ViewErrModel struct{}
+
+func (m ViewErrModel) ShortHelp() []key.Binding {
+	return []key.Binding{ui.KeyMap.EscBack}
+}
+
+func (m ViewErrModel) FullHelp() [][]key.Binding {
+	return nil
 }
 
 type (
@@ -59,17 +77,21 @@ type (
 type Model struct {
 	db         *database.Database
 	windowSize tea.WindowSizeMsg
+	loader     ui.LoaderModel
+	consent    ui.ConsentModel
 	menu       MenuModel
 	help       help.Model
 	setupUser  SetupUserModel
 	view       UIView
 	FatalErr   FatalErrorMsg
+	err        error
 	HasAborted bool
 }
 
 func New() (Model, error) {
 	m := Model{}
 	var err error
+	m.loader = ui.NewLoader()
 
 	m.help = help.New()
 	m.help.Styles.ShortKey = ui.HelpKeyStyle
@@ -89,8 +111,16 @@ func New() (Model, error) {
 		return m, nil
 	}
 
-	m.CreateMenu()
+	secPerDay := 86400.0
+	days := float64(m.db.Profile().TokenExpirationSec-time.Now().Unix()) / secPerDay
+	logger.Log(logger.Debug, "NewView(): token expires in: %0.2f days", days)
+
 	m.view = Menu
+	if days < 7 {
+		m.view = TokenExpiring
+	}
+
+	m.CreateMenu()
 	return m, nil
 }
 
@@ -118,19 +148,42 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, abort
 
 	case tea.KeyPressMsg:
+		switch {
 		// This is typically a forced abort so we assume the user
 		// wanted to abort, rather than just exit.
-		if msg.String() == "ctrl+c" {
+		case key.Matches(msg, ui.KeyMap.AbortApp):
 			logger.Log(logger.Debug, "Update(): user aborted application with ctrl+c")
 			m.view = Abort
 			return m, abort
-		}
 
 		// Allows easy exit from any view
-		if msg.String() == "ctrl+x" {
+		case key.Matches(msg, ui.KeyMap.ExitApp):
 			logger.Log(logger.Debug, "Update(): user exited application using ctrl+x")
 			m.view = Exit
 			return m, exit
+
+		case key.Matches(msg, ui.KeyMap.EscBack):
+			if m.err != nil {
+				m.view = Menu
+				m.err = nil
+				return m, nil
+			}
+
+		// Manage token expiration consent
+		case key.Matches(msg, ui.KeyMap.Select):
+			if m.loader.IsLoading() {
+				return m, nil
+			}
+
+			if m.view == TokenExpiring {
+				if m.consent.Select() == ui.No {
+					m.view = Menu
+					return m, nil
+				}
+			}
+
+			m.loader, cmd = m.loader.Start("Refreshing Token")
+			return m, tea.Batch(cmd, m.refreshToken())
 		}
 
 	case SetupUserFinishedMsg:
@@ -146,6 +199,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.view = Menu
 		return m, m.menu.Init()
 
+	case viewRefreshTokenMsg:
+		m.loader.Stop()
+		if msg.err != nil {
+			m.err = msg.err
+			return m, nil
+		}
+		m.view = Menu
+
 	case AbortMsg:
 		logger.Log(logger.Debug, "Update(): aborting application")
 		m.HasAborted = true
@@ -159,9 +220,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	}
 
+	if m.loader.IsLoading() {
+		m.loader, cmd = m.loader.Update(msg)
+		return m, cmd
+	}
+
 	if m.view == SetupUser {
 		m.setupUser, cmd = m.setupUser.Update(msg)
 		return m, cmd
+	}
+
+	if m.view == TokenExpiring {
+		m.consent = m.consent.Update(msg)
+		return m, nil
 	}
 
 	m.menu, cmd = m.menu.Update(msg)
@@ -171,9 +242,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) View() tea.View {
+	if m.loader.IsLoading() {
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.loader.View()))
+	}
+
+	if m.err != nil {
+		return tea.NewView(lipgloss.JoinVertical(
+			lipgloss.Left,
+			ui.DisplayTitle("Error Updating Token"),
+			ui.DisplayError(m.err),
+			ui.HelpStyle.Render(m.help.View(ViewErrModel{})),
+		))
+	}
+
 	switch m.view {
 	case Menu:
 		return m.menu.View()
+
+	case TokenExpiring:
+		return m.ViewExpiration()
 
 	case SetupUser:
 		v := m.setupUser.View()
@@ -191,6 +278,19 @@ func (m Model) View() tea.View {
 		return tea.NewView("missing view")
 
 	}
+}
+
+func (m Model) ViewExpiration() tea.View {
+	return tea.NewView(lipgloss.JoinVertical(
+		lipgloss.Left,
+		"",
+		m.consent.View(
+			ui.ConsentStyle.Render(
+				"Your Kitsu token is about to expire, would you like to refresh it now?",
+			),
+		),
+		ui.HelpStyle.Render(m.help.View(m.consent)),
+	))
 }
 
 func (m *Model) CreateMenu() {
@@ -248,6 +348,24 @@ func sendFatal(errMsg, desc string) tea.Cmd {
 			Msg:  errMsg,
 			Desc: desc,
 		}
+	}
+}
+
+func (m Model) refreshToken() tea.Cmd {
+	return func() tea.Msg {
+		logger.Log(logger.Debug, "refreshing token")
+		data, err := kitsu.RefreshToken(m.db.Profile().RefreshToken)
+		if err != nil {
+			logger.Log(logger.Error, err.Error())
+			return viewRefreshTokenMsg{err}
+		}
+		// TODO: this should just take the AuthTokenData struct as an arg
+		logger.Log(logger.Debug, "saving token data to database")
+		if err = m.db.SaveTokenData(data.Token, data.RefreshToken, data.ExpiresIn); err != nil {
+			logger.Log(logger.Error, err.Error())
+			return viewRefreshTokenMsg{err}
+		}
+		return viewRefreshTokenMsg{}
 	}
 }
 
