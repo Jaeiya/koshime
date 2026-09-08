@@ -3,6 +3,7 @@ package ui
 import (
 	"fmt"
 
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/internal/logger"
@@ -46,6 +47,14 @@ func (m ConsentModel) View(msg ...string) string {
 
 	msg = append(msg, "", no, yes)
 	return lipgloss.JoinVertical(lipgloss.Left, msg...)
+}
+
+func (m ConsentModel) ShortHelp() []key.Binding {
+	return []key.Binding{KeyMap.Up, KeyMap.Down, KeyMap.Select}
+}
+
+func (m ConsentModel) FullHelp() [][]key.Binding {
+	return nil
 }
 
 // Select returns the currently selected consent value
