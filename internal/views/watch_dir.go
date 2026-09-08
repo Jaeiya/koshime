@@ -40,11 +40,9 @@ type WatchDirInfo struct {
 
 type WatchDirModel struct {
 	windowSize tea.WindowSizeMsg
-	ui         struct {
-		loader ui.LoaderModel
-		menu   ui.MenuModel
-	}
-	state WatchDirState
+	loader     ui.LoaderModel
+	menu       ui.MenuModel
+	state      WatchDirState
 }
 
 type WatchDirState struct {
@@ -59,11 +57,11 @@ type WatchDirState struct {
 
 func newWatchDirModel() WatchDirModel {
 	m := WatchDirModel{}
-	m.ui.menu = ui.NewMenuModel([]string{
+	m.menu = ui.NewMenuModel([]string{
 		"Clean Recent",
 		"Clean All",
 	})
-	m.ui.loader = ui.NewLoader()
+	m.loader = ui.NewLoader()
 	return m
 }
 
@@ -80,20 +78,20 @@ func (m WatchDirModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		m.windowSize = msg
 
 	case WatchDirLoadFilesMsg:
-		m.ui.loader, cmd = m.ui.loader.Start("Loading Watched Files")
+		m.loader, cmd = m.loader.Start("Loading Watched Files")
 		return m, tea.Batch(cmd, m.loadFiles)
 
 	case WatchDirInfo:
 		m.state.folderInfo = msg
-		m.ui.loader.Stop()
+		m.loader.Stop()
 
 	case error:
-		m.ui.loader.Stop()
+		m.loader.Stop()
 		m.state.err = msg
 	}
 
-	if m.ui.loader.IsLoading() {
-		m.ui.loader, cmd = m.ui.loader.Update(msg)
+	if m.loader.IsLoading() {
+		m.loader, cmd = m.loader.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -111,8 +109,8 @@ func (m WatchDirModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 }
 
 func (m WatchDirModel) View() tea.View {
-	if m.ui.loader.IsLoading() {
-		return tea.NewView(ui.Style.MarginTop(1).Render(m.ui.loader.View()))
+	if m.loader.IsLoading() {
+		return tea.NewView(ui.Style.MarginTop(1).Render(m.loader.View()))
 	}
 
 	if m.state.err != nil {
@@ -130,7 +128,7 @@ func (m WatchDirModel) View() tea.View {
 }
 
 func (m WatchDirModel) ShortHelp() []key.Binding {
-	if m.ui.loader.IsLoading() {
+	if m.loader.IsLoading() {
 		return []key.Binding{}
 	}
 
@@ -166,7 +164,7 @@ func (m WatchDirModel) UpdateMenu(msg tea.Msg) (WatchDirModel, tea.Cmd) {
 		if m.state.folderInfo.fileCount == 0 {
 			return m, nil
 		}
-		m.ui.loader, cmd = m.ui.loader.Start("Cleaning Files")
+		m.loader, cmd = m.loader.Start("Cleaning Files")
 		switch msg.Value {
 		case 0:
 			m.state.view = WatchDirCleanRecent
@@ -178,7 +176,7 @@ func (m WatchDirModel) UpdateMenu(msg tea.Msg) (WatchDirModel, tea.Cmd) {
 	}
 
 	if m.state.folderInfo.fileCount > 0 {
-		m.ui.menu, cmd = m.ui.menu.Update(msg)
+		m.menu, cmd = m.menu.Update(msg)
 		cmds = append(cmds, cmd)
 	}
 
@@ -222,7 +220,7 @@ series. If you've watched ;dy;5;x; different series, this will leave ;dy;5;x; fi
 			`;dgu;Clean All;x; removes all files within the watch directory. This is
 typically a good idea after each season.`,
 		}, 1, 0, 1),
-		m.ui.menu.View(),
+		m.menu.View(),
 	))
 }
 
@@ -238,7 +236,7 @@ func (m WatchDirModel) UpdateCleaned(msg tea.Msg) (WatchDirModel, tea.Cmd) {
 	case WatchDirSuccessfulDeleteMsg:
 		m.state.cleanResults.deleted = msg.count
 		m.state.cleanResults.size = msg.size
-		m.ui.loader.Stop()
+		m.loader.Stop()
 	}
 	return m, nil
 }
