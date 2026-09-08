@@ -229,7 +229,7 @@ func (m *Model) CreateMenu() {
 			},
 			{
 				Name:      "Clean",
-				ModelFunc: func() ViewModel { return newWatchDirModel() },
+				ModelFunc: func() ViewModel { return newManDirModel() },
 				Desc:      "View & manage your watched anime files.",
 			},
 		}, Desc: "Submenu for managing Koshime functionality."},

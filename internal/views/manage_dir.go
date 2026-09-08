@@ -15,46 +15,46 @@ import (
 	"github.com/Jaeiya/koshime/internal/utils"
 )
 
-type WatchDirView int
+type ManDirView int
 
 const (
-	WatchDirMenu = WatchDirView(iota)
-	WatchDirCleanRecent
-	WatchDirCleanAll
+	ManDirMenu = ManDirView(iota)
+	ManDirCleanRecent
+	ManDirCleanAll
 )
 
 type (
-	WatchDirSuccessfulDeleteMsg struct {
+	ManDirSuccessfulDeleteMsg struct {
 		count int
 		size  int64
 	}
-	WatchDirLoadFilesMsg struct{}
+	ManDirLoadFilesMsg struct{}
 )
 
-type WatchDirInfo struct {
+type ManDirInfo struct {
 	location    string
 	size        int64
 	fileCount   int
 	avgFileSize int64
 }
 
-type WatchDirResults struct {
+type ManDirResults struct {
 	Deleted int
 	Size    int64
 }
 
-type WatchDirModel struct {
+type ManDirModel struct {
 	windowSize tea.WindowSizeMsg
 	loader     ui.LoaderModel
 	menu       ui.MenuModel
 	err        error
-	view       WatchDirView
-	folderInfo WatchDirInfo
-	results    WatchDirResults
+	view       ManDirView
+	folderInfo ManDirInfo
+	results    ManDirResults
 }
 
-func newWatchDirModel() WatchDirModel {
-	m := WatchDirModel{}
+func newManDirModel() ManDirModel {
+	m := ManDirModel{}
 	m.menu = ui.NewMenuModel([]string{
 		"Clean Recent",
 		"Clean All",
@@ -63,11 +63,11 @@ func newWatchDirModel() WatchDirModel {
 	return m
 }
 
-func (m WatchDirModel) Init() tea.Cmd {
+func (m ManDirModel) Init() tea.Cmd {
 	return m.loadWatchDir
 }
 
-func (m WatchDirModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m ManDirModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -75,11 +75,11 @@ func (m WatchDirModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.windowSize = msg
 
-	case WatchDirLoadFilesMsg:
+	case ManDirLoadFilesMsg:
 		m.loader, cmd = m.loader.Start("Loading Watched Files")
 		return m, tea.Batch(cmd, m.loadFiles)
 
-	case WatchDirInfo:
+	case ManDirInfo:
 		m.folderInfo = msg
 		m.loader.Stop()
 
@@ -94,11 +94,11 @@ func (m WatchDirModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	}
 
 	switch m.view {
-	case WatchDirMenu:
+	case ManDirMenu:
 		m, cmd = m.UpdateMenu(msg)
 		cmds = append(cmds, cmd)
 
-	case WatchDirCleanRecent, WatchDirCleanAll:
+	case ManDirCleanRecent, ManDirCleanAll:
 		m, cmd = m.UpdateCleaned(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -106,7 +106,7 @@ func (m WatchDirModel) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m WatchDirModel) View() tea.View {
+func (m ManDirModel) View() tea.View {
 	if m.loader.IsLoading() {
 		return tea.NewView(ui.Style.MarginTop(1).Render(m.loader.View()))
 	}
@@ -116,16 +116,16 @@ func (m WatchDirModel) View() tea.View {
 	}
 
 	switch m.view {
-	case WatchDirMenu:
+	case ManDirMenu:
 		return m.ViewMenu()
-	case WatchDirCleanRecent, WatchDirCleanAll:
+	case ManDirCleanRecent, ManDirCleanAll:
 		return m.ViewCleaned()
 	default:
 		return tea.NewView("missing ManageWatchDir view")
 	}
 }
 
-func (m WatchDirModel) ShortHelp() []key.Binding {
+func (m ManDirModel) ShortHelp() []key.Binding {
 	if m.loader.IsLoading() {
 		return []key.Binding{}
 	}
@@ -135,7 +135,7 @@ func (m WatchDirModel) ShortHelp() []key.Binding {
 	}
 
 	switch m.view {
-	case WatchDirCleanRecent:
+	case ManDirCleanRecent:
 		return []key.Binding{ui.KeyMap.Submit}
 	default:
 	}
@@ -143,11 +143,11 @@ func (m WatchDirModel) ShortHelp() []key.Binding {
 	return []key.Binding{ui.KeyMap.Up, ui.KeyMap.Down, ui.KeyMap.Select, ui.KeyMap.MainMenu}
 }
 
-func (m WatchDirModel) FullHelp() [][]key.Binding {
+func (m ManDirModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
 
-func (m WatchDirModel) UpdateMenu(msg tea.Msg) (WatchDirModel, tea.Cmd) {
+func (m ManDirModel) UpdateMenu(msg tea.Msg) (ManDirModel, tea.Cmd) {
 	var cmd tea.Cmd
 	var cmds []tea.Cmd
 
@@ -165,10 +165,10 @@ func (m WatchDirModel) UpdateMenu(msg tea.Msg) (WatchDirModel, tea.Cmd) {
 		m.loader, cmd = m.loader.Start("Cleaning Files")
 		switch msg.Value {
 		case 0:
-			m.view = WatchDirCleanRecent
+			m.view = ManDirCleanRecent
 			return m, tea.Batch(cmd, m.cleanRecentFiles)
 		case 1:
-			m.view = WatchDirCleanAll
+			m.view = ManDirCleanAll
 			return m, tea.Batch(cmd, m.cleanAll)
 		}
 	}
@@ -181,7 +181,7 @@ func (m WatchDirModel) UpdateMenu(msg tea.Msg) (WatchDirModel, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-func (m WatchDirModel) ViewMenu() tea.View {
+func (m ManDirModel) ViewMenu() tea.View {
 	if m.folderInfo.size == 0 {
 		return tea.NewView(lipgloss.JoinVertical(
 			lipgloss.Left,
@@ -222,7 +222,7 @@ typically a good idea after each season.`,
 	))
 }
 
-func (m WatchDirModel) UpdateCleaned(msg tea.Msg) (WatchDirModel, tea.Cmd) {
+func (m ManDirModel) UpdateCleaned(msg tea.Msg) (ManDirModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch {
@@ -231,7 +231,7 @@ func (m WatchDirModel) UpdateCleaned(msg tea.Msg) (WatchDirModel, tea.Cmd) {
 			return m, m.loadWatchDir
 		}
 
-	case WatchDirSuccessfulDeleteMsg:
+	case ManDirSuccessfulDeleteMsg:
 		m.results.Deleted = msg.count
 		m.results.Size = msg.size
 		m.loader.Stop()
@@ -239,7 +239,7 @@ func (m WatchDirModel) UpdateCleaned(msg tea.Msg) (WatchDirModel, tea.Cmd) {
 	return m, nil
 }
 
-func (m WatchDirModel) ViewCleaned() tea.View {
+func (m ManDirModel) ViewCleaned() tea.View {
 	viewLines := []string{
 		ui.DisplaySubTitle("Manage Watch Directory", "Cleaned Recent"),
 		"",
@@ -249,7 +249,7 @@ func (m WatchDirModel) ViewCleaned() tea.View {
 
 	if m.results.Deleted == 0 {
 		typeStr := "Folder has no recent files to delete"
-		if m.view == WatchDirCleanAll {
+		if m.view == ManDirCleanAll {
 			typeStr = "Folder is already empty"
 		}
 		viewLines = append(
@@ -288,21 +288,21 @@ func (m WatchDirModel) ViewCleaned() tea.View {
 	))
 }
 
-func (m *WatchDirModel) reset() {
+func (m *ManDirModel) reset() {
 	m.err = nil
-	m.view = WatchDirMenu
-	m.folderInfo = WatchDirInfo{}
-	m.results = WatchDirResults{}
+	m.view = ManDirMenu
+	m.folderInfo = ManDirInfo{}
+	m.results = ManDirResults{}
 }
 
-func (m WatchDirModel) loadFiles() tea.Msg {
+func (m ManDirModel) loadFiles() tea.Msg {
 	dirPath := app.WatchedDir()
 	entries, err := os.ReadDir(dirPath)
 	if err != nil {
 		return fmt.Errorf("could not read watch dir: %w", err)
 	}
 
-	info := WatchDirInfo{
+	info := ManDirInfo{
 		location: dirPath,
 	}
 	for _, entry := range entries {
@@ -322,7 +322,7 @@ func (m WatchDirModel) loadFiles() tea.Msg {
 	return info
 }
 
-func (m WatchDirModel) cleanRecentFiles() tea.Msg {
+func (m ManDirModel) cleanRecentFiles() tea.Msg {
 	fileNames, err := fileSys.ReadDirFiles(app.WatchedDir())
 	if err != nil {
 		return fmt.Errorf("failed to read watch dir: %w", err)
@@ -382,10 +382,10 @@ func (m WatchDirModel) cleanRecentFiles() tea.Msg {
 		}
 	}
 
-	return WatchDirSuccessfulDeleteMsg{count, totalSize}
+	return ManDirSuccessfulDeleteMsg{count, totalSize}
 }
 
-func (m WatchDirModel) cleanAll() tea.Msg {
+func (m ManDirModel) cleanAll() tea.Msg {
 	fileNames, err := fileSys.ReadDirFiles(app.WatchedDir())
 	if err != nil {
 		return fmt.Errorf("failed to read watch dir: %w", err)
@@ -408,9 +408,9 @@ func (m WatchDirModel) cleanAll() tea.Msg {
 		count++
 	}
 
-	return WatchDirSuccessfulDeleteMsg{count, size}
+	return ManDirSuccessfulDeleteMsg{count, size}
 }
 
-func (m WatchDirModel) loadWatchDir() tea.Msg {
-	return WatchDirLoadFilesMsg{}
+func (m ManDirModel) loadWatchDir() tea.Msg {
+	return ManDirLoadFilesMsg{}
 }
