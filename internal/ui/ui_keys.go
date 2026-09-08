@@ -18,6 +18,8 @@ type MainKeyMap struct {
 	HelpLess key.Binding
 	Back     key.Binding
 	Exit     key.Binding
+	ExitApp  key.Binding
+	AbortApp key.Binding
 }
 
 var KeyMap = MainKeyMap{
@@ -36,6 +38,8 @@ var KeyMap = MainKeyMap{
 	Back:     key.NewBinding(key.WithKeys("backspace", "left"), key.WithHelp("←", "back")),
 	MainMenu: key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "menu")),
 	Exit:     key.NewBinding(key.WithKeys("esc"), key.WithHelp("esc", "exit")),
+	ExitApp:  key.NewBinding(key.WithKeys("ctrl+x"), key.WithHelp("ctrl+x", "exit app")),
+	AbortApp: key.NewBinding(key.WithKeys("ctrl+c"), key.WithHelp("ctrl+c", "abort app")),
 }
 
 type KeyHelpInfo[T any] struct {
