@@ -33,23 +33,21 @@ type Anime struct {
 }
 
 type Profile struct {
-	ID              string
-	SecondsWatched  int
-	CompletedSeries int
-	Username        string
-	Slug            string
-	About           string
-	Location        string
-	Birthday        string
-	Gender          string
-	CreatedAt       string
-	AccessToken     string
-	RefreshToken    string
-	QbtPort         int
-	// Unix timestamp in seconds
-	TokenExpirationSec int64
-	// Unix timestamp in seconds
-	LastUpdateSec int64
+	ID                 string
+	Username           string
+	Slug               string
+	About              string
+	Location           string
+	Birthday           string
+	Gender             string
+	CreatedAt          string
+	SecondsWatched     int
+	CompletedSeries    int
+	LastUpdateSec      int64  // Unix timestamp in seconds; 🟡 custom field
+	AccessToken        string // 🟡 custom field
+	RefreshToken       string // 🟡 custom field
+	TokenExpirationSec int64  // Unix timestamp in seconds; 🟡 custom field
+	QbtPort            int    // QBittorrent client port; 🟡 custom field
 }
 
 type AuthTokenData struct {
