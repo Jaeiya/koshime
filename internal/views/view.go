@@ -106,7 +106,7 @@ func New() (Model, error) {
 	}
 
 	if !m.db.Exists() {
-		logger.Log(logger.Info, "Database not found: begin user setup")
+		logger.Log(logger.Info, "NewView(): database not found: begin user setup")
 		m.setupUser = newSetupUserModel()
 		return m, nil
 	}
@@ -117,6 +117,10 @@ func New() (Model, error) {
 
 	m.view = Menu
 	if days < 7 {
+		logger.Log(
+			logger.Debug,
+			"NewView(): token is expiring soon, req user consent to refresh",
+		)
 		m.view = TokenExpiring
 	}
 
