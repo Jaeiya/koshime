@@ -180,10 +180,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.view = Menu
 					return m, nil
 				}
+				m.loader, cmd = m.loader.Start("Refreshing Token")
+				return m, tea.Batch(cmd, m.refreshToken())
 			}
 
-			m.loader, cmd = m.loader.Start("Refreshing Token")
-			return m, tea.Batch(cmd, m.refreshToken())
 		}
 
 	case SetupUserFinishedMsg:
