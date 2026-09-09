@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/Jaeiya/koshime/internal/database"
+	"github.com/Jaeiya/koshime/internal/kitsu"
 	"github.com/Jaeiya/koshime/internal/logger"
 	"github.com/Jaeiya/koshime/internal/qbittorrent"
 	"github.com/Jaeiya/koshime/internal/ui"
@@ -30,6 +31,8 @@ const (
 	Offline
 	Online
 )
+
+type profileRefreshMsg struct{}
 
 type MenuView struct {
 	Name      string
@@ -69,8 +72,21 @@ func NewMenuModel(views []MenuView, db *database.Database) MenuModel {
 }
 
 func (m MenuModel) Init() tea.Cmd {
+	var cmds []tea.Cmd
 	logger.Log(logger.Debug, "Init(): getting qbt state")
-	return m.initQbtState()
+	cmds = append(cmds, m.initQbtState())
+
+	const secPerDay = 86400.0
+	days := float64(time.Now().Unix()-m.db.Profile().LastUpdateSec) / secPerDay
+	if days >= 7 {
+		logger.Log(
+			logger.Debug,
+			"Init(): refreshing profile: last updated %0.2f days ago",
+			days,
+		)
+		cmds = append(cmds, m.refreshProfile())
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m MenuModel) Update(msg tea.Msg) (MenuModel, tea.Cmd) {
@@ -268,6 +284,28 @@ func (m MenuModel) initQbtState() tea.Cmd {
 		}
 		logger.Log(logger.Debug, "sending qbt state: Online")
 		return QbtStateMsg{Online}
+	}
+}
+
+func (m MenuModel) refreshProfile() tea.Cmd {
+	/*
+		IMPORTANT: We return nil for all errors because this is an unimportant
+		background process. If it does fail, then that usually means all other
+		requests will likely fail, and therefore letting those errors bubble
+		up makes more sense.
+	*/
+	return func() tea.Msg {
+		logger.Log(logger.Debug, "refreshing profile")
+		profile, err := kitsu.GetProfile(m.db.Profile().Username)
+		if err != nil {
+			logger.Log(logger.Error, err.Error())
+			return nil
+		}
+		if err = m.db.SaveProfile(profile); err != nil {
+			logger.Log(logger.Error, fmt.Errorf("overwriting profile: %w", err).Error())
+			return nil
+		}
+		return profileRefreshMsg{}
 	}
 }
 
