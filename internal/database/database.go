@@ -214,6 +214,26 @@ func (db *Database) OverwriteLib(anime []kitsu.Anime) error {
 	return db.Save()
 }
 
+// OverwriteProfile overwrites all existing profile data and saves it.
+//
+// 🟠 This is destructive and should only be used to
+// bootstrap or refresh a users profile.
+func (db *Database) OverwriteProfile(profile kitsu.Profile) error {
+	db.data.Profile = profile
+	return db.Save()
+}
+
+// SaveProfile saves only the data created by Kitsu; all custom
+// fields are preserved.
+func (db *Database) SaveProfile(profile kitsu.Profile) error {
+	profile.AccessToken = db.Profile().AccessToken
+	profile.RefreshToken = db.Profile().RefreshToken
+	profile.TokenExpirationSec = db.Profile().TokenExpirationSec
+	profile.QbtPort = db.Profile().QbtPort
+	db.data.Profile = profile
+	return db.Save()
+}
+
 func (db Database) Save() error {
 	bytes, err := msgpack.Marshal(db.data)
 	if err != nil {
