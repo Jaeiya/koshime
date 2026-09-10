@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Jaeiya/koshime/internal/kitsu"
+	"github.com/Jaeiya/koshime/internal/logger"
 	"github.com/Jaeiya/koshime/internal/utils"
 )
 
@@ -69,6 +70,7 @@ func (ff FansubFilter) FilterByAnime(
 			break
 		}
 		if !fp.IsSupported(fileName) {
+			logger.Log(logger.Hot, "FilterByAnime(): unsupported file [%s]", fileName)
 			continue
 		}
 		fansub, err := fp.Parse(fileName)
@@ -94,9 +96,23 @@ func (ff FansubFilter) FilterByAnime(
 			if f, exists := animeFoundStore[found.Value.ID]; exists {
 				if found.Score > f.Score {
 					animeFoundStore[found.Value.ID] = found
+					logger.Log(
+						logger.Debug,
+						"revising match: [%s] to [%s] with score [%d]",
+						found.Value.JPN_Title,
+						found.FileInfo.Filename,
+						found.Score,
+					)
 				}
 			} else {
 				animeFoundStore[found.Value.ID] = found
+				logger.Log(
+					logger.Debug,
+					"matching: [%s] to [%s] with score [%d]",
+					found.Value.JPN_Title,
+					found.FileInfo.Filename,
+					found.Score,
+				)
 			}
 		}
 
