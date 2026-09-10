@@ -178,6 +178,27 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime, threshold int) int
 		}
 	}
 
+	// ========== PREFIX MATCH ==========
+	if strings.Contains(anime.JPN_Title, ":") || strings.Contains(anime.ENG_Title, ":") {
+		if strings.Contains(anime.JPN_Title, ":") {
+			if title == ff.normalizeTitle(strings.Split(anime.JPN_Title, ":")[0]) {
+				return 100
+			}
+		}
+		if strings.Contains(anime.ENG_Title, ":") {
+			if title == ff.normalizeTitle(strings.Split(anime.ENG_Title, ":")[0]) {
+				return 100
+			}
+		}
+		for _, t := range anime.AltTitles {
+			if strings.Contains(t, ":") {
+				if title == ff.normalizeTitle(strings.Split(t, ":")[0]) {
+					return 100
+				}
+			}
+		}
+	}
+
 	score := 0
 
 	// ========= SUBSTR WORD MATCH ==========

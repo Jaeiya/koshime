@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFansubFilterByLibEntry(t *testing.T) {
+func TestFilterByAnime(t *testing.T) {
 	ff := FansubFilter{}
 	fs := utils.FileSys{}
 	t.Parallel()
@@ -268,6 +268,34 @@ func TestFansubFilterByLibEntry(t *testing.T) {
 						Filename: "[group] a b c d e f g h i j k l m n o p q r s t u v.mkv",
 					},
 					Score: 84,
+				},
+			},
+		},
+		{
+			name:   "match exact prefix in title before normal matching",
+			stream: fs.GenFilenameStream("[group] prefix as title.mkv"),
+			actual: []kitsu.Anime{
+				{
+					ID:        "0",
+					JPN_Title: "prefix as title: and the rest of the title",
+				},
+				{ // This would typically score 100
+					ID:        "1",
+					JPN_Title: "prefix as title",
+				},
+			},
+			expected: []FilteredAnime{
+				{
+					Value: kitsu.Anime{
+						ID:        "0",
+						JPN_Title: "prefix as title: and the rest of the title",
+					},
+					FileInfo: FansubFileInfo{
+						Fansub:   "group",
+						Title:    "prefix as title",
+						Filename: "[group] prefix as title.mkv",
+					},
+					Score: 100,
 				},
 			},
 		},
