@@ -11,6 +11,7 @@ import (
 	"github.com/Jaeiya/koshime/internal/app"
 	"github.com/Jaeiya/koshime/internal/ui"
 	"github.com/Jaeiya/koshime/internal/utils"
+	"github.com/atotto/clipboard"
 )
 
 type RssSearchModel struct {
@@ -20,6 +21,7 @@ type RssSearchModel struct {
 	windowSize   tea.WindowSizeMsg
 	minInputLen  int
 	searchResult app.RSSResult
+	lastFeedURL  string
 }
 
 func newRssSearchModel() RssSearchModel {
@@ -64,12 +66,16 @@ func (m RssSearchModel) Update(msg tea.Msg) (RssSearchModel, tea.Cmd) {
 
 	case app.RSSResult:
 		m.searchResult = msg
+		m.lastFeedURL = msg.FeedURL
 		return m, func() tea.Msg { return ParseRssMsg{Value: msg} }
 
 	case ParsedRssResults:
 		m.loader.Stop()
 		if msg.Err != nil {
 			return m, func() tea.Msg { return msg.Err }
+		}
+		if err := clipboard.WriteAll(m.lastFeedURL); err != nil {
+			return m, func() tea.Msg { return err }
 		}
 		m.list = msg.List
 	}
@@ -142,7 +148,7 @@ func (m RssSearchModel) ViewReview() tea.View {
 		lipgloss.Left,
 		ui.DisplaySubTitle("RSS", "Selection"),
 		"",
-		ui.DisplayText([]string{";w;Feed URL:"}),
+		ui.DisplayText([]string{";w;Feed URL (;m;Copied to Clipboard!;w;):"}),
 		ui.Style.MarginLeft(3).
 			Render(utils.ColorText(fmt.Sprintf(";dg;%s", m.searchResult.FeedURL))),
 		"",
