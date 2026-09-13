@@ -305,7 +305,7 @@ func (FansubFilter) titleVariants(title string) []string {
 	// of a range of numbers.
 	capacity := (((len(words) - 1) * len(words)) / 2) + 1
 	mutations := make([]string, 0, capacity)
-	mutations = append(mutations, title)
+	mutations = append(mutations, strings.Join(words, " "))
 
 	for k := range len(words) - 1 {
 		for i := range words {
