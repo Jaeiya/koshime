@@ -195,22 +195,21 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime, threshold int) int
 	}
 
 	// ========== PREFIX MATCH ==========
-	if strings.Contains(anime.JPN_Title, ":") || strings.Contains(anime.ENG_Title, ":") {
+	hasPrefix := strings.Contains(anime.JPN_Title, ":") ||
+		strings.Contains(anime.ENG_Title, ":")
+
+	if hasPrefix {
+		titleMuts := ff.titleVariants(title)
 		if strings.Contains(anime.JPN_Title, ":") {
-			if title == ff.normalizeTitle(strings.Split(anime.JPN_Title, ":")[0]) {
+			jpnTitle := ff.normalizeTitle(strings.Split(anime.JPN_Title, ":")[0])
+			if slices.Contains(titleMuts, jpnTitle) {
 				return 100
 			}
 		}
 		if strings.Contains(anime.ENG_Title, ":") {
-			if title == ff.normalizeTitle(strings.Split(anime.ENG_Title, ":")[0]) {
+			engTitle := ff.normalizeTitle(strings.Split(anime.ENG_Title, ":")[0])
+			if slices.Contains(titleMuts, engTitle) {
 				return 100
-			}
-		}
-		for _, t := range anime.AltTitles {
-			if strings.Contains(t, ":") {
-				if title == ff.normalizeTitle(strings.Split(t, ":")[0]) {
-					return 100
-				}
 			}
 		}
 	}
@@ -294,4 +293,34 @@ func (FansubFilter) normalizeTitle(title string) string {
 			strings.ReplaceAll(utils.ReplaceCutset(title, ".-,?:![]()<>", " "), "  ", " "),
 		),
 	)
+}
+
+func (FansubFilter) titleVariants(title string) []string {
+	words := strings.Fields(title)
+	if len(words) < 2 {
+		return nil
+	}
+
+	// Use triangle num formula n(n + 1) / 2 to calculate sum
+	// of a range of numbers.
+	capacity := (((len(words) - 1) * len(words)) / 2) + 1
+	mutations := make([]string, 0, capacity)
+	mutations = append(mutations, title)
+
+	for k := range len(words) - 1 {
+		for i := range words {
+			if i+k+2 > len(words) {
+				break
+			}
+			titleMut := strings.TrimSpace(fmt.Sprintf(
+				"%s %s %s",
+				strings.Join(words[:i], " "),
+				strings.Join(words[i:k+2+i], ""),
+				strings.Join(words[k+2+i:], " "),
+			))
+			mutations = append(mutations, titleMut)
+		}
+	}
+
+	return mutations
 }

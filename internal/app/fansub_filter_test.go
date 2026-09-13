@@ -299,6 +299,90 @@ func TestFilterByAnime(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "match exact prefix with simple variations on the jpn title",
+			stream: fs.GenFilenameStream("[group] prefix as title.mkv"),
+			actual: []kitsu.Anime{
+				{
+					ID:        "0",
+					JPN_Title: "prefix astitle: and the rest of the title",
+				},
+				{ // This would typically score 100
+					ID:        "1",
+					JPN_Title: "prefix astitle",
+				},
+			},
+			expected: []FilteredAnime{
+				{
+					Value: kitsu.Anime{
+						ID:        "0",
+						JPN_Title: "prefix astitle: and the rest of the title",
+					},
+					FileInfo: FansubFileInfo{
+						Fansub:   "group",
+						Title:    "prefix as title",
+						Filename: "[group] prefix as title.mkv",
+					},
+					Score: 100,
+				},
+			},
+		},
+		{
+			name:   "match exact prefix with simple variations on the eng title",
+			stream: fs.GenFilenameStream("[group] prefix as title.mkv"),
+			actual: []kitsu.Anime{
+				{
+					ID:        "0",
+					ENG_Title: "prefix astitle: and the rest of the title",
+				},
+				{ // This would typically score 100
+					ID:        "1",
+					ENG_Title: "prefix astitle",
+				},
+			},
+			expected: []FilteredAnime{
+				{
+					Value: kitsu.Anime{
+						ID:        "0",
+						ENG_Title: "prefix astitle: and the rest of the title",
+					},
+					FileInfo: FansubFileInfo{
+						Fansub:   "group",
+						Title:    "prefix as title",
+						Filename: "[group] prefix as title.mkv",
+					},
+					Score: 100,
+				},
+			},
+		},
+		{
+			name:   "match exact prefix with extended variations on the title",
+			stream: fs.GenFilenameStream("[group] prefix as the title.mkv"),
+			actual: []kitsu.Anime{
+				{
+					ID:        "0",
+					JPN_Title: "prefix asthetitle: and the rest of the title",
+				},
+				{ // This would typically score 100
+					ID:        "1",
+					JPN_Title: "prefix as the title",
+				},
+			},
+			expected: []FilteredAnime{
+				{
+					Value: kitsu.Anime{
+						ID:        "0",
+						JPN_Title: "prefix asthetitle: and the rest of the title",
+					},
+					FileInfo: FansubFileInfo{
+						Fansub:   "group",
+						Title:    "prefix as the title",
+						Filename: "[group] prefix as the title.mkv",
+					},
+					Score: 100,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run("should "+tt.name, func(t *testing.T) {
