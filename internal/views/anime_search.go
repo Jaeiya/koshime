@@ -19,9 +19,9 @@ import (
 type AnimeSearchView int
 
 const (
-	AnimeSearch_Query = AnimeSearchView(iota)
-	AnimeSearch_Results
-	AnimeSearch_Selected
+	AnimeSearchQuery = AnimeSearchView(iota)
+	AnimeSearchResults
+	AnimeSearchSelected
 )
 
 type (
@@ -117,18 +117,8 @@ type AnimeSearchModel struct {
 		width  int
 		height int
 	}
-	config struct {
-		source            app.AnimeFinderSource
-		header            string
-		consentHeader     string
-		inputWidth        int
-		minInputLen       int
-		itemsPerPage      int
-		maxResults        int
-		useAnimeSelection bool
-		escSendsExit      bool
-	}
-	ui struct {
+	config AnimeSearchConfig
+	ui     struct {
 		list         list.Model
 		input        textinput.Model
 		loader       ui.LoaderModel
@@ -159,6 +149,7 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 	}
 
 	m := &AnimeSearchModel{db: db}
+	m.config = *cfg
 
 	m.ui.loader = ui.NewLoader()
 	m.ui.list = ui.NewList(ui.ListOptions{})
@@ -167,57 +158,44 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 	m.ui.input = ui.NewTextInput()
 	m.ui.input.Focus()
 	m.ui.input.Placeholder = "Enter your query"
+
 	m.ui.input.SetWidth(20)
-
-	m.config.useAnimeSelection = cfg.useAnimeSelection
-	m.config.escSendsExit = cfg.escSendsExit
-
-	if cfg.inputWidth > 0 {
-		m.ui.input.SetWidth(cfg.inputWidth)
+	if m.config.inputWidth > 0 {
+		m.ui.input.SetWidth(m.config.inputWidth)
 	}
 
-	m.config.consentHeader = cfg.consentHeader
-
-	m.config.header = "Find Anime"
-	if cfg.header != "" {
-		m.config.header = cfg.header
+	if m.config.header == "" {
+		m.config.header = "Find Anime"
+	}
+	if m.config.minInputLen == 0 {
+		m.config.minInputLen = 4
+	}
+	if m.config.itemsPerPage == 0 {
+		m.config.itemsPerPage = 5
+	}
+	if m.config.maxResults == 0 {
+		m.config.maxResults = 10
 	}
 
-	m.config.minInputLen = 4 // Minimum characters to submit search
-	if cfg.minInputLen > 0 {
-		m.config.minInputLen = cfg.minInputLen
-	}
-
-	m.config.itemsPerPage = 5 // Max list items to display per page
-	if cfg.itemsPerPage > 0 {
-		m.config.itemsPerPage = cfg.itemsPerPage
-	}
-
-	m.config.maxResults = 10 // Max results to find per search
-	if cfg.maxResults > 0 {
-		m.config.maxResults = cfg.maxResults
-	}
-
-	m.config.source = cfg.source
-	if cfg.source != app.NoSource {
-		m.state.source = cfg.source
+	if m.config.source != app.NoSource {
+		m.state.source = m.config.source
 	} else {
 		m.state.source = app.Kitsu
 	}
 
-	if cfg.kitsuStatus == nil {
-		cfg.kitsuStatus = []kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished}
+	if m.config.kitsuStatus == nil {
+		m.config.kitsuStatus = []kitsu.AnimeStatus{kitsu.AnimeNew, kitsu.AnimeFinished}
 	}
 
 	m.animeFinderMap = map[app.AnimeFinderSource]app.AnimeFinder{
-		app.Kitsu: app.NewKitsuAnimeFinder(m.config.maxResults, cfg.kitsuStatus),
+		app.Kitsu: app.NewKitsuAnimeFinder(m.config.maxResults, m.config.kitsuStatus),
 		app.Local: app.NewLocalAnimeFinder(m.config.maxResults, db),
 	}
 
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
 
 	m.helpMap = AnimeSearchHelp{
-		AnimeSearch_Query: {
+		AnimeSearchQuery: {
 			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
 				keys := make([]key.Binding, 0, 4)
 				if m.config.source == app.NoSource {
@@ -232,7 +210,7 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 				return keys
 			},
 		},
-		AnimeSearch_Results: {
+		AnimeSearchResults: {
 			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
 				if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
 					return []key.Binding{ui.KeyMap.EscBack}
@@ -240,7 +218,7 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 				return []key.Binding{}
 			},
 		},
-		AnimeSearch_Selected: {
+		AnimeSearchSelected: {
 			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
 				if !fam.config.useAnimeSelection {
 					return []key.Binding{}
@@ -274,7 +252,7 @@ func (m *AnimeSearchModel) Update(msg tea.Msg) tea.Cmd {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Abort):
-			if m.state.view == AnimeSearch_Query && m.config.escSendsExit {
+			if m.state.view == AnimeSearchQuery && m.config.escSendsExit {
 				return func() tea.Msg { return AnimeSearchExitMsg{} }
 			}
 		}
@@ -286,13 +264,13 @@ func (m *AnimeSearchModel) Update(msg tea.Msg) tea.Cmd {
 	}
 
 	switch m.state.view {
-	case AnimeSearch_Query:
+	case AnimeSearchQuery:
 		cmd = m.UpdateQuery(msg)
 		cmds = append(cmds, cmd)
-	case AnimeSearch_Results:
+	case AnimeSearchResults:
 		cmd = m.UpdateResults(msg)
 		cmds = append(cmds, cmd)
-	case AnimeSearch_Selected:
+	case AnimeSearchSelected:
 		cmd = m.UpdateSelection(msg)
 		cmds = append(cmds, cmd)
 	}
@@ -302,11 +280,11 @@ func (m *AnimeSearchModel) Update(msg tea.Msg) tea.Cmd {
 
 func (m AnimeSearchModel) View() tea.View {
 	switch m.state.view {
-	case AnimeSearch_Query:
+	case AnimeSearchQuery:
 		return m.ViewQuery()
-	case AnimeSearch_Results:
+	case AnimeSearchResults:
 		return m.ViewResults()
-	case AnimeSearch_Selected:
+	case AnimeSearchSelected:
 		return m.ViewSelection()
 	}
 	return tea.NewView("missing AnimeSearch view")
@@ -335,7 +313,7 @@ func (m *AnimeSearchModel) UpdateQuery(msg tea.Msg) tea.Cmd {
 			}
 
 			m.ui.loader, cmd = m.ui.loader.Start(m.config.header)
-			m.state.view = AnimeSearch_Results
+			m.state.view = AnimeSearchResults
 			return tea.Batch(cmd, m.findAnime(m.ui.input.Value()))
 
 		case key.Matches(msg, m.keys.tab):
@@ -452,7 +430,7 @@ func (m *AnimeSearchModel) UpdateResults(msg tea.Msg) tea.Cmd {
 				item := m.ui.list.SelectedItem().(ui.ListItem)
 				m.state.selectedAnime = m.state.results[item.Index()]
 				if m.config.useAnimeSelection {
-					m.state.view = AnimeSearch_Selected
+					m.state.view = AnimeSearchSelected
 				} else {
 					return func() tea.Msg { return SelectedAnimeMsg{m.state.selectedAnime} }
 				}
@@ -535,13 +513,13 @@ func (m *AnimeSearchModel) UpdateSelection(msg tea.Msg) tea.Cmd {
 				break
 			}
 			if m.ui.consent.Select() == ui.No {
-				m.state.view = AnimeSearch_Results
+				m.state.view = AnimeSearchResults
 				return nil
 			}
 			return func() tea.Msg { return SelectedAnimeMsg{m.state.selectedAnime} }
 
 		case key.Matches(msg, ui.KeyMap.EscBack, ui.KeyMap.Back):
-			m.state.view = AnimeSearch_Results
+			m.state.view = AnimeSearchResults
 			m.ui.consent.Reset()
 		}
 	}
