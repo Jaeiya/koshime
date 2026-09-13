@@ -297,9 +297,12 @@ func (m *AnimeSearchModel) UpdateQuery(msg tea.Msg) tea.Cmd {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, ui.KeyMap.Submit):
-			hasShortInput := utils.RuneCount(m.ui.input.Value()) < m.config.minInputLen
+			if m.ui.loader.IsLoading() {
+				break
+			}
 
-			if m.ui.loader.IsLoading() || hasShortInput {
+			hasShortInput := utils.RuneCount(m.ui.input.Value()) < m.config.minInputLen
+			if hasShortInput {
 				break
 			}
 
