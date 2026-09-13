@@ -30,7 +30,6 @@ type (
 	}
 	AnimeSearchExitMsg struct{}
 	AnimeSearchOption  func(*AnimeSearchConfig)
-	AnimeSearchHelp    map[AnimeSearchView]ui.KeyHelpInfo[AnimeSearchModel]
 )
 
 type AnimeSearchConfig struct {
@@ -128,7 +127,6 @@ type AnimeSearchModel struct {
 	keys struct {
 		tab key.Binding
 	}
-	helpMap        AnimeSearchHelp
 	db             *database.Database
 	state          AnimeSearchState
 	animeFinderMap map[app.AnimeFinderSource]app.AnimeFinder
@@ -193,51 +191,6 @@ func NewAnimeSearchModel(db *database.Database, opts ...AnimeSearchOption) *Anim
 	}
 
 	m.keys.tab = key.NewBinding(key.WithKeys("tab"), key.WithHelp("tab", "source"))
-
-	m.helpMap = AnimeSearchHelp{
-		AnimeSearchQuery: {
-			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
-				keys := make([]key.Binding, 0, 4)
-				if m.config.source == app.NoSource {
-					keys = append(keys, fam.keys.tab, ui.KeyMap.Submit)
-				}
-				if m.config.source != app.NoSource {
-					keys = append(keys, ui.KeyMap.Submit)
-				}
-				if m.config.escSendsExit {
-					keys = append(keys, ui.KeyMap.MainMenu)
-				}
-				return keys
-			},
-		},
-		AnimeSearchResults: {
-			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
-				if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
-					return []key.Binding{ui.KeyMap.EscBack}
-				}
-				return []key.Binding{}
-			},
-		},
-		AnimeSearchSelected: {
-			ShortHelp: func(fam AnimeSearchModel) []key.Binding {
-				if !fam.config.useAnimeSelection {
-					return []key.Binding{}
-				}
-				if fam.config.consentHeader == "" {
-					return []key.Binding{
-						m.ui.animeDisplay.ShortHelp()[0],
-						ui.KeyMap.EscBack,
-					}
-				}
-				return []key.Binding{
-					m.ui.animeDisplay.ShortHelp()[0],
-					ui.KeyMap.Submit,
-					ui.KeyMap.EscBack,
-				}
-			},
-		},
-	}
-
 	return m
 }
 
@@ -291,7 +244,45 @@ func (m AnimeSearchModel) View() tea.View {
 }
 
 func (m AnimeSearchModel) ShortHelp() []key.Binding {
-	return m.helpMap[m.state.view].ShortHelp(m)
+	switch m.state.view {
+	case AnimeSearchQuery:
+		keys := make([]key.Binding, 0, 4)
+		if m.config.source == app.NoSource {
+			keys = append(keys, m.keys.tab, ui.KeyMap.Submit)
+		}
+		if m.config.source != app.NoSource {
+			keys = append(keys, ui.KeyMap.Submit)
+		}
+		if m.config.escSendsExit {
+			keys = append(keys, ui.KeyMap.MainMenu)
+		}
+		return keys
+
+	case AnimeSearchResults:
+		if !m.ui.loader.IsLoading() && len(m.state.results) == 0 {
+			return []key.Binding{ui.KeyMap.EscBack}
+		}
+		return []key.Binding{}
+
+	case AnimeSearchSelected:
+		if !m.config.useAnimeSelection {
+			return []key.Binding{}
+		}
+		if m.config.consentHeader == "" {
+			return []key.Binding{
+				m.ui.animeDisplay.ShortHelp()[0],
+				ui.KeyMap.EscBack,
+			}
+		}
+		return []key.Binding{
+			m.ui.animeDisplay.ShortHelp()[0],
+			ui.KeyMap.Submit,
+			ui.KeyMap.EscBack,
+		}
+
+	default:
+		return nil
+	}
 }
 
 func (m AnimeSearchModel) FullHelp() [][]key.Binding {
