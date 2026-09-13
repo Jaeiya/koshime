@@ -71,51 +71,34 @@ func (m *AnimeDisplayModel) Update(msg tea.Msg) {
 	}
 }
 
-func (m AnimeDisplayModel) View(ai kitsu.Anime) string {
-	return m.DisplayAnimeInfo(ai, m.displayMode)
-}
-
-func (m AnimeDisplayModel) ShortHelp() []key.Binding {
-	switch m.displayMode {
-	case Simple:
-		return []key.Binding{m.keys.extended}
-	case Extended:
-		return []key.Binding{m.keys.all}
-	case All:
-		return []key.Binding{m.keys.simple}
-	default:
-		return []key.Binding{}
-	}
-}
-
-func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) string {
+func (m AnimeDisplayModel) View(anime kitsu.Anime) string {
 	headers := []string{
 		utils.ColorText(";g;Title"),
 		utils.ColorText(";dc;Canon"),
 	}
 
 	items := []string{
-		info.ENG_Title,
-		info.JPN_Title,
+		anime.ENG_Title,
+		anime.JPN_Title,
 	}
 
 	if items[0] == "" {
-		items[0] = info.JPN_Title
+		items[0] = anime.JPN_Title
 	}
 
 	// Accept only utf8 titles
-	altTitles := make([]string, 0, len(info.AltTitles))
-	for i := range len(info.AltTitles) {
-		if utils.HasNonASCII(info.AltTitles[i]) {
+	altTitles := make([]string, 0, len(anime.AltTitles))
+	for i := range len(anime.AltTitles) {
+		if utils.HasNonASCII(anime.AltTitles[i]) {
 			continue
 		}
-		altTitles = append(altTitles, info.AltTitles[i])
+		altTitles = append(altTitles, anime.AltTitles[i])
 	}
 
 	if len(altTitles) > 0 {
 		for range len(altTitles) {
 			headers = append(headers, utils.ColorText(";db;AltTitle"))
-			if Simple == mode {
+			if Simple == m.displayMode {
 				break
 			}
 		}
@@ -123,7 +106,7 @@ func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) 
 		headers = append(headers, utils.ColorText(";db;AltTitle"))
 	}
 
-	if Simple == mode {
+	if Simple == m.displayMode {
 		for i, item := range items {
 			if len(item) > maxStrLen {
 				items[i] = item[:maxStrLen-2] + ".."
@@ -140,7 +123,7 @@ func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) 
 		}
 	}
 
-	if Extended == mode || All == mode {
+	if Extended == m.displayMode || All == m.displayMode {
 		if len(altTitles) > 0 {
 			for _, title := range altTitles {
 				if utils.HasNonASCII(title) {
@@ -154,37 +137,37 @@ func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) 
 	}
 
 	headers = append(headers, utils.ColorText(";dc;Status"))
-	items = append(items, utils.ColorText(";b;"+info.Status))
+	items = append(items, utils.ColorText(";b;"+anime.Status))
 
 	headers = append(headers, utils.ColorText(";y;Type"))
-	items = append(items, utils.ColorText(";c;"+info.Type))
+	items = append(items, utils.ColorText(";c;"+anime.Type))
 
 	totalEpsStr := utils.ColorText(";bk;Unknown")
-	if info.Episodes > 0 {
-		totalEpsStr = fmt.Sprintf(";m;%d", info.Episodes)
+	if anime.Episodes > 0 {
+		totalEpsStr = fmt.Sprintf(";m;%d", anime.Episodes)
 	}
 
-	if info.Progress > -1 {
+	if anime.Progress > -1 {
 		headers = append(headers, utils.ColorText(";y;Progress"))
 		items = append(items, utils.ColorText(
-			fmt.Sprintf(";dg;%d ;y;/ %s", info.Progress, totalEpsStr),
+			fmt.Sprintf(";dg;%d ;y;/ %s", anime.Progress, totalEpsStr),
 		))
 	} else {
 		headers = append(headers, utils.ColorText(";dc;Episodes"))
 		items = append(items, utils.ColorText(fmt.Sprintf(";m;%s", totalEpsStr)))
 	}
 
-	avgRating := utils.ColorText(fmt.Sprintf(";w;%s", info.AvgRating))
-	if info.AvgRating == "" {
+	avgRating := utils.ColorText(fmt.Sprintf(";w;%s", anime.AvgRating))
+	if anime.AvgRating == "" {
 		avgRating = utils.ColorText(";bk;Not Calculated")
 	}
 	headers = append(headers, utils.ColorText(";dc;AvgRating"))
 	items = append(items, avgRating)
 
-	hasFeed := info.QbtFeed.Name != ""
+	hasFeed := anime.QbtFeed.Name != ""
 
 	headers = append(headers, utils.ColorText(";dc;RSSFeed"))
-	switch mode {
+	switch m.displayMode {
 	case Simple:
 		if hasFeed {
 			items = append(items, utils.ColorText(";g;Yes"))
@@ -193,8 +176,8 @@ func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) 
 		}
 	case Extended, All:
 		if hasFeed {
-			uri := info.QbtFeed.RuleURI
-			if mode == Extended && len(uri) > maxStrLen {
+			uri := anime.QbtFeed.RuleURI
+			if m.displayMode == Extended && len(uri) > maxStrLen {
 				uri = uri[:maxStrLen-2] + ".."
 			}
 			items = append(items, utils.ColorText(fmt.Sprintf(";g;%s", uri)))
@@ -203,23 +186,36 @@ func (m AnimeDisplayModel) DisplayAnimeInfo(info kitsu.Anime, mode DisplayMode) 
 		}
 	}
 
-	link, _ := url.JoinPath(kitsu.KitsuDomain, "anime", info.Slug)
+	link, _ := url.JoinPath(kitsu.KitsuDomain, "anime", anime.Slug)
 
-	if All == mode {
+	if All == m.displayMode {
 		headers = append(
 			headers,
 			utils.ColorText(";x;Link"),
 			utils.ColorText(";dc;Synopsis"),
 		)
-		if len(info.Synopsis) > MaxSynopsisLen {
-			info.Synopsis = info.Synopsis[:MaxSynopsisLen-3] + "..."
+		if len(anime.Synopsis) > MaxSynopsisLen {
+			anime.Synopsis = anime.Synopsis[:MaxSynopsisLen-3] + "..."
 		}
 		items = append(
 			items,
 			utils.ColorText(";dy;"+link),
-			info.Synopsis,
+			anime.Synopsis,
 		)
 	}
 
 	return ui.DisplayPropValue(headers, items)
+}
+
+func (m AnimeDisplayModel) ShortHelp() []key.Binding {
+	switch m.displayMode {
+	case Simple:
+		return []key.Binding{m.keys.extended}
+	case Extended:
+		return []key.Binding{m.keys.all}
+	case All:
+		return []key.Binding{m.keys.simple}
+	default:
+		return []key.Binding{}
+	}
 }
