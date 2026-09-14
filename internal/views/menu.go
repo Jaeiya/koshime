@@ -279,6 +279,7 @@ func (m MenuModel) initQbtState() tea.Cmd {
 		}
 		strPort := strconv.Itoa(p.QbtPort)
 		if err := qbittorrent.CheckConn(strPort); err != nil {
+			logger.Log(logger.Error, err.Error())
 			logger.Log(logger.Debug, "sending qbt state: Offline")
 			return QbtStateMsg{Offline}
 		}
