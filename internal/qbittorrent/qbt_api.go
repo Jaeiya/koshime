@@ -33,47 +33,45 @@ const (
 	apiRemoveItemURI = ApiUri("rss/removeItem") // Can remove folder or feed
 )
 
+const defaultPort = "8080"
+
 var (
-	qbtPort       = "8080"
-	errConnFailed = fmt.Errorf("cannot connect to qbittorrent")
-	httpUtils     = utils.Http{}
-	ruleCache     = map[string]RSSRule{}
+	httpUtils = utils.Http{}
+	ruleCache = map[string]RSSRule{}
 )
 
 type qBittorrentAPI struct {
-	Port string
+	port string
 }
 
 func NewLogin(port string) (*qBittorrentAPI, error) {
-	if port != "" {
-		qbtPort = port
+	if port == "" {
+		port = defaultPort
 	}
 
 	// Make sure we can connect to the qbittorrent service
-	req, _ := http.NewRequest(http.MethodHead, buildApiUrl(""), nil)
-	_, err := httpUtils.Do(req, "", "")
-	if err != nil {
-		return nil, errConnFailed
+	if err := CheckConn(port); err != nil {
+		return nil, fmt.Errorf("failed to login to qbittorrent: %w", err)
 	}
 
+	qb := &qBittorrentAPI{port: port}
+
 	resp, err := httpUtils.PostForm(
-		buildApiUrl(apiLoginURI),
+		qb.buildApiUrl(apiLoginURI),
 		// We assume auth-bypass for localhost
-		url.Values{"username": {""}, "password": {"penis"}},
+		url.Values{"username": {""}, "password": {""}},
 	)
 	if err != nil {
 		return nil, err
 	}
 
 	if resp.StatusCode >= 400 {
-		return nil, fmt.Errorf("could not login: %s", string(resp.Body))
+		return nil, fmt.Errorf("login rejected by qbittorrent: %s", string(resp.Body))
 	}
-
-	qb := &qBittorrentAPI{Port: port}
 
 	rules, err := qb.Rules()
 	if err != nil {
-		return nil, fmt.Errorf("failed to cache rules: %w", err)
+		return nil, fmt.Errorf("failed to cache rules after logging in: %w", err)
 	}
 
 	maps.Copy(ruleCache, rules)
@@ -82,16 +80,20 @@ func NewLogin(port string) (*qBittorrentAPI, error) {
 }
 
 func CheckConn(port string) error {
-	req, _ := http.NewRequest(http.MethodHead, "http://localhost:"+port+"/api/v2/", nil)
+	req, _ := http.NewRequest(
+		http.MethodHead,
+		fmt.Sprintf("http://localhost:%s/api/v2/", port),
+		nil,
+	)
 	_, err := httpUtils.Do(req, "", "")
 	if err != nil {
-		return errConnFailed
+		return fmt.Errorf("qBittorrent connection failed: %w", err)
 	}
 	return nil
 }
 
 func (qb qBittorrentAPI) AddFeed(name, feedURL string) error {
-	resp, err := httpUtils.PostForm(buildApiUrl(apiAddFeedURI), url.Values{
+	resp, err := httpUtils.PostForm(qb.buildApiUrl(apiAddFeedURI), url.Values{
 		"path": {name},
 		"url":  {feedURL},
 	})
@@ -106,7 +108,7 @@ func (qb qBittorrentAPI) AddFeed(name, feedURL string) error {
 }
 
 func (qb qBittorrentAPI) DeleteFeed(name string) error {
-	resp, err := httpUtils.PostForm(buildApiUrl(apiRemoveItemURI), url.Values{
+	resp, err := httpUtils.PostForm(qb.buildApiUrl(apiRemoveItemURI), url.Values{
 		"path": {name},
 	})
 	if err != nil {
@@ -121,7 +123,7 @@ func (qb qBittorrentAPI) DeleteFeed(name string) error {
 }
 
 func (qb qBittorrentAPI) Feeds() ([]RSSFeedItem, error) {
-	req, _ := http.NewRequest(http.MethodGet, buildApiUrl(apiFeedItemsURI), nil)
+	req, _ := http.NewRequest(http.MethodGet, qb.buildApiUrl(apiFeedItemsURI), nil)
 
 	resp, err := httpUtils.Do(req, "application/json", "")
 	if err != nil {
@@ -160,7 +162,7 @@ func (qb qBittorrentAPI) AddRule(name string, rule RSSRule) error {
 }
 
 func (qb qBittorrentAPI) DeleteRule(name string) error {
-	resp, err := httpUtils.PostForm(buildApiUrl(apiRemoveRuleURI), url.Values{
+	resp, err := httpUtils.PostForm(qb.buildApiUrl(apiRemoveRuleURI), url.Values{
 		"ruleName": {name},
 	})
 	if err != nil {
@@ -213,7 +215,7 @@ func (qb qBittorrentAPI) Rule(name string) (RSSRule, bool) {
 }
 
 func (qb qBittorrentAPI) Rules() (RSSRulesMap, error) {
-	req, _ := http.NewRequest(http.MethodGet, buildApiUrl(apiRulesURI), nil)
+	req, _ := http.NewRequest(http.MethodGet, qb.buildApiUrl(apiRulesURI), nil)
 	resp, err := httpUtils.Do(req, "application/json", "")
 	if err != nil {
 		return nil, err
@@ -254,7 +256,7 @@ func (qb qBittorrentAPI) saveRule(name string, rule RSSRule, mode RuleMode) erro
 		return fmt.Errorf("failed to parse rule as json: %w", err)
 	}
 
-	resp, err := httpUtils.PostForm(buildApiUrl(apiSaveRuleURI), url.Values{
+	resp, err := httpUtils.PostForm(qb.buildApiUrl(apiSaveRuleURI), url.Values{
 		"ruleName": {name},
 		"ruleDef":  {string(jsonRule)},
 	})
@@ -270,7 +272,7 @@ func (qb qBittorrentAPI) saveRule(name string, rule RSSRule, mode RuleMode) erro
 }
 
 func (qb qBittorrentAPI) Logout() error {
-	req, _ := http.NewRequest(http.MethodPost, buildApiUrl(apiLogoutURI), nil)
+	req, _ := http.NewRequest(http.MethodPost, qb.buildApiUrl(apiLogoutURI), nil)
 	resp, err := httpUtils.Do(req, "", "")
 	if err != nil {
 		return err
@@ -283,6 +285,6 @@ func (qb qBittorrentAPI) Logout() error {
 	return nil
 }
 
-func buildApiUrl(uri ApiUri) string {
-	return fmt.Sprintf("http://localhost:%s/api/v2/%s", qbtPort, uri)
+func (qb qBittorrentAPI) buildApiUrl(uri ApiUri) string {
+	return fmt.Sprintf("http://localhost:%s/api/v2/%s", qb.port, uri)
 }
