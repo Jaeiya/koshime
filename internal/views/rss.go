@@ -230,8 +230,7 @@ func (m RssMainModel) FullHelp() [][]key.Binding {
 func (m RssMainModel) testConn() tea.Cmd {
 	return func() tea.Msg {
 		port := strconv.Itoa(m.db.Profile().QbtPort)
-		err := qbittorrent.CheckConn(port)
-		if err != nil {
+		if err := qbittorrent.CheckConn(port); err != nil {
 			return QbtConnMsg{false}
 		}
 		return QbtConnMsg{true}
