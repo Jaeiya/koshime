@@ -233,6 +233,20 @@ func (qb qBittorrentAPI) Rules() (RSSRulesMap, error) {
 	return rules, nil
 }
 
+func (qb qBittorrentAPI) Logout() error {
+	req, _ := http.NewRequest(http.MethodPost, qb.buildApiUrl(apiLogoutURI), nil)
+	resp, err := httpUtils.Do(req, "", "")
+	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode >= 400 {
+		return fmt.Errorf("failed to logout: %s", string(resp.Body))
+	}
+
+	return nil
+}
+
 func (qb qBittorrentAPI) saveRule(name string, rule RSSRule, mode RuleMode) error {
 	_, ruleExists := ruleCache[name]
 
@@ -266,20 +280,6 @@ func (qb qBittorrentAPI) saveRule(name string, rule RSSRule, mode RuleMode) erro
 
 	if resp.StatusCode >= 400 {
 		return fmt.Errorf("failed to save rule: %s", string(resp.Body))
-	}
-
-	return nil
-}
-
-func (qb qBittorrentAPI) Logout() error {
-	req, _ := http.NewRequest(http.MethodPost, qb.buildApiUrl(apiLogoutURI), nil)
-	resp, err := httpUtils.Do(req, "", "")
-	if err != nil {
-		return err
-	}
-
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("failed to logout: %s", string(resp.Body))
 	}
 
 	return nil
