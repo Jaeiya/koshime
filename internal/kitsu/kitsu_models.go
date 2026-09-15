@@ -33,16 +33,17 @@ type Anime struct {
 }
 
 type Profile struct {
-	ID                 string
-	Username           string
-	Slug               string
-	About              string
-	Location           string
-	Birthday           string
-	Gender             string
-	CreatedAt          string
-	SecondsWatched     int
-	CompletedSeries    int
+	ID              string
+	Username        string
+	Slug            string
+	About           string
+	Location        string
+	Birthday        string
+	Gender          string
+	CreatedAt       string
+	SecondsWatched  int
+	CompletedSeries int
+	//### CUSTOM FIELDS ###
 	LastUpdateSec      int64  // Unix timestamp in seconds; 🟡 custom field
 	AccessToken        string // 🟡 custom field
 	RefreshToken       string // 🟡 custom field
@@ -51,14 +52,12 @@ type Profile struct {
 }
 
 type AuthTokenData struct {
-	Token     string `json:"access_token"`
-	TokenType string `json:"token_type"`
-	// Seconds until token expires
-	ExpiresIn    int    `json:"expires_in"`
+	Token        string `json:"access_token"`
+	TokenType    string `json:"token_type"`
+	ExpiresIn    int    `json:"expires_in"` // Seconds until token expires
 	RefreshToken string `json:"refresh_token"`
 	Scope        string `json:"scope"`
-	// Seconds since unix epoch
-	CreatedAt int `json:"created_at"`
+	CreatedAt    int    `json:"created_at"` // Seconds since unix epoch
 }
 
 type ProfileData struct {
@@ -90,25 +89,21 @@ type ProfileData struct {
 type AnimeData struct {
 	ID         string `json:"id"`
 	Attributes struct {
-		// Never empty
-		CanonicalTitle string `json:"canonicalTitle"`
+		CanonicalTitle string `json:"canonicalTitle"` // Never empty
 		Titles         struct {
 			English string `json:"en"`    // Can be empty
 			Romaji  string `json:"en_jp"` // Can be empty
 		} `json:"titles"`
-		// Can be empty
-		AltTitles []string `json:"abbreviatedTitles"`
-		// Is a float-percentage of favor (ex: 72.34) and can be empty
-		AvgRating string `json:"averageRating"`
-		// Can be empty
-		AgeRating string `json:"ageRating"`
-		EpCount   int    `json:"episodeCount"`
-		StartDate string `json:"startDate"`
-		EndDate   string `json:"endDate"`
-		Type      string `json:"subtype"`
-		Status    string `json:"status"`
-		Slug      string `json:"slug"`
-		Synopsis  string `json:"synopsis"`
+		AltTitles []string `json:"abbreviatedTitles"` // Can be empty
+		AvgRating string   `json:"averageRating"`     // float-percentage (ex: 72.34); can be empty
+		AgeRating string   `json:"ageRating"`         // Can be empty
+		EpCount   int      `json:"episodeCount"`
+		StartDate string   `json:"startDate"`
+		EndDate   string   `json:"endDate"`
+		Type      string   `json:"subtype"`
+		Status    string   `json:"status"`
+		Slug      string   `json:"slug"`
+		Synopsis  string   `json:"synopsis"`
 	} `json:"attributes"`
 }
 
