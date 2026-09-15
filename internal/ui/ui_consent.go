@@ -17,7 +17,8 @@ const (
 )
 
 type ConsentModel struct {
-	pos Consent
+	pos      Consent
+	isActive bool
 }
 
 func (m ConsentModel) Update(msg tea.Msg) ConsentModel {
@@ -68,9 +69,20 @@ func (m *ConsentModel) Select() Consent {
 		return fmt.Sprintf("Select(): %s", selStr)
 	})
 	lastPos := m.pos
-	// Reset for re-use
-	m.pos = No
+	// Allow us to re-use model
+	m.Reset()
 	return lastPos
+}
+
+// Activate sets the 'isActive' flag to true, allowing you to
+// then use IsActive() to determine if the model should be
+// updated/viewed manually.
+func (m *ConsentModel) Activate() {
+	m.isActive = true
+}
+
+func (m ConsentModel) IsActive() bool {
+	return m.isActive
 }
 
 func (m *ConsentModel) SetConsentPos(pos Consent) {
@@ -80,4 +92,5 @@ func (m *ConsentModel) SetConsentPos(pos Consent) {
 
 func (m *ConsentModel) Reset() {
 	m.pos = No
+	m.isActive = false
 }
