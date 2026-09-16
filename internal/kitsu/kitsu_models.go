@@ -243,6 +243,23 @@ func newAnimeStatusPayload(libID string, status LibAnimeStatus) ([]byte, error) 
 	return json.Marshal(payload)
 }
 
+func newAnimeRatingPayload(libID string, rating int) ([]byte, error) {
+	payload := struct {
+		Data struct {
+			Id         string `json:"id"`
+			Type       string `json:"type"`
+			Attributes struct {
+				Rating int `json:"ratingTwenty"`
+			} `json:"attributes"`
+		} `json:"data"`
+	}{}
+
+	payload.Data.Id = libID
+	payload.Data.Type = "library-entries"
+	payload.Data.Attributes.Rating = rating
+	return json.Marshal(payload)
+}
+
 func newAnimeProgressPayload(libID string, progress int) ([]byte, error) {
 	payload := struct {
 		Data struct {

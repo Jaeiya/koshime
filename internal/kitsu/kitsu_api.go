@@ -291,3 +291,32 @@ func UpdateAnimeProgress(libID, token string, progress int) (ProgressRespData, e
 
 	return respData, nil
 }
+
+func RateAnime(libID, token string, rating int) (int, error) {
+	payload, err := newAnimeRatingPayload(libID, rating)
+	if err != nil {
+		return -1, err
+	}
+
+	respData := struct {
+		Data struct {
+			Id         string
+			Attributes struct {
+				Rating int `json:"ratingTwenty"`
+			}
+		}
+	}{}
+
+	opts := APIReqOptions{
+		method:      apiPatch,
+		url:         libraryEntryURL(libID),
+		contentType: vndAPIContent,
+		payload:     payload,
+		token:       token,
+	}
+	if _, err = newAPIRequest(opts, &respData); err != nil {
+		return -1, err
+	}
+
+	return respData.Data.Attributes.Rating, nil
+}
