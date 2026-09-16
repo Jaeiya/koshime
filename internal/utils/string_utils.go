@@ -115,3 +115,15 @@ func AreWordsInSlice(haystack, needle []string) bool {
 	}
 	return false
 }
+
+func RatingToString(rating int) string {
+	if rating > 20 {
+		panic("expected a rating out of twenty")
+	}
+	if rating < 0 {
+		panic("rating cannot be less than zero")
+	}
+
+	rated := float64(rating) / 20 * 10
+	return fmt.Sprintf("%0.1f", rated)
+}

@@ -2,6 +2,7 @@ package utils
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 )
 
@@ -53,4 +54,11 @@ func CalcRating(r string) string {
 	}
 
 	return fmt.Sprintf("%.2f", rawRating/10)
+}
+
+func ToTwentyRating(rating float64) int {
+	if rating > 10 || rating < 1 {
+		panic("rating cannot be outside expected range")
+	}
+	return int(math.Round(rating * 20 / 10))
 }
