@@ -1,32 +1,22 @@
 
-type Some_View int
-
-const (
-	Some_Default = Some_View(iota)
-)
-
-type Some_Model struct {
+type SomeModel struct {
 	windowSize tea.WindowSizeMsg
 	ui         struct {
 		loader ui.LoaderModel
 	}
-	state Some_State
-}
-
-type Some_State struct {
 	err error
 }
 
-func newSomeModel() Some_Model {
-	m := Some_Model{}
-	return m
+func newSomeModel() SomeModel {
+	m := SomeModel{}
+	m.ui.loader = ui.NewLoader()
 }
 
-func (m Some_Model) Init() tea.Cmd {
+func (m SomeModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m Some_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
+func (m SomeModel) Update(msg tea.Msg) (SomeModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.windowSize = msg
@@ -38,27 +28,31 @@ func (m Some_Model) Update(msg tea.Msg) (ViewModel, tea.Cmd) {
 		}
 
 	case error:
-		m.state.err = msg
+		m.err = msg
 	}
 	return m, nil
 }
 
-func (m Some_Model) View() (string, *tea.Cursor) {
-	if m.ui.loader.IsLoading() {
-		return ui.Style.MarginTop(1).Render(m.ui.loader.View()), nil
+func (m SomeModel) View() tea.View {
+	v := tea.NewView("")
+
+	if m.loader.IsLoading() {
+		v.Content = ui.Style.MarginTop(1).Render(m.loader.View())
+		return v
 	}
 
-	if m.state.err != nil {
-		return ui.DisplayError(m.state.err), nil
+	if m.err != nil {
+		v.Content = ui.DisplayError(m.err)
+		return v
 	}
 
-	return "", nil
+	return v
 }
 
-func (m Some_Model) ShortHelp() []key.Binding {
+func (m SomeModel) ShortHelp() []key.Binding {
 	return []key.Binding{}
 }
 
-func (m Some_Model) FullHelp() [][]key.Binding {
+func (m SomeModel) FullHelp() [][]key.Binding {
 	return [][]key.Binding{}
 }
