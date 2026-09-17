@@ -42,8 +42,9 @@ type WatchModel struct {
 		reload key.Binding
 		enter  key.Binding
 	}
-	db    *database.Database
-	state WatchState
+	rating RatingModel
+	db     *database.Database
+	state  WatchState
 }
 
 type WatchState struct {
@@ -287,10 +288,17 @@ func (m WatchModel) ViewSelection() tea.View {
 
 func (m WatchModel) UpdateProgress(msg tea.Msg) (WatchModel, tea.Cmd) {
 	var cmd tea.Cmd
+	var cmds []tea.Cmd
+
 	m.ui.consent = m.ui.consent.Update(msg)
 
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
+		// Events deferred to rating model
+		if m.state.progress.isCompleted {
+			break
+		}
+
 		switch {
 		case key.Matches(msg, ui.KeyMap.EscBack):
 			m.cancelProgress()
@@ -321,13 +329,36 @@ func (m WatchModel) UpdateProgress(msg tea.Msg) (WatchModel, tea.Cmd) {
 		p.isCompleted = msg.IsCompleted
 		p.last = msg.LastEp
 		p.next = msg.NextEp
+		anime := m.state.selection.anime.Value
+		m.rating = newRatingModel(anime.LibID, m.db.Profile().AccessToken)
+		title := anime.ENG_Title
+		if title == "" {
+			title = anime.JPN_Title
+		}
+		m.rating.SetAnimeTitle(title)
+		m.rating.SetHeader("Watch")
 		m.ui.loader.Stop()
 
+	case RatingCompletedMsg, RatingDeclinedMsg:
+		ls := m.state.lastSelected
+		m.state = WatchState{}
+		m.state.lastSelected = ls
+		m.ui.loader, cmd = m.ui.loader.Start("Reloading Anime")
+		return m, tea.Sequence(cmd, m.loadAnime)
 	}
-	return m, nil
+
+	if m.state.progress.isCompleted {
+		m.rating, cmd = m.rating.Update(msg)
+		cmds = append(cmds, cmd)
+	}
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m WatchModel) ViewProgress() tea.View {
+	if m.state.progress.isCompleted {
+		return m.rating.View()
+	}
 	if m.state.progress.isUpdated {
 		return tea.NewView(m.displayUpdatedProgress())
 	}
@@ -342,10 +373,6 @@ func (m WatchModel) displayUpdatedProgress() string {
 			m.state.progress.next,
 		),
 	})
-
-	if m.state.progress.isCompleted {
-		progressStr = ui.DisplayText([]string{`Anime has been ;g;Completed;x;!`})
-	}
 
 	if m.state.selection.fileState == app.Watched || m.state.selection.fileState == app.Pilot {
 		progressStr = ui.DisplayText([]string{
