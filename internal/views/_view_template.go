@@ -17,6 +17,9 @@ func (m SomeModel) Init() tea.Cmd {
 }
 
 func (m SomeModel) Update(msg tea.Msg) (SomeModel, tea.Cmd) {
+	var cmd tea.Cmd
+	var cmds []tea.Cmd
+
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.windowSize = msg
@@ -30,7 +33,8 @@ func (m SomeModel) Update(msg tea.Msg) (SomeModel, tea.Cmd) {
 	case error:
 		m.err = msg
 	}
-	return m, nil
+
+	return m, tea.Batch(cmds...)
 }
 
 func (m SomeModel) View() tea.View {
