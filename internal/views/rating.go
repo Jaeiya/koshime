@@ -192,11 +192,6 @@ func (m *RatingModel) SetHeader(header string) {
 	m.header = header
 }
 
-func (m *RatingModel) reset() {
-	m.animeTitle = ""
-	m.ui.input.SetValue("")
-}
-
 func (m RatingModel) parseRating(input string) (int, error) {
 	input = strings.TrimSpace(input)
 	if input == "" {
