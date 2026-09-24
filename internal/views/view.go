@@ -222,6 +222,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.view = Exit
 		return m, tea.Quit
 
+	// During token expiration consent, this msg gets ignored
+	// so we need to explicitly handle it.
+	case QbtStateMsg:
+		m.menu, cmd = m.menu.Update(msg)
+		return m, cmd
 	}
 
 	if m.loader.IsLoading() {
