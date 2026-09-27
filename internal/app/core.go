@@ -319,7 +319,7 @@ func FuzzyFindAnime(anime []kitsu.Anime, search string) (kitsu.Anime, bool) {
 	topScore := 0
 
 	for _, a := range anime {
-		s := ff.Score(search, a, 5)
+		s := ff.Score(search, a, WithThreshold(1), WithSynopsis())
 		if s > topScore {
 			topScore = s
 			topAnime = a

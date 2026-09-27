@@ -84,7 +84,7 @@ func (ff FansubFilter) FilterByAnime(
 
 		found := FilteredAnime{}
 		for _, anime := range animeList {
-			s := ff.Score(fansub.Title, anime, scoreThreshold)
+			s := ff.Score(fansub.Title, anime, WithThreshold(scoreThreshold))
 			if s > found.Score {
 				found.Value = anime
 				found.FileInfo = fansub
@@ -150,7 +150,7 @@ func (ff FansubFilter) FilterFilenamesByAnime(
 			return nil, fmt.Errorf("failed to parse filename: %w", err)
 		}
 
-		s := ff.Score(fansub.Title, anime, scoreThreshold)
+		s := ff.Score(fansub.Title, anime, WithThreshold(scoreThreshold))
 		if s > topScore {
 			topScore = s
 		}
@@ -164,17 +164,34 @@ func (ff FansubFilter) FilterFilenamesByAnime(
 	return found[topScore], nil
 }
 
+type ScoreOptions struct {
+	threshold      int
+	searchSynopsis bool
+}
+
+type ScoreOption func(options *ScoreOptions)
+
 // Score determines a match percentage based on how well the
 // specified title matches any of the anime's titles.
 //
 // 🔵 A match Score <= threshold is considered a 0% match. This is
 // because that threshold will not be considered a valuable match
 // in this context.
-func (ff FansubFilter) Score(title string, anime kitsu.Anime, threshold int) int {
+func (ff FansubFilter) Score(title string, anime kitsu.Anime, options ...ScoreOption) int {
 	title = ff.normalizeTitle(title)
 	titleWords := strings.Fields(title)
 	if len(titleWords) == 0 {
 		return 0
+	}
+
+	opt := ScoreOptions{}
+	for _, o := range options {
+		o(&opt)
+	}
+
+	threshold := opt.threshold
+	if threshold <= 0 {
+		threshold = 50
 	}
 
 	jpnWords := strings.Fields(ff.normalizeTitle(anime.JPN_Title))
@@ -259,7 +276,30 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime, threshold int) int
 		}
 	}
 
-	if score > threshold {
+	// ========= FUZZY SYNOPSIS MATCH ==========
+	if opt.searchSynopsis {
+		synopsis := ff.normalizeTitle(anime.Synopsis)
+		sWords := strings.Fields(synopsis)
+		wordMap := ff.buildWordMap(sWords)
+		foundWords := map[string]struct{}{}
+		matchCount := 0
+		for _, word := range titleWords {
+			if _, exists := foundWords[word]; exists {
+				continue
+			}
+			if _, exists := wordMap[word]; exists {
+				matchCount += 1
+			}
+		}
+		s := matchCount * 100 / len(wordMap)
+		if len(wordMap) < len(titleWords) {
+			s = matchCount * 100 / len(titleWords)
+		}
+		if s > score {
+			score = s
+		}
+	}
+
 	if score >= threshold {
 		return score
 	}
@@ -275,6 +315,18 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime, threshold int) int
 	}
 
 	return 0
+}
+
+func WithThreshold(threshold int) ScoreOption {
+	return func(options *ScoreOptions) {
+		options.threshold = threshold
+	}
+}
+
+func WithSynopsis() ScoreOption {
+	return func(options *ScoreOptions) {
+		options.searchSynopsis = true
+	}
 }
 
 func (ff FansubFilter) buildWordMap(titleWords []string) map[string]struct{} {
