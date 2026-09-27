@@ -297,8 +297,11 @@ func (FansubFilter) normalizeTitle(title string) string {
 
 func (FansubFilter) titleVariants(title string) []string {
 	words := strings.Fields(title)
-	if len(words) < 2 {
+	if len(words) == 0 {
 		return nil
+	}
+	if len(words) < 2 {
+		return words
 	}
 
 	// Use triangle num formula n(n + 1) / 2 to calculate sum

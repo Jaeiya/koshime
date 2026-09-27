@@ -383,6 +383,34 @@ func TestFilterByAnime(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:   "match exact prefix with one word title",
+			stream: fs.GenFilenameStream("[group] prefix.mkv"),
+			actual: []kitsu.Anime{
+				{
+					ID:        "0",
+					JPN_Title: "prefix: and the rest of the title",
+				},
+				{ // This would typically score 100
+					ID:        "1",
+					JPN_Title: "prefix as the title",
+				},
+			},
+			expected: []FilteredAnime{
+				{
+					Value: kitsu.Anime{
+						ID:        "0",
+						JPN_Title: "prefix: and the rest of the title",
+					},
+					FileInfo: FansubFileInfo{
+						Fansub:   "group",
+						Title:    "prefix",
+						Filename: "[group] prefix.mkv",
+					},
+					Score: 100,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run("should "+tt.name, func(t *testing.T) {
@@ -477,7 +505,7 @@ func TestScore(t *testing.T) {
 	for _, tt := range tests {
 		t.Run("should "+tt.desc, func(t *testing.T) {
 			t.Parallel()
-			assert.Equal(t, tt.wantScore, ff.Score(tt.title, tt.anime, 33))
+			assert.Equal(t, tt.wantScore, ff.Score(tt.title, tt.anime, WithThreshold(33)))
 		})
 	}
 }
