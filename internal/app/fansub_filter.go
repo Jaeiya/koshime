@@ -229,7 +229,7 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime, threshold int) int
 	// A fuzzy search is not necessary if we found an
 	// acceptable score, because a substr word match
 	// is a more accurate match.
-	if score > threshold {
+	if score >= threshold {
 		return score
 	}
 
@@ -260,6 +260,7 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime, threshold int) int
 	}
 
 	if score > threshold {
+	if score >= threshold {
 		return score
 	}
 
