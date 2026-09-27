@@ -18,6 +18,26 @@ type FilteredAnime struct {
 
 type AnimeTitleMap map[string]map[string]struct{}
 
+type (
+	ScoreOption  func(options *ScoreOptions)
+	ScoreOptions struct {
+		threshold      int
+		searchSynopsis bool
+	}
+)
+
+func WithThreshold(threshold int) ScoreOption {
+	return func(options *ScoreOptions) {
+		options.threshold = threshold
+	}
+}
+
+func WithSynopsis() ScoreOption {
+	return func(options *ScoreOptions) {
+		options.searchSynopsis = true
+	}
+}
+
 type FansubFilter struct{}
 
 // All parses all possible fansubs from the provided stream and
@@ -164,13 +184,6 @@ func (ff FansubFilter) FilterFilenamesByAnime(
 	return found[topScore], nil
 }
 
-type ScoreOptions struct {
-	threshold      int
-	searchSynopsis bool
-}
-
-type ScoreOption func(options *ScoreOptions)
-
 // Score determines a match percentage based on how well the
 // specified title matches any of the anime's titles.
 //
@@ -315,18 +328,6 @@ func (ff FansubFilter) Score(title string, anime kitsu.Anime, options ...ScoreOp
 	}
 
 	return 0
-}
-
-func WithThreshold(threshold int) ScoreOption {
-	return func(options *ScoreOptions) {
-		options.threshold = threshold
-	}
-}
-
-func WithSynopsis() ScoreOption {
-	return func(options *ScoreOptions) {
-		options.searchSynopsis = true
-	}
 }
 
 func (ff FansubFilter) buildWordMap(titleWords []string) map[string]struct{} {
