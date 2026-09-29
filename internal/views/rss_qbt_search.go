@@ -2,6 +2,7 @@ package views
 
 import (
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -28,6 +29,7 @@ type RssQbtSearchModel struct {
 	refinedRssList list.Model
 	windowSize     tea.WindowSizeMsg
 	queriedFansubs []app.FansubFileInfo
+	anime          []kitsu.Anime
 	selAnime       kitsu.Anime
 	selFeed        app.RSSResult
 	selAnimeIdx    int
@@ -42,6 +44,17 @@ func newRssQbtSearchModel(db *database.Database) RssQbtSearchModel {
 	m.input = ui.NewTextInput()
 	m.input.Placeholder = "<anime fansub search terms>"
 	m.loader = ui.NewLoader()
+	m.anime = db.Anime()
+	// Sort anime without a feed, to the top
+	slices.SortFunc(m.anime, func(a1, a2 kitsu.Anime) int {
+		if a1.QbtFeed.Name == "" && a2.QbtFeed.Name != "" {
+			return -1
+		}
+		if a1.QbtFeed.Name != "" && a2.QbtFeed.Name == "" {
+			return 1
+		}
+		return 0
+	})
 	m.input.SetWidth(30)
 	m.minInputLen = 3
 	m.selAnimeIdx = -1
@@ -146,7 +159,7 @@ func (m RssQbtSearchModel) UpdateSearch(msg tea.Msg) (RssQbtSearchModel, tea.Cmd
 			// Save selected anime
 			//nolint:errcheck // it will ALWAYS be a list item
 			m.selAnimeIdx = m.animeList.SelectedItem().(ui.ListItem).Index()
-			m.selAnime = m.db.Anime()[m.selAnimeIdx]
+			m.selAnime = m.anime[m.selAnimeIdx]
 		}
 	}
 
@@ -504,9 +517,8 @@ func (m RssQbtSearchModel) saveQbtFeed(feed string) tea.Cmd {
 }
 
 func (m RssQbtSearchModel) createAnimeList() list.Model {
-	anime := m.db.Anime()
-	items := make([]list.Item, len(anime))
-	for i, entry := range anime {
+	items := make([]list.Item, len(m.anime))
+	for i, entry := range m.anime {
 		items[i] = ui.NewListItem(entry.JPN_Title, entry.ENG_Title, i)
 	}
 
